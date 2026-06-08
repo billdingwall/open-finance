@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finance Workspace · Prototype</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <header class="sidebar-head">
+        <div class="workspace-id">
+          <div class="ws-icon">F</div>
+          <div>
+            <div class="ws-name">Finance</div>
+            <div class="ws-meta">iCloud · finance-main</div>
+          </div>
+        </div>
+      </header>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <footer class="sidebar-foot">
+        <div class="sync-pill">
+          <span class="dot dot-ok"></span>
+          <span>Synced</span>
+          <span class="sep">·</span>
+          <span class="muted">2m ago</span>
+        </div>
+      </footer>
+    </aside>
+
+    <main class="center" id="center">
+      <header class="center-head">
+        <div class="breadcrumb" id="breadcrumb"></div>
+        <div class="title-row">
+          <h1 id="page-title">Overview</h1>
+          <div class="status-cluster">
+            <span class="status-chip status-ok" id="sync-status">
+              <span class="dot dot-ok"></span> Synced
+            </span>
+            <span class="status-chip status-warn" id="issue-status">
+              <span class="dot dot-warn"></span> <span id="issue-count">8</span> issues
+            </span>
+          </div>
+        </div>
+        <div class="actions-row">
+          <div class="local-actions" id="local-actions"></div>
+        </div>
+      </header>
+
+      <div class="filter-bar" id="filter-bar"></div>
+
+      <div class="content" id="content"></div>
+    </main>
+
+    <aside class="inspector" id="inspector">
+      <header class="inspector-head">
+        <h2 id="inspector-title">Inspector</h2>
+        <div class="inspector-sub" id="inspector-sub">Nothing selected</div>
+      </header>
+      <div class="inspector-body" id="inspector-body">
+        <div class="empty-inspector">
+          <div class="empty-glyph"></div>
+          <p>Select a card, row, or item in the center panel to see source file lineage, metadata, and validation here.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
