@@ -1,11 +1,11 @@
 # Quickstart: Prototype Review Guide
 
 **Feature**: 001-prototype-prd-alignment
-**Prototype location**: `prototypes/app-structure/`
+**Prototype location**: `design/prototype/`
 
 ## Opening the prototype
 
-1. Open `prototypes/app-structure/index.html` in a browser (no server required — file:// works).
+1. Open `design/prototype/index.html` in a browser (no server required — file:// works).
 2. The prototype loads immediately with no build step.
 3. Default view on load: **Accounts** (the `accounts-overview` screen).
 

@@ -3,11 +3,11 @@
 **Feature Branch**: `001-prototype-prd-alignment`
 **Created**: 2026-06-08
 **Status**: Draft
-**Prototype location**: `prototypes/app-structure/` (static HTML/CSS/JS)
+**Prototype location**: `design/prototype/` (static HTML/CSS/JS)
 
 ## Purpose
 
-The prototype at `prototypes/app-structure/` is the primary design reference for the v1 macOS
+The prototype at `design/prototype/` is the primary design reference for the v1 macOS
 app. Every design decision that affects layout, interaction patterns, information hierarchy, or
 visual treatment should be visible and testable here before it is built in Swift.
 
@@ -346,7 +346,7 @@ grid showing at least 2 mock account cards.
 
 ## Assumptions
 
-- All changes are confined to `prototypes/app-structure/` (`app.js`, `index.html`, `styles.css`, `data.js`). No other files are created.
+- All changes are confined to `design/prototype/` (`app.js`, `index.html`, `styles.css`, `data.js`). No other files are created.
 - Mock and placeholder data is acceptable throughout. Data accuracy is not a goal — visual design fidelity and interaction pattern clarity are.
 - The existing chart helpers (`donutChart`, `lineChart`, `barChart`) and the `el()` utility are available for all new view functions without modification.
 - The onboarding flow can be implemented as a modal overlay on the existing shell, a dedicated view navigable from Settings, or a standalone mode triggered by a "Show onboarding" button — the implementation pattern is a design decision for the prototype author.
