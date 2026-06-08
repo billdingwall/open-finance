@@ -75,23 +75,25 @@ const goalById = () => Object.fromEntries(DATA.goals.map(g => [g.id, g]));
 // ---------- State ------------------------------------------------------------
 
 const state = {
-  view: 'overview-dashboard',
+  view: 'accounts-overview',
   selection: null, // { kind, id }
   filters: {
-    'personal-budget-current': { period: '2026-05', account: 'all', category: 'all', search: '' },
-    'personal-budget-history': { },
-    'savings-active':          { search: '' },
-    'savings-all':             { search: '' },
-    'investments-portfolio':   { account: 'all', sleeve: 'all', assetClass: 'all' },
-    'investments-holdings':    { account: 'all', sleeve: 'all', search: '' },
-    'business-entity':         { entity: 'consulting-llc', period: '2026-05' },
-    'taxes-current':           { year: 2026 },
-    'notes-all':               { type: 'all', search: '' },
-    'issues-all':              { severity: 'all', repairable: 'all' },
-    'overview-dashboard':      { period: '2026-05' },
+    'budget-overview':       { period: '2026-05', account: 'all', category: 'all', search: '' },
+    'budget-history':        { },
+    'savings-goals':         { search: '' },
+    'investments-portfolio': { account: 'all', sleeve: 'all', assetClass: 'all' },
+    'investments-holdings':  { account: 'all', sleeve: 'all', search: '' },
+    'business-entity':       { entity: 'consulting-llc', period: '2026-05' },
+    'taxes-current':         { year: 2026 },
+    'accounts-overview':     { },
+    'savings-investments':   { },
+    'taxes-deductions':      { },
+    'overview-dashboard':    { period: '2026-05' },
   },
-  overviewKpi: 'cashFlow',
+  overviewKpi: 'budget',
   navCollapsed: new Set(),
+  syncState: 'synced',
+  inspectorOpen: false,
 };
 
 // ---------- Sidebar ----------------------------------------------------------
@@ -99,32 +101,24 @@ const state = {
 const NAV = [
   { id: 'overview', label: 'Overview', items: [
     { id: 'overview-dashboard', label: 'Dashboard' },
-    { id: 'overview-monthly',   label: 'Monthly Snapshots' },
-    { id: 'overview-annual',    label: 'Annual Snapshots' },
   ]},
-  { id: 'budget', label: 'Personal Budget', items: [
-    { id: 'personal-budget-current',  label: 'Current Month' },
-    { id: 'personal-budget-history',  label: 'Budget History' },
-    { id: 'personal-budget-categories', label: 'Categories' },
-    { id: 'personal-budget-rules',    label: 'Rules' },
+  { id: 'accounts', label: 'Accounts', items: [
+    { id: 'accounts-overview', label: 'All Accounts' },
   ]},
-  { id: 'savings', label: 'Savings Goals', items: [
-    { id: 'savings-all',      label: 'All Goals' },
-    { id: 'savings-active',   label: 'Active Goals', badge: '4' },
-    { id: 'savings-archived', label: 'Archived Goals', badge: '1' },
-    { id: 'savings-goal-house-down-payment', label: 'House Down Payment' },
-    { id: 'savings-goal-emergency-fund',     label: 'Emergency Fund' },
+  { id: 'budget', label: 'Budget', items: [
+    { id: 'budget-overview',    label: 'Overview' },
+    { id: 'budget-history',     label: 'Budget History' },
+    { id: 'budget-categories',  label: 'Categories' },
   ]},
-  { id: 'investments', label: 'Investments', items: [
-    { id: 'investments-portfolio', label: 'Portfolio Overview' },
-    { id: 'investments-accounts',  label: 'Accounts' },
-    { id: 'investments-brokerage', label: 'Brokerage' },
-    { id: 'investments-ira',       label: 'IRA' },
-    { id: 'investments-sleeves',   label: 'Sleeves' },
-    { id: 'investments-sleeve-core-growth', label: 'Core Growth' },
-    { id: 'investments-sleeve-income',      label: 'Income' },
-    { id: 'investments-holdings',  label: 'Holdings' },
-    { id: 'investments-benchmarks',label: 'Benchmarks' },
+  { id: 'savings-investments', label: 'Savings & Investments', items: [
+    { id: 'savings-goals',            label: 'Goals' },
+    { id: 'savings-goals-active',     label: 'Active Goals',  badge: String(DATA.goals.filter(g => g.status === 'active').length) },
+    { id: 'savings-goals-archived',   label: 'Archived Goals', badge: String(DATA.goals.filter(g => g.status === 'archived').length) },
+    { id: 'investments-portfolio',    label: 'Portfolio Overview' },
+    { id: 'investments-accounts',     label: 'Accounts' },
+    { id: 'investments-sleeves',      label: 'Sleeves' },
+    { id: 'investments-holdings',     label: 'Holdings' },
+    { id: 'investments-benchmarks',   label: 'Benchmarks' },
   ]},
   { id: 'business', label: 'Business', items: [
     { id: 'business-all-entities',   label: 'All Entities' },
@@ -134,21 +128,11 @@ const NAV = [
     { id: 'business-entity',         label: 'Consulting LLC' },
   ]},
   { id: 'taxes', label: 'Taxes', items: [
-    { id: 'taxes-current',        label: 'Current Tax Year' },
-    { id: 'taxes-estimated',      label: 'Estimated Payments' },
-    { id: 'taxes-gains',          label: 'Gains & Income' },
-    { id: 'taxes-checklist',      label: 'Prep Checklist' },
-  ]},
-  { id: 'notes', label: 'Notes', items: [
-    { id: 'notes-monthly',  label: 'Monthly Reviews' },
-    { id: 'notes-strategy', label: 'Strategy Notes' },
-    { id: 'notes-business', label: 'Business Notes' },
-    { id: 'notes-tax',      label: 'Tax Notes' },
-  ]},
-  { id: 'issues', label: 'Issues', items: [
-    { id: 'issues-all',        label: 'All Issues',     badge: String(DATA.issues.length) },
-    { id: 'issues-repairable', label: 'Repairable',     badge: String(DATA.issues.filter(i => i.repairable).length) },
-    { id: 'issues-manual',     label: 'Manual Review',  badge: String(DATA.issues.filter(i => !i.repairable).length) },
+    { id: 'taxes-current',    label: 'Current Tax Year' },
+    { id: 'taxes-deductions', label: 'Deductions' },
+    { id: 'taxes-estimated',  label: 'Estimated Payments' },
+    { id: 'taxes-gains',      label: 'Gains & Income' },
+    { id: 'taxes-checklist',  label: 'Prep Checklist' },
   ]},
   { id: 'settings', label: 'Settings', items: [
     { id: 'settings-workspace', label: 'Workspace' },
@@ -157,6 +141,13 @@ const NAV = [
 ];
 
 function renderSidebar() {
+  const pill = document.getElementById('sync-pill');
+  if (pill) {
+    pill.dataset.state = state.syncState;
+    const labels = { synced: 'Synced', syncing: 'Syncing…', stale: 'Stale', error: 'Sync error' };
+    const labelEl = pill.querySelector('.sync-pill-label');
+    if (labelEl) labelEl.textContent = labels[state.syncState] || state.syncState;
+  }
   const root = $('#sidebar-nav');
   root.innerHTML = '';
   for (const group of NAV) {
@@ -191,11 +182,31 @@ function renderSidebar() {
 // ---------- Navigation -------------------------------------------------------
 
 function navigate(viewId) {
+  closeInspector();
   state.view = viewId;
   state.selection = null;
   renderSidebar();
   renderCenter();
+}
+
+function openInspector(kind, id) {
+  state.selection = { kind, id };
+  state.inspectorOpen = true;
+  const insp = document.getElementById('inspector');
+  if (insp) insp.classList.add('inspector-open');
+  const backdrop = document.getElementById('inspector-backdrop');
+  if (backdrop) backdrop.style.display = 'block';
+  renderCenter();
   renderInspector();
+}
+
+function closeInspector() {
+  state.selection = null;
+  state.inspectorOpen = false;
+  const insp = document.getElementById('inspector');
+  if (insp) insp.classList.remove('inspector-open');
+  const backdrop = document.getElementById('inspector-backdrop');
+  if (backdrop) backdrop.style.display = 'none';
 }
 
 // ---------- Filter bar -------------------------------------------------------
@@ -380,74 +391,67 @@ function renderCenter() {
   content.innerHTML = '';
   // route
   const v = state.view;
-  if (v === 'overview-dashboard' || v === 'overview-monthly' || v === 'overview-annual') return viewOverview();
-  if (v === 'personal-budget-current')                                                   return viewBudgetCurrent();
-  if (v === 'personal-budget-history')                                                   return viewBudgetHistory();
-  if (v === 'personal-budget-categories')                                                return viewBudgetCategories();
-  if (v === 'personal-budget-rules')                                                     return viewBudgetRules();
-  if (v.startsWith('savings-'))                                                          return viewSavings();
-  if (v === 'investments-portfolio' || v === 'investments-accounts' || v === 'investments-brokerage' || v === 'investments-ira') return viewInvestments();
-  if (v === 'investments-sleeves' || v.startsWith('investments-sleeve-'))                return viewInvestmentsSleeves();
+  if (v === 'overview-dashboard')                                                        return viewOverviewDashboard();
+  if (v === 'accounts-overview')                                                         return viewAccounts();
+  if (v === 'budget-overview')                                                           return viewBudgetOverview();
+  if (v === 'budget-history')                                                            return viewBudgetHistory();
+  if (v === 'budget-categories')                                                         return viewBudgetCategories();
+  if (v === 'savings-goals' || v === 'savings-goals-active' || v === 'savings-goals-archived') return viewSavingsGoals();
+  if (v === 'investments-portfolio' || v === 'investments-accounts')                    return viewInvestments();
+  if (v === 'investments-sleeves')                                                       return viewInvestmentsSleeves();
   if (v === 'investments-holdings')                                                      return viewInvestmentsHoldings();
   if (v === 'investments-benchmarks')                                                    return viewInvestmentsBenchmarks();
   if (v === 'business-entity' || v === 'business-all-entities' || v === 'business-monthly') return viewBusiness();
   if (v === 'business-categories')                                                       return viewBusinessCategories();
   if (v === 'business-budgets')                                                          return viewBusinessBudgets();
-  if (v === 'taxes-current' || v === 'taxes-estimated' || v === 'taxes-gains' || v === 'taxes-checklist') return viewTaxes();
-  if (v.startsWith('notes-'))                                                            return viewNotes();
-  if (v.startsWith('issues-'))                                                           return viewIssues();
-  if (v.startsWith('settings-'))                                                         return viewSettings();
+  if (v === 'taxes-current')                                                             return viewTaxesCurrent();
+  if (v === 'taxes-deductions')                                                          return viewTaxesDeductions();
+  if (v === 'taxes-estimated' || v === 'taxes-gains' || v === 'taxes-checklist')        return viewTaxes();
+  if (v === 'onboarding')                                                                return viewOnboarding();
+  if (v === 'indexing-progress')                                                         return viewIndexingProgress();
+  if (v === 'settings-workspace')                                                        return viewSettingsWorkspace();
+  if (v === 'settings-schema')                                                           return viewSettingsSchema();
+  // stub for any unimplemented view
+  const c = $('#content');
+  c.appendChild(el('p', { style: { color: 'var(--muted)', padding: '24px' }, text: 'Coming in this sprint' }));
 }
 
 // ---------- Overview ---------------------------------------------------------
 
-function viewOverview() {
+function viewOverviewDashboard() {
   setHeader({
     title: 'Overview',
-    breadcrumb: ['Finance', 'Overview', state.view === 'overview-monthly' ? 'Monthly Snapshots' : state.view === 'overview-annual' ? 'Annual Snapshots' : 'Dashboard'],
+    breadcrumb: ['Finance', 'Overview', 'Dashboard'],
     actions: [
       { label: 'Export', variant: 'btn-ghost' },
       { label: 'Reindex', variant: 'btn-ghost' },
     ],
   });
-  renderFilterBar([
-    { label: 'Period',  value: 'May 2026',  active: true },
-    { label: 'Accounts',value: 'All' },
-    { label: 'View',    value: 'Dashboard' },
-    { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search across workspace', onChange: () => {} },
-  ]);
+  renderFilterBar([]);
 
   const c = $('#content');
   const o = DATA.overview;
 
-  // KPI grid
+  // 5 KPI cards (T031): Budget, Savings, Investments, Business, Taxes
   const kpis = [
-    { id: 'cashFlow',          label: 'Cash Flow',        value: fmtUSD(o.cashFlow.value, { sign: true }), delta: fmtPctSigned(o.cashFlow.change), deltaCls: 'pos', foot: 'May · net inflow' },
-    { id: 'budgetVariance',    label: 'Budget Variance',  value: fmtUSD(o.budgetVariance.value, { sign: true }), delta: 'over plan',  deltaCls: 'neg', foot: 'Travel +$364, Groceries +$78' },
-    { id: 'savingsProgress',   label: 'Savings Progress', value: fmtPct(o.savingsProgress.value, 0), delta: fmtPctSigned(o.savingsProgress.change), deltaCls: 'pos', foot: '$58,640 of $96,000 plan' },
-    { id: 'portfolioValue',    label: 'Portfolio Value',  value: fmtUSD(o.portfolioValue.value), delta: fmtPctSigned(o.portfolioValue.change), deltaCls: 'pos', foot: '+$4,640 month over month' },
-    { id: 'businessNetIncome', label: 'Business NI',      value: fmtUSD(o.businessNetIncome.value, { sign: true }), delta: fmtPctSigned(o.businessNetIncome.change), deltaCls: 'pos', foot: 'Consulting LLC · May' },
-    { id: 'taxStatus',         label: 'Tax Status',       value: o.taxStatus.value, delta: o.taxStatus.subtle, deltaCls: 'flat', foot: '4 estimated payments planned' },
-    { id: 'issueCount',        label: 'Open Issues',      value: String(DATA.issues.length), delta: '5 repairable', deltaCls: 'flat', foot: '3 manual review' },
+    { id: 'budget',      label: 'Budget',       value: fmtUSD(o.budgetVariance.value, { sign: true }), delta: 'over plan',  deltaCls: 'neg', foot: 'Travel +$364, Groceries +$78', nav: 'budget-overview' },
+    { id: 'savings',     label: 'Savings',       value: fmtPct(o.savingsProgress.value, 0), delta: fmtPctSigned(o.savingsProgress.change), deltaCls: 'pos', foot: '$58,640 of $96,000 plan', nav: 'savings-goals' },
+    { id: 'investments', label: 'Investments',   value: fmtUSD(o.portfolioValue.value), delta: fmtPctSigned(o.portfolioValue.change), deltaCls: 'pos', foot: '+$4,640 MoM', nav: 'investments-portfolio' },
+    { id: 'business',    label: 'Business NI',   value: fmtUSD(o.businessNetIncome.value, { sign: true }), delta: fmtPctSigned(o.businessNetIncome.change), deltaCls: 'pos', foot: 'Consulting LLC · May', nav: 'business-entity' },
+    { id: 'taxes',       label: 'Taxes',         value: o.taxStatus.value, delta: o.taxStatus.subtle, deltaCls: 'flat', foot: '4 estimated payments planned', nav: 'taxes-current' },
   ];
 
-  const kpiGrid = el('div', { class: 'kpi-grid cols-7' });
+  const kpiGrid = el('div', { class: 'kpi-grid' });
   for (const k of kpis) {
-    const card = el('div', {
+    kpiGrid.appendChild(el('div', {
       class: 'kpi-card' + (state.overviewKpi === k.id ? ' selected' : ''),
-      onclick: () => {
-        state.overviewKpi = k.id;
-        select({ kind: 'overview-kpi', id: k.id });
-        renderCenter();
-      },
+      onclick: () => { state.overviewKpi = k.id; navigate(k.nav); },
     }, [
       el('div', { class: 'kpi-label', text: k.label }),
-      el('div', { class: 'kpi-value smaller', text: k.value }),
+      el('div', { class: 'kpi-value', text: k.value }),
       el('div', { class: 'kpi-delta ' + k.deltaCls, text: k.delta }),
       el('div', { class: 'kpi-foot', text: k.foot }),
-    ]);
-    kpiGrid.appendChild(card);
+    ]));
   }
   c.appendChild(kpiGrid);
 
@@ -461,9 +465,7 @@ function viewOverview() {
       el('div', { class: 'panel-head' }, [
         el('h3', { text: 'Cash Flow Trend' }),
         el('span', { class: 'panel-sub', text: 'Net inflow · trailing 12 months' }),
-        el('div', { class: 'panel-actions' }, [
-          el('span', { class: 'derived-tag', text: 'Derived' }),
-        ]),
+        el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
       ]),
       el('div', { class: 'panel-body' }, [
         el('div', { class: 'chart-wrap', html: barChart(cashFlowVals, { labels: cashFlowLabels }) }),
@@ -477,9 +479,7 @@ function viewOverview() {
       el('div', { class: 'panel-head' }, [
         el('h3', { text: 'Net Worth Trend' }),
         el('span', { class: 'panel-sub', text: 'Liquid + investments + cash' }),
-        el('div', { class: 'panel-actions' }, [
-          el('span', { class: 'derived-tag', text: 'Derived' }),
-        ]),
+        el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
       ]),
       el('div', { class: 'panel-body' }, [
         el('div', { class: 'chart-wrap', html: lineChart([o.netWorth], { labels: netWorthLabels }) }),
@@ -492,146 +492,162 @@ function viewOverview() {
   ]);
   c.appendChild(charts);
 
-  // Recent activity table
-  const activity = el('div', { class: 'panel' }, [
+  // Inline Issues table (T032) — grouped by severity
+  const issuesByGroup = { error: [], warning: [], info: [] };
+  for (const i of DATA.issues) issuesByGroup[i.severity].push(i);
+
+  const issuesPanel = el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
-      el('h3', { text: 'Recent Changes & Flagged Items' }),
-      el('span', { class: 'panel-sub', text: 'Last 7 days' }),
+      el('h3', { text: 'Validation Issues' }),
+      el('span', { class: 'panel-sub', text: DATA.issues.length + ' open' }),
       el('div', { class: 'panel-actions' }, [
-        el('button', { class: 'btn btn-ghost', text: 'Open log' }),
+        el('span', { class: 'tag tag-err', text: issuesByGroup.error.length + ' errors' }),
+        el('span', { class: 'tag tag-warn', text: issuesByGroup.warning.length + ' warnings' }),
+        el('span', { class: 'tag tag-info', text: issuesByGroup.info.length + ' info' }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [
       (() => {
         const table = el('table', { class: 'tbl' });
-        table.innerHTML = `
-          <thead>
-            <tr><th>Item</th><th>Domain</th><th>Status</th><th style="width:110px">Due</th></tr>
-          </thead>
-          <tbody></tbody>`;
+        table.innerHTML = `<thead><tr><th style="width:80px">Severity</th><th>Issue</th><th>File</th><th style="width:90px">Status</th></tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
-        for (const a of o.recentActivity) {
-          const tr = el('tr', {
-            class: state.selection && state.selection.kind === a.ref.kind && state.selection.id === a.ref.id ? 'selected' : '',
-            onclick: () => { select(a.ref); renderCenter(); },
-          });
-          const statusTag = (() => {
-            if (a.status === 'Open' || a.status === 'Over') return el('span', { class: 'tag tag-err', text: a.status });
-            if (a.status === 'Done' || a.status === 'Updated') return el('span', { class: 'tag tag-ok', text: a.status });
-            if (a.status === 'Repairable') return el('span', { class: 'tag tag-info', text: a.status });
-            if (a.status === 'Upcoming' || a.status === 'Watching') return el('span', { class: 'tag tag-warn', text: a.status });
-            return el('span', { class: 'tag', text: a.status });
-          })();
-          tr.appendChild(el('td', { text: a.item }));
-          tr.appendChild(el('td', { text: a.domain }));
-          tr.appendChild(el('td', {}, [statusTag]));
-          tr.appendChild(el('td', { class: 'muted', text: a.due }));
-          tbody.appendChild(tr);
+        for (const sev of ['error', 'warning', 'info']) {
+          for (const i of issuesByGroup[sev]) {
+            const sevCls = sev === 'error' ? 'issue-row--error' : sev === 'warning' ? 'issue-row--warning' : 'issue-row--info';
+            const tr = el('tr', {
+              class: (state.selection?.kind === 'issue' && state.selection?.id === i.id ? 'selected ' : '') + sevCls,
+              onclick: () => openInspector('issue', i.id),
+            });
+            const sevTag = sev === 'error' ? el('span', { class: 'tag tag-err', text: 'error' }) :
+                           sev === 'warning' ? el('span', { class: 'tag tag-warn', text: 'warning' }) :
+                           el('span', { class: 'tag tag-info', text: 'info' });
+            tr.appendChild(el('td', {}, [sevTag]));
+            tr.appendChild(el('td', {}, [
+              el('div', { text: i.title }),
+              el('div', { style: { fontSize: '11px', color: 'var(--muted)' }, text: i.message }),
+            ]));
+            tr.appendChild(el('td', {}, [
+              el('span', { class: 'path-chip' }, [
+                i.filePath || i.file,
+                el('span', { class: 'sync-badge sync-badge--available' }),
+              ]),
+            ]));
+            tr.appendChild(el('td', {}, [
+              i.repairable ? el('span', { class: 'issue-badge--repairable', text: 'repairable' }) : el('span', { class: 'issue-badge--manual', text: 'manual' }),
+            ]));
+            tbody.appendChild(tr);
+          }
         }
         return table;
       })(),
     ]),
   ]);
-  c.appendChild(activity);
+  c.appendChild(issuesPanel);
 }
 
-// ---------- Personal Budget --------------------------------------------------
+// ---------- Budget -----------------------------------------------------------
 
-function viewBudgetCurrent() {
+function viewBudgetOverview() {
   setHeader({
-    title: 'Personal Budget · May 2026',
-    breadcrumb: ['Finance', 'Personal Budget', 'Current Month'],
+    title: 'Budget · May 2026',
+    breadcrumb: ['Finance', 'Budget', 'Overview'],
     actions: [
       { label: 'Import CSV', variant: '' },
       { label: 'Export', variant: 'btn-ghost' },
-      { label: 'New rule', variant: 'btn-ghost' },
     ],
   });
-
-  const f = state.filters['personal-budget-current'];
-  renderFilterBar([
-    { label: 'Period',   value: 'May 2026', active: true },
-    { label: 'Account',  value: f.account === 'all' ? 'All' : f.account },
-    { label: 'Category', value: f.category === 'all' ? 'All' : (cats()[f.category]?.name || 'All') },
-    { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search transactions', value: f.search, onChange: v => { f.search = v; renderCenter(); } },
-  ]);
+  renderFilterBar([]);
 
   const c = $('#content');
-
-  // KPIs
   const planned = DATA.categories.reduce((s, x) => s + x.planned, 0);
   const actual = DATA.transactions.reduce((s, x) => {
     if (x.category === 'income') return s;
     return s + Math.abs(x.amount < 0 ? x.amount : 0);
   }, 0);
   const variance = actual - planned;
-  const recurringCount = DATA.transactions.filter(t => t.recurring).length;
 
   const kpis = [
-    { id: 'planned',  label: 'Planned',    value: fmtUSD(planned), delta: '10 categories', deltaCls: 'flat', foot: 'May targets · Personal/budgets.csv' },
-    { id: 'actual',   label: 'Actual',     value: fmtUSD(actual),  delta: fmtPctSigned(actual / planned - 1), deltaCls: variance > 0 ? 'neg' : 'pos', foot: 'Through May 24' },
-    { id: 'variance', label: 'Variance',   value: fmtUSD(variance, { sign: true }), delta: variance > 0 ? 'over plan' : 'under plan', deltaCls: variance > 0 ? 'neg' : 'pos', foot: 'Travel + Dining are top drivers' },
-    { id: 'recurring',label: 'Recurring',  value: String(recurringCount), delta: '7 active rules', deltaCls: 'flat', foot: 'Personal/rules.csv' },
+    { id: 'planned',  label: 'Planned',   value: fmtUSD(planned),  delta: '10 categories', deltaCls: 'flat', foot: 'May targets · Personal/budgets.csv' },
+    { id: 'actual',   label: 'Actual',    value: fmtUSD(actual),   delta: fmtPctSigned(actual / planned - 1), deltaCls: variance > 0 ? 'neg' : 'pos', foot: 'Through May 24' },
+    { id: 'variance', label: 'Variance',  value: fmtUSD(variance, { sign: true }), delta: variance > 0 ? 'over plan' : 'under plan', deltaCls: variance > 0 ? 'neg' : 'pos', foot: 'Travel + Dining are top drivers' },
   ];
-
   const kpiGrid = el('div', { class: 'kpi-grid' });
   for (const k of kpis) {
-    const card = el('div', { class: 'kpi-card' + (state.selection?.kind === 'budget-kpi' && state.selection?.id === k.id ? ' selected' : ''),
-      onclick: () => { select({ kind: 'budget-kpi', id: k.id }); renderCenter(); },
-    }, [
+    kpiGrid.appendChild(el('div', { class: 'kpi-card', onclick: () => { select({ kind: 'budget-kpi', id: k.id }); } }, [
       el('div', { class: 'kpi-label', text: k.label }),
       el('div', { class: 'kpi-value', text: k.value }),
       el('div', { class: 'kpi-delta ' + k.deltaCls, text: k.delta }),
       el('div', { class: 'kpi-foot', text: k.foot }),
-    ]);
-    kpiGrid.appendChild(card);
+    ]));
   }
   c.appendChild(kpiGrid);
 
-  // Category totals (left) + transaction table (right) — but actually 2:1 grid then table
+  // Donut chart + category table (T033 / T034)
+  const sliceData = [
+    { label: 'Fixed',        value: DATA.categories.filter(c => c.group === 'Fixed').reduce((s, c) => s + c.planned, 0),        color: '#6366f1' },
+    { label: 'Discretionary',value: DATA.categories.filter(c => c.group === 'Discretionary').reduce((s, c) => s + c.planned, 0), color: '#f59e0b' },
+    { label: 'Savings',      value: DATA.categories.filter(c => c.group === 'Savings').reduce((s, c) => s + c.planned, 0),       color: '#0ea5e9' },
+    { label: 'Variable',     value: DATA.categories.filter(c => c.group === 'Variable').reduce((s, c) => s + c.planned, 0),      color: '#22c55e' },
+  ];
+  const allZero = sliceData.every(s => s.value === 0);
+
+  const donutPanel = el('div', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Spending Mix · May 2026' }),
+      el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+    ]),
+    el('div', { class: 'panel-body' }, [
+      allZero
+        ? el('div', { style: { textAlign: 'center', color: 'var(--muted)', padding: '24px' }, text: 'No transactions this month' })
+        : el('div', { style: { display: 'flex', gap: '16px', alignItems: 'center' } }, [
+            el('div', { style: { width: '160px', flex: '0 0 160px' }, html: donutChart(sliceData, { size: 160, thickness: 26 }) }),
+            el('div', { style: { flex: '1' } }, sliceData.map(s =>
+              el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', fontSize: '12.5px' } }, [
+                el('span', { style: { display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: s.color, flexShrink: '0' } }),
+                el('span', { style: { flex: '1' }, text: s.label }),
+                el('span', { style: { fontVariantNumeric: 'tabular-nums', color: 'var(--muted)' }, text: fmtUSD(s.value) }),
+              ])
+            )),
+          ]),
+    ]),
+  ]);
+
+  // Category variance table with trailing average column (T034)
+  const trailingAvg = {
+    housing: 2400, groceries: 680, utilities: 310, dining: 290,
+    childcare: 1450, insurance: 408, travel: 420, golf: 145, investments: 1500, savings: 1050,
+  };
   const categoryTotals = computeCategoryTotals();
+
   const catPanel = el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
       el('h3', { text: 'Category Variance · May 2026' }),
       el('span', { class: 'panel-sub', text: '10 categories' }),
-      el('div', { class: 'panel-actions' }, [
-        el('span', { class: 'derived-tag', text: 'Derived' }),
-      ]),
+      el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
     ]),
     el('div', { class: 'panel-body flush' }, [
       (() => {
         const table = el('table', { class: 'tbl' });
-        table.innerHTML = `
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th class="num">Planned</th>
-              <th class="num">Actual</th>
-              <th>Progress</th>
-              <th class="num">Variance</th>
-            </tr>
-          </thead>
-          <tbody></tbody>`;
+        table.innerHTML = `<thead><tr><th>Category</th><th class="num">Planned</th><th class="num">Actual</th><th class="num">3M Avg</th><th>Progress</th><th class="num">Variance</th></tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         for (const row of categoryTotals) {
           const tr = el('tr', {
             class: state.selection?.kind === 'category' && state.selection?.id === row.category.id ? 'selected' : '',
-            onclick: () => { select({ kind: 'category', id: row.category.id }); renderCenter(); },
+            onclick: () => openInspector('category', row.category.id),
           });
           const pct = Math.min(row.actual / Math.max(row.planned, 1), 1.5);
           const overBy = row.actual - row.planned;
           const barCls = overBy > row.planned * 0.05 ? 'err' : overBy > 0 ? 'warn' : 'ok';
+          const avg = trailingAvg[row.category.id];
           tr.appendChild(el('td', {}, [
             el('span', { style: { display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: row.category.color, marginRight: '8px' } }),
             row.category.name,
           ]));
           tr.appendChild(el('td', { class: 'num', text: fmtUSD(row.planned) }));
           tr.appendChild(el('td', { class: 'num', text: fmtUSD(row.actual) }));
+          tr.appendChild(el('td', { class: 'num muted', text: avg != null ? fmtUSD(avg) : '~' + fmtUSD(row.planned) }));
           tr.appendChild(el('td', {}, [
-            el('div', { class: 'bar-inline ' + barCls }, [
-              el('span', { style: { width: (Math.min(pct, 1) * 100) + '%' } }),
-            ]),
+            el('div', { class: 'bar-inline ' + barCls }, [el('span', { style: { width: (Math.min(pct, 1) * 100) + '%' } })]),
           ]));
           tr.appendChild(el('td', { class: 'num ' + (overBy > 0 ? 'neg' : 'pos'), text: fmtUSD(overBy, { sign: true }) }));
           tbody.appendChild(tr);
@@ -641,42 +657,15 @@ function viewBudgetCurrent() {
     ]),
   ]);
 
-  // Goal contribution mini-panel
-  const goalSummary = el('div', { class: 'panel' }, [
-    el('div', { class: 'panel-head' }, [
-      el('h3', { text: 'Contributions to Goals' }),
-      el('span', { class: 'panel-sub', text: 'May 2026' }),
-    ]),
-    el('div', { class: 'panel-body' }, DATA.goals.filter(g => g.status === 'active').map(g => {
-      const m = g.contributions[g.contributions.length - 1];
-      const pct = (m?.amount || 0) / Math.max(g.monthlyTarget, 1);
-      return el('div', { style: { marginBottom: '10px', cursor: 'pointer' }, onclick: () => { select({ kind: 'goal', id: g.id }); renderCenter(); } }, [
-        el('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', marginBottom: '4px' } }, [
-          el('span', { text: g.name }),
-          el('span', { style: { color: 'var(--muted)' }, text: fmtUSD(m?.amount || 0) + ' / ' + fmtUSD(g.monthlyTarget) }),
-        ]),
-        el('div', { class: 'bar-inline ' + (pct < 0.95 ? 'warn' : 'ok') }, [
-          el('span', { style: { width: Math.min(pct, 1) * 100 + '%' } }),
-        ]),
-      ]);
-    })),
-  ]);
+  c.appendChild(el('div', { class: 'row-2-1' }, [donutPanel, catPanel]));
 
-  const middle = el('div', { class: 'row-2-1' }, [catPanel, goalSummary]);
-  c.appendChild(middle);
-
-  // Transactions table
+  // Transaction ledger
+  const f = state.filters['budget-overview'];
   let txs = DATA.transactions.filter(t => t.category !== 'income');
-  if (f.search) {
-    const q = f.search.toLowerCase();
-    txs = txs.filter(t => (t.merchant + ' ' + t.description + ' ' + t.id).toLowerCase().includes(q));
-  }
-  if (f.category && f.category !== 'all') txs = txs.filter(t => t.category === f.category);
-
   const txPanel = el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
       el('h3', { text: 'Transaction Ledger' }),
-      el('span', { class: 'panel-sub', text: `${txs.length} of ${DATA.transactions.length} transactions` }),
+      el('span', { class: 'panel-sub', text: `${txs.length} transactions` }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
         el('button', { class: 'btn btn-ghost', text: 'Open file' }),
@@ -685,24 +674,13 @@ function viewBudgetCurrent() {
     el('div', { class: 'panel-body flush' }, [
       (() => {
         const table = el('table', { class: 'tbl' });
-        table.innerHTML = `
-          <thead>
-            <tr>
-              <th style="width:90px">Date</th>
-              <th>Merchant</th>
-              <th>Category</th>
-              <th>Account</th>
-              <th class="num">Amount</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>`;
+        table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Merchant</th><th>Category</th><th>Account</th><th class="num">Amount</th><th></th></tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         const C = cats();
         for (const t of txs) {
           const tr = el('tr', {
             class: state.selection?.kind === 'transaction' && state.selection?.id === t.id ? 'selected' : '',
-            onclick: () => { select({ kind: 'transaction', id: t.id }); renderCenter(); },
+            onclick: () => openInspector('transaction', t.id),
           });
           tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
           tr.appendChild(el('td', {}, [
@@ -714,8 +692,7 @@ function viewBudgetCurrent() {
             C[t.category]?.name || t.category,
           ]));
           tr.appendChild(el('td', { class: 'muted', text: t.account }));
-          const cls = 'num ' + (t.amount < 0 ? '' : 'pos');
-          tr.appendChild(el('td', { class: cls, text: fmtUSD2(t.amount) }));
+          tr.appendChild(el('td', { class: 'num ' + (t.amount < 0 ? '' : 'pos'), text: fmtUSD2(t.amount) }));
           const tags = [];
           if (t.recurring) tags.push(el('span', { class: 'tag tag-muted', text: 'recurring' }));
           if (t.duplicate) tags.push(el('span', { class: 'tag tag-err', text: 'duplicate' }));
@@ -744,7 +721,7 @@ function computeCategoryTotals() {
 function viewBudgetHistory() {
   setHeader({
     title: 'Budget History',
-    breadcrumb: ['Finance', 'Personal Budget', 'Budget History'],
+    breadcrumb: ['Finance', 'Budget', 'Budget History'],
     actions: [{ label: 'Export', variant: 'btn-ghost' }],
   });
   renderFilterBar([
@@ -800,7 +777,7 @@ function viewBudgetHistory() {
 function viewBudgetCategories() {
   setHeader({
     title: 'Categories',
-    breadcrumb: ['Finance', 'Personal Budget', 'Categories'],
+    breadcrumb: ['Finance', 'Budget', 'Categories'],
     actions: [{ label: 'New category', variant: '' }, { label: 'Export', variant: 'btn-ghost' }],
   });
   renderFilterBar([{ label: 'Group', value: 'All' }, { label: 'Status', value: 'Active' }]);
@@ -819,7 +796,7 @@ function viewBudgetCategories() {
       for (const t of totals) {
         const tr = el('tr', {
           class: state.selection?.kind === 'category' && state.selection?.id === t.category.id ? 'selected' : '',
-          onclick: () => { select({ kind: 'category', id: t.category.id }); renderCenter(); },
+          onclick: () => openInspector('category', t.category.id),
         });
         tr.appendChild(el('td', {}, [
           el('span', { style: { display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: t.category.color, marginRight: '8px' } }),
@@ -862,7 +839,7 @@ function viewBudgetRules() {
       for (const r of DATA.rules) {
         const tr = el('tr', {
           class: state.selection?.kind === 'rule' && state.selection?.id === r.id ? 'selected' : '',
-          onclick: () => { select({ kind: 'rule', id: r.id }); renderCenter(); },
+          onclick: () => openInspector('rule', r.id),
         });
         tr.appendChild(el('td', { class: 'mono', text: r.pattern }));
         tr.appendChild(el('td', { text: C[r.category]?.name || r.category }));
@@ -877,26 +854,21 @@ function viewBudgetRules() {
   c.appendChild(panel);
 }
 
-// ---------- Savings ----------------------------------------------------------
+// ---------- Savings & Investments (Goals) ------------------------------------
 
-function viewSavings() {
-  let label = 'All Goals';
+function viewSavingsGoals() {
+  let label = 'Goals';
   let goals = DATA.goals;
-  if (state.view === 'savings-active')   { label = 'Active Goals';   goals = goals.filter(g => g.status === 'active'); }
-  if (state.view === 'savings-archived') { label = 'Archived Goals'; goals = goals.filter(g => g.status !== 'active'); }
-  if (state.view.startsWith('savings-goal-')) {
-    const id = state.view.replace('savings-goal-', '');
-    const g = goalById()[id];
-    if (g) { label = g.name; goals = [g]; }
-  }
+  if (state.view === 'savings-goals-active')   { label = 'Active Goals';   goals = goals.filter(g => g.status === 'active'); }
+  if (state.view === 'savings-goals-archived') { label = 'Archived Goals'; goals = goals.filter(g => g.status !== 'active'); }
 
   setHeader({
     title: 'Savings Goals',
-    breadcrumb: ['Finance', 'Savings Goals', label],
+    breadcrumb: ['Finance', 'Savings & Investments', label],
     actions: [{ label: 'New goal', variant: '' }, { label: 'Export', variant: 'btn-ghost' }],
   });
   renderFilterBar([
-    { label: 'Status', value: state.view === 'savings-archived' ? 'Archived' : 'Active', active: true },
+    { label: 'Status', value: state.view === 'savings-goals-archived' ? 'Archived' : 'Active', active: true },
     { label: 'Target year', value: 'All' },
     { kind: 'spacer' },
     { kind: 'search', placeholder: 'Search goals', onChange: () => {} },
@@ -931,7 +903,7 @@ function viewSavings() {
     const pct = g.balance / g.target;
     const card = el('div', {
       class: 'goal-card' + (state.selection?.kind === 'goal' && state.selection?.id === g.id ? ' selected' : ''),
-      onclick: () => { select({ kind: 'goal', id: g.id }); renderCenter(); },
+      onclick: () => openInspector('goal', g.id),
     }, [
       el('div', { class: 'goal-name' }, [
         g.name,
@@ -964,7 +936,7 @@ function viewSavings() {
       table.innerHTML = `<thead><tr><th>Goal</th>${periods.map(p => `<th class="num">${p.slice(2)}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody></tbody>`;
       const tbody = table.querySelector('tbody');
       for (const g of goals.filter(g => g.status === 'active')) {
-        const tr = el('tr', { onclick: () => { select({ kind: 'goal', id: g.id }); renderCenter(); } });
+        const tr = el('tr', { onclick: () => openInspector('goal', g.id) });
         tr.appendChild(el('td', { text: g.name }));
         let total = 0;
         for (const p of periods) {
@@ -1102,7 +1074,7 @@ function viewInvestments() {
         const ug = mv - h.basis;
         const tr = el('tr', {
           class: state.selection?.kind === 'holding' && state.selection?.id === h.id ? 'selected' : '',
-          onclick: () => { select({ kind: 'holding', id: h.id }); renderCenter(); },
+          onclick: () => openInspector('holding', h.id),
         });
         tr.appendChild(el('td', {}, [el('span', { class: 'tag tag-accent', text: h.ticker })]));
         tr.appendChild(el('td', { class: 'truncate', text: h.name }));
@@ -1165,24 +1137,59 @@ function viewInvestmentsSleeves() {
 }
 
 function viewInvestmentsHoldings() { viewInvestments(); }
+
+function heatMapTable(rows, periods) {
+  const table = document.createElement('table');
+  table.className = 'heat-map-table';
+  const thead = table.createTHead();
+  const headerRow = thead.insertRow();
+  const th0 = document.createElement('th');
+  th0.textContent = 'Account';
+  headerRow.appendChild(th0);
+  for (const p of periods) {
+    const th = document.createElement('th');
+    th.textContent = p;
+    headerRow.appendChild(th);
+  }
+  const tbody = table.createTBody();
+  for (const row of rows) {
+    const tr = tbody.insertRow();
+    const isSp500 = row.accountId === 'sp500';
+    if (isSp500) tr.className = 'sp500-row';
+    const tdName = tr.insertCell();
+    tdName.textContent = row.label;
+    for (const p of periods) {
+      const td = tr.insertCell();
+      const v = row.returns[p];
+      if (v == null) {
+        td.textContent = '—';
+      } else {
+        td.textContent = (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+        td.className = v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+      }
+    }
+  }
+  return table;
+}
+
 function viewInvestmentsBenchmarks() {
   setHeader({
     title: 'Benchmarks',
-    breadcrumb: ['Finance', 'Investments', 'Benchmarks'],
+    breadcrumb: ['Finance', 'Savings & Investments', 'Benchmarks'],
     actions: [{ label: 'Import benchmark', variant: '' }],
   });
-  renderFilterBar([{ label: 'Benchmark', value: 'S&P 500', active: true }, { label: 'Window', value: '12 months' }]);
+  renderFilterBar([]);
   const c = $('#content');
   c.appendChild(el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
-      el('h3', { text: 'S&P 500 · Investments/benchmarks/sp500.csv' }),
+      el('h3', { text: 'Period Returns · Investments/benchmarks/' }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
         el('span', { class: 'tag tag-warn', text: 'Missing May data' }),
       ]),
     ]),
-    el('div', { class: 'panel-body' }, [
-      el('div', { class: 'chart-wrap tall', html: lineChart([DATA.benchSeries.portfolio, DATA.benchSeries.sp500], { labels: DATA.benchSeries.labels, colors: ['#3651d3', '#94a3b8'] }) }),
+    el('div', { class: 'panel-body flush' }, [
+      heatMapTable(DATA.benchmarkReturns, DATA.benchmarkPeriods),
     ]),
   ]));
 }
@@ -1307,7 +1314,7 @@ function viewBusiness() {
       for (const t of txs) {
         const tr = el('tr', {
           class: state.selection?.kind === 'biz-tx' && state.selection?.id === t.id ? 'selected' : '',
-          onclick: () => { select({ kind: 'biz-tx', id: t.id }); renderCenter(); },
+          onclick: () => openInspector('biz-tx', t.id),
         });
         tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
         tr.appendChild(el('td', { text: t.merchant }));
@@ -1406,7 +1413,7 @@ function viewTaxes() {
       for (const p of DATA.estimatedPayments) {
         const tr = el('tr', {
           class: state.selection?.kind === 'estimatedPayment' && state.selection?.id === p.id ? 'selected' : '',
-          onclick: () => { select({ kind: 'estimatedPayment', id: p.id }); renderCenter(); },
+          onclick: () => openInspector('estimatedPayment', p.id),
         });
         tr.appendChild(el('td', { text: 'Q' + p.quarter + ' ' + p.year }));
         tr.appendChild(el('td', { class: 'muted', text: p.jurisdiction }));
@@ -1457,7 +1464,7 @@ function viewTaxes() {
       for (const r of DATA.realizedGains) {
         const tr = el('tr', {
           class: state.selection?.kind === 'realized' && state.selection?.id === r.id ? 'selected' : '',
-          onclick: () => { select({ kind: 'realized', id: r.id }); renderCenter(); },
+          onclick: () => openInspector('realized', r.id),
         });
         tr.appendChild(el('td', {}, [el('span', { class: 'tag tag-accent', text: r.ticker })]));
         tr.appendChild(el('td', { class: 'muted', text: fmtDateLong(r.closed) }));
@@ -1697,19 +1704,22 @@ function viewIssues() {
       ]),
     ]);
     for (const i of items) {
-      const sevCls = i.severity === 'error' ? 'sev-err' : i.severity === 'warning' ? 'sev-warn' : 'sev-info';
+      const sevRowCls = i.severity === 'error' ? 'issue-row--error' : i.severity === 'warning' ? 'issue-row--warning' : 'issue-row--info';
+      const sevDotCls = i.severity === 'error' ? 'sev-err' : i.severity === 'warning' ? 'sev-warn' : 'sev-info';
       const row = el('div', {
-        class: 'issue-row' + (state.selection?.kind === 'issue' && state.selection?.id === i.id ? ' selected' : ''),
-        onclick: () => { select({ kind: 'issue', id: i.id }); renderCenter(); },
+        class: 'issue-row ' + sevRowCls + (state.selection?.kind === 'issue' && state.selection?.id === i.id ? ' selected' : ''),
+        onclick: () => openInspector('issue', i.id),
       }, [
-        el('span', { class: 'sev-dot ' + sevCls }),
-        el('div', {}, [
+        el('span', { class: 'sev-dot ' + sevDotCls }),
+        el('div', { style: { flex: '1', minWidth: 0 } }, [
           el('div', { class: 'issue-title', text: i.title }),
           el('div', { class: 'issue-msg', text: i.message }),
         ]),
-        el('span', { class: 'issue-file', text: i.file + (i.row ? ':' + i.row : '') }),
-        i.repairable ? el('span', { class: 'tag tag-info', text: 'repairable' }) : el('span', { class: 'tag tag-muted', text: 'manual' }),
-        el('span', { class: 'tag tag-muted', text: i.severity }),
+        el('span', { class: 'path-chip' }, [
+          i.filePath || i.file + (i.row ? ':' + i.row : ''),
+          el('span', { class: 'sync-badge sync-badge--available' }),
+        ]),
+        i.repairable ? el('span', { class: 'issue-badge--repairable', text: 'repairable' }) : el('span', { class: 'issue-badge--manual', text: 'manual' }),
       ]);
       groupEl.appendChild(row);
     }
@@ -1719,18 +1729,285 @@ function viewIssues() {
 
 // ---------- Settings ---------------------------------------------------------
 
-function viewSettings() {
-  setHeader({ title: 'Settings', breadcrumb: ['Finance', 'Settings'], actions: [] });
+function viewSettingsWorkspace() {
+  setHeader({ title: 'Settings · Workspace', breadcrumb: ['Finance', 'Settings', 'Workspace'], actions: [] });
   renderFilterBar([]);
   const c = $('#content');
   c.appendChild(el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [el('h3', { text: 'Workspace' })]),
     el('div', { class: 'panel-body' }, [
-      el('div', { class: 'insp-row' }, [el('span', { class: 'k', text: 'Workspace path' }), el('span', { class: 'v' }, [el('span', { class: 'path-chip', text: 'iCloud Drive › Finance' })])]),
+      el('div', { class: 'insp-row' }, [el('span', { class: 'k', text: 'Workspace path' }), el('span', { class: 'v' }, [el('span', { class: 'path-chip' }, ['iCloud Drive › Finance', el('span', { class: 'sync-badge sync-badge--available' })])])]),
       el('div', { class: 'insp-row' }, [el('span', { class: 'k', text: 'Workspace ID' }), el('span', { class: 'v mono', text: DATA.workspace.id })]),
       el('div', { class: 'insp-row' }, [el('span', { class: 'k', text: 'Default currency' }), el('span', { class: 'v', text: 'USD' })]),
       el('div', { class: 'insp-row' }, [el('span', { class: 'k', text: 'Timezone' }), el('span', { class: 'v', text: 'America/Denver' })]),
       el('div', { class: 'insp-row' }, [el('span', { class: 'k', text: 'Last indexed' }), el('span', { class: 'v', text: DATA.workspace.lastIndexed })]),
+      el('div', { class: 'insp-row' }, [el('span', { class: 'k', text: 'iCloud sync' }), el('span', { class: 'v' }, [
+        el('span', { class: 'sync-pill', id: 'ws-sync-pill', dataset: { state: state.syncState } }, [
+          el('span', { class: 'sync-pill-icon' }),
+          el('span', { class: 'sync-pill-label', text: state.syncState }),
+        ]),
+      ])]),
+    ]),
+  ]));
+
+  // Reviewer controls
+  c.appendChild(el('div', { class: 'panel', style: { marginTop: '12px' } }, [
+    el('div', { class: 'panel-head' }, [el('h3', { text: 'Prototype Review Controls' })]),
+    el('div', { class: 'panel-body' }, [
+      el('p', { style: { fontSize: '12px', color: 'var(--muted)', marginBottom: '12px' }, text: 'These buttons control prototype state for design review. They do not represent real app functionality.' }),
+      el('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, [
+        // T019: Show onboarding flow button
+        el('button', { class: 'btn', onclick: () => navigate('onboarding') }, ['Show onboarding flow']),
+        // T023: Cycle sync state button (appended, does not replace T019)
+        el('button', { class: 'btn btn-ghost', onclick: () => {
+          const states = ['synced', 'syncing', 'stale', 'error'];
+          const idx = states.indexOf(state.syncState);
+          state.syncState = states[(idx + 1) % states.length];
+          renderSidebar();
+          renderCenter();
+        } }, ['Cycle sync state']),
+        // T025: Show indexing state button (appended, does not replace T019 or T023)
+        el('button', { class: 'btn btn-ghost', onclick: () => navigate('indexing-progress') }, ['Show indexing state']),
+      ]),
+    ]),
+  ]));
+}
+
+function viewSettingsSchema() {
+  setHeader({ title: 'Settings · Schema', breadcrumb: ['Finance', 'Settings', 'Schema'], actions: [] });
+  renderFilterBar([]);
+  const c = $('#content');
+  c.appendChild(el('div', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [el('h3', { text: 'Schema Registry' })]),
+    el('div', { class: 'panel-body' }, [
+      el('p', { style: { color: 'var(--muted)', fontSize: '12px' }, text: 'Schema version ' + DATA.workspace.schemaVersion + ' · 24 file types defined' }),
+    ]),
+  ]));
+}
+
+// ---------- Onboarding (T018) ------------------------------------------------
+
+function viewOnboarding() {
+  setHeader({
+    title: 'First-Launch Onboarding',
+    breadcrumb: ['Finance', 'Settings', 'Workspace', 'Onboarding'],
+    actions: [{ label: '← Back to Workspace', variant: 'btn-ghost', onClick: () => navigate('settings-workspace') }],
+  });
+  renderFilterBar([]);
+  const c = $('#content');
+
+  c.appendChild(el('div', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'iCloud Workspace States' }),
+      el('span', { class: 'panel-sub', text: '7 states + success' }),
+    ]),
+    el('div', { class: 'panel-body' }, [
+      el('div', { class: 'onboarding-grid' }, DATA.iCloudStates.map(ws => {
+        const severity = ['available', 'workspace-created'].includes(ws.id) ? 'ok' :
+                         ['not-signed-in', 'container-unavailable', 'conflict-detected', 'file-missing-locally'].includes(ws.id) ? 'err' :
+                         ws.id === 'syncing' ? 'neutral' : 'warn';
+        return el('div', { class: 'onboarding-card onboarding-card--' + severity }, [
+          el('span', { class: 'state-icon', text: ws.icon }),
+          el('div', { class: 'state-label', text: ws.label }),
+          el('div', { class: 'state-desc', text: ws.description }),
+          ws.recoveryAction
+            ? el('button', { class: 'btn state-action', text: ws.recoveryAction })
+            : null,
+          ws.id === 'workspace-created'
+            ? el('div', { style: { marginTop: '8px', fontSize: '11.5px', color: 'var(--muted)' } }, [
+                el('div', { text: 'Path: ' + DATA.workspace.path }),
+                el('div', { text: 'ID: ' + DATA.workspace.id }),
+              ])
+            : null,
+        ]);
+      })),
+    ]),
+  ]));
+}
+
+// ---------- Indexing Progress (T025) ------------------------------------------
+
+function viewIndexingProgress() {
+  setHeader({
+    title: 'Workspace Indexing',
+    breadcrumb: ['Finance', 'Settings', 'Workspace', 'Indexing'],
+    actions: [{ label: '← Back to Workspace', variant: 'btn-ghost', onClick: () => navigate('settings-workspace') }],
+  });
+  renderFilterBar([]);
+  const c = $('#content');
+  c.appendChild(el('div', { class: 'indexing-view' }, [
+    el('h2', { text: 'Indexing workspace…' }),
+    el('p', { style: { color: 'var(--muted)', fontSize: '12px' }, text: '47 of 83 files scanned' }),
+    el('div', { class: 'indexing-progress-bar' }, [
+      el('div', { class: 'indexing-progress-bar-fill', style: { width: '57%' } }),
+    ]),
+    el('p', { style: { color: 'var(--muted)', fontSize: '11.5px', marginTop: '6px' }, text: 'Estimated: ~12 seconds remaining' }),
+  ]));
+  c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px', maxWidth: '640px', margin: '16px auto 0' } }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Classification Warnings' }),
+      el('span', { class: 'panel-sub', text: '1 item needs attention' }),
+    ]),
+    el('div', { class: 'panel-body flush' }, [
+      (() => {
+        const table = el('table', { class: 'tbl' });
+        table.innerHTML = `<thead><tr><th>File</th><th>Issue</th><th>Action</th></tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        const tr = tbody.insertRow();
+        const td1 = tr.insertCell(); td1.innerHTML = '<span class="path-chip">Investments/benchmarks/sp500.csv<span class="sync-badge sync-badge--missing"></span></span>';
+        const td2 = tr.insertCell(); td2.textContent = 'File exists in iCloud but not downloaded locally';
+        const td3 = tr.insertCell(); td3.innerHTML = '<button class="btn btn-ghost" style="font-size:11.5px">Download</button>';
+        return table;
+      })(),
+    ]),
+  ]));
+}
+
+// ---------- Accounts (T041) --------------------------------------------------
+
+function viewAccounts() {
+  setHeader({
+    title: 'Accounts',
+    breadcrumb: ['Finance', 'Accounts', 'All Accounts'],
+    actions: [{ label: 'Export', variant: 'btn-ghost' }],
+  });
+  renderFilterBar([]);
+  const c = $('#content');
+
+  if (!DATA.accounts || DATA.accounts.length === 0) {
+    // T042: empty state
+    c.appendChild(el('div', { style: { textAlign: 'center', padding: '48px 24px', color: 'var(--muted)' } }, [
+      el('div', { style: { fontSize: '32px', marginBottom: '12px' }, text: '🏦' }),
+      el('h3', { style: { color: 'var(--ink-2)', marginBottom: '8px' }, text: 'No accounts added' }),
+      el('p', { style: { fontSize: '12px', marginBottom: '16px' }, text: 'Accounts will appear here once you add them to your workspace.' }),
+      el('button', { class: 'btn', text: 'Add account (coming soon)' }),
+    ]));
+    return;
+  }
+
+  const totalInflow = DATA.accounts.reduce((s, a) => s + a.monthlyInflow, 0);
+  const totalNI = DATA.accounts.reduce((s, a) => s + a.ytdNetIncome, 0);
+
+  c.appendChild(el('div', { class: 'accounts-aggregate' }, [
+    el('div', { class: 'agg-item' }, [
+      el('div', { class: 'agg-label', text: 'Monthly Inflow' }),
+      el('div', { class: 'agg-value', text: fmtUSD(totalInflow) }),
+    ]),
+    el('div', { class: 'agg-item' }, [
+      el('div', { class: 'agg-label', text: 'YTD Net Income' }),
+      el('div', { class: 'agg-value', text: fmtUSD(totalNI) }),
+    ]),
+    el('div', { class: 'agg-item' }, [
+      el('div', { class: 'agg-label', text: 'Accounts' }),
+      el('div', { class: 'agg-value', text: String(DATA.accounts.length) }),
+    ]),
+  ]));
+
+  const grid = el('div', { class: 'accounts-grid' });
+  for (const a of DATA.accounts) {
+    grid.appendChild(el('div', {
+      class: 'account-card' + (state.selection?.kind === 'account' && state.selection?.id === a.id ? ' selected' : ''),
+      onclick: () => openInspector('account', a.id),
+    }, [
+      el('div', { class: 'ac-name', text: a.name }),
+      el('div', { class: 'ac-inst', text: a.institution }),
+      el('div', { class: 'ac-group', text: a.group }),
+      el('div', { class: 'ac-metrics' }, [
+        el('div', {}, [
+          el('div', { class: 'ac-metric-label', text: 'Monthly inflow' }),
+          el('div', { class: 'ac-metric-value', text: fmtUSD(a.monthlyInflow) }),
+        ]),
+        el('div', { style: { textAlign: 'right' } }, [
+          el('div', { class: 'ac-metric-label', text: 'YTD net' }),
+          el('div', { class: 'ac-metric-value', text: fmtUSD(a.ytdNetIncome) }),
+        ]),
+      ]),
+    ]));
+  }
+  c.appendChild(grid);
+}
+
+// ---------- Taxes: Deductions (T039) -----------------------------------------
+
+function viewTaxesDeductions() {
+  setHeader({
+    title: 'Deductions · 2026',
+    breadcrumb: ['Finance', 'Taxes', 'Deductions'],
+    actions: [{ label: 'Export prep packet', variant: '' }],
+  });
+  renderFilterBar([]);
+  const c = $('#content');
+
+  const groups = [
+    { key: 'standard',   label: 'Standard Deduction' },
+    { key: 'above-line', label: 'Above-the-Line Deductions' },
+    { key: 'schedule-a', label: 'Schedule A — Itemized Deductions' },
+    { key: 'schedule-c', label: 'Schedule C — Self-Employment Deductions' },
+  ];
+
+  for (const group of groups) {
+    const items = DATA.deductions.filter(d => d.type === group.key);
+    const total = items.reduce((s, d) => s + d.estimatedAmount, 0);
+
+    const groupEl = el('div', { class: 'deduction-group' });
+    groupEl.appendChild(el('div', { class: 'deduction-group-head' }, [
+      el('span', { class: 'dg-title', text: group.label }),
+      el('span', { class: 'dg-total', text: fmtUSD(total) }),
+    ]));
+
+    const table = el('table', { class: 'tbl' });
+    table.innerHTML = `<thead><tr><th>Deduction</th><th class="num">Estimated Amount</th><th>Status</th></tr></thead><tbody></tbody>`;
+    const tbody = table.querySelector('tbody');
+    for (const d of items) {
+      const tr = tbody.insertRow();
+      tr.insertCell().textContent = d.name;
+      const tdAmt = tr.insertCell(); tdAmt.className = 'num'; tdAmt.textContent = d.estimatedAmount > 0 ? fmtUSD(d.estimatedAmount) : '—';
+      const tdSt = tr.insertCell();
+      const tag = d.status === 'confirmed' ? el('span', { class: 'tag tag-ok', text: 'confirmed' }) :
+                  d.status === 'estimated' ? el('span', { class: 'tag tag-warn', text: 'estimated' }) :
+                  el('span', { class: 'tag tag-err', text: 'missing' });
+      tdSt.appendChild(tag);
+    }
+    const totalRow = tbody.insertRow();
+    totalRow.style.fontWeight = '600';
+    totalRow.insertCell().textContent = 'Total';
+    const tdTotal = totalRow.insertCell(); tdTotal.className = 'num'; tdTotal.textContent = fmtUSD(total);
+    totalRow.insertCell();
+
+    groupEl.appendChild(el('div', { class: 'panel', style: { margin: '0' } }, [
+      el('div', { class: 'panel-body flush' }, [table]),
+    ]));
+    c.appendChild(groupEl);
+  }
+}
+
+// ---------- Taxes: Current Year with per-account rate table (T040) -----------
+
+function viewTaxesCurrent() {
+  viewTaxes();
+
+  // Append per-account effective rate table
+  const c = $('#content');
+  c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Effective Tax Rate by Account · 2026 YTD' }),
+      el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+    ]),
+    el('div', { class: 'panel-body flush' }, [
+      (() => {
+        const table = el('table', { class: 'tbl' });
+        table.innerHTML = `<thead><tr><th>Account</th><th class="num">Taxable Income</th><th class="num">Taxes Paid</th><th class="num">Taxes Owed</th><th class="num">Effective Rate</th></tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        for (const r of DATA.accountTaxRates) {
+          const tr = tbody.insertRow();
+          tr.insertCell().textContent = r.accountName;
+          const tdInc = tr.insertCell(); tdInc.className = 'num'; tdInc.textContent = r.taxableIncome > 0 ? fmtUSD(r.taxableIncome) : '—';
+          const tdPaid = tr.insertCell(); tdPaid.className = 'num'; tdPaid.textContent = r.taxesPaid > 0 ? fmtUSD(r.taxesPaid) : '—';
+          const tdOwed = tr.insertCell(); tdOwed.className = 'num'; tdOwed.textContent = r.taxesOwed > 0 ? fmtUSD(r.taxesOwed) : '—';
+          const tdRate = tr.insertCell(); tdRate.className = 'num'; tdRate.textContent = r.effectiveRate > 0 ? fmtPct(r.effectiveRate) : '—';
+        }
+        return table;
+      })(),
     ]),
   ]));
 }
@@ -1745,6 +2022,8 @@ function select(sel) {
 }
 
 function renderInspector() {
+  if (!state.inspectorOpen) return;
+
   const head = $('#inspector-title');
   const sub = $('#inspector-sub');
   const body = $('#inspector-body');
@@ -1932,29 +2211,38 @@ function renderInspector() {
     body.appendChild(insSection('Issue', [
       ['Severity', i.severity],
       ['Group', i.group],
-      ['File', el('span', { class: 'path-chip', text: i.file + (i.row ? ':' + i.row : '') })],
+      ['File', el('span', { class: 'path-chip' }, [
+        i.filePath || i.file + (i.row ? ':' + i.row : ''),
+        el('span', { class: 'sync-badge sync-badge--available' }),
+      ])],
+      ['Row', i.row != null ? String(i.row) : '—'],
       ['Repairable', i.repairable ? 'Yes' : 'No (manual)'],
     ], { tag: i.severity === 'error' ? 'err' : i.severity === 'warning' ? 'warn' : 'info' }));
 
-    if (i.preview) {
+    if (i.repairable && i.repairPreview) {
       body.appendChild(el('div', { class: 'insp-section' }, [
         el('div', { class: 'insp-label', text: 'Repair preview' }),
-        el('div', { class: 'pre-block' }, [
-          i.preview.context ? el('span', { class: 'muted', text: i.preview.context + '\n' }) : null,
-          i.preview.del ? el('span', { class: 'del', text: i.preview.del + '\n' }) : null,
-          i.preview.add ? el('span', { class: 'add', text: i.preview.add + '\n' }) : null,
+        el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' } }, [
+          el('div', {}, [
+            el('div', { style: { fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--err)', marginBottom: '4px' }, text: 'Before' }),
+            el('pre', { class: 'insp-pre', style: { background: '#fee2e2', fontSize: '10.5px' }, text: i.repairPreview.before }),
+          ]),
+          el('div', {}, [
+            el('div', { style: { fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ok)', marginBottom: '4px' }, text: 'After' }),
+            el('pre', { class: 'insp-pre', style: { background: '#dcfce7', fontSize: '10.5px' }, text: i.repairPreview.after }),
+          ]),
         ]),
-        el('div', { style: { marginTop: '10px', display: 'flex', gap: '6px' } }, [
-          el('button', { class: 'btn btn-primary', text: 'Preview & apply' }),
-          el('button', { class: 'btn btn-ghost', text: 'Open in editor' }),
+        el('div', { style: { marginBottom: '8px', fontSize: '11px', color: 'var(--muted)', background: 'var(--surface-sunken)', padding: '6px 10px', borderRadius: '6px' }, text: '🔒 A timestamped backup will be created before applying this change.' }),
+        el('div', { style: { display: 'flex', gap: '6px' } }, [
+          el('button', { class: 'btn btn-primary', text: 'Apply repair' }),
+          el('button', { class: 'btn btn-ghost', text: 'Cancel' }),
         ]),
-        el('div', { style: { marginTop: '8px', fontSize: '11px', color: 'var(--muted)' }, text: 'A timestamped backup is created automatically before any write.' }),
       ]));
     } else {
       body.appendChild(el('div', { class: 'insp-section' }, [
-        el('div', { class: 'insp-label', text: 'Manual review' }),
-        el('p', { style: { fontSize: '12px', color: 'var(--ink-3)', lineHeight: '1.5' }, text: 'This issue cannot be repaired automatically. Open the source file and apply the change in your editor of choice.' }),
-        el('div', { style: { display: 'flex', gap: '6px' } }, [
+        el('div', { class: 'insp-label', text: 'Manual review required' }),
+        el('p', { style: { fontSize: '12px', color: 'var(--ink-3)', lineHeight: '1.5' }, text: 'This issue cannot be repaired automatically. Open the source file and apply the change manually in your editor.' }),
+        el('div', { style: { display: 'flex', gap: '6px', marginTop: '10px' } }, [
           el('button', { class: 'btn btn-ghost', text: 'Reveal in Finder' }),
           el('button', { class: 'btn btn-ghost', text: 'Open in editor' }),
         ]),
@@ -2041,6 +2329,24 @@ function renderInspector() {
     return;
   }
 
+  if (k === 'account') {
+    const a = DATA.accounts.find(x => x.id === sel.id);
+    if (!a) return setEmpty();
+    head.textContent = a.name;
+    sub.textContent = a.group + ' · ' + a.institution;
+    body.appendChild(insBlockKVs([
+      ['Monthly Inflow', el('span', { class: 'insp-value big', text: fmtUSD(a.monthlyInflow) })],
+    ], { stacked: true }));
+    body.appendChild(insSection('Account details', [
+      ['Institution', a.institution],
+      ['Type', a.type],
+      ['Group', a.group],
+      ['YTD net income', fmtUSD(a.ytdNetIncome)],
+    ]));
+    body.appendChild(insSourceBlock({ file: 'Accounts/accounts.csv', row: null, importedFrom: null }));
+    return;
+  }
+
   // generic fallback
   head.textContent = 'Inspector';
   sub.textContent = '(' + k + ')';
@@ -2093,7 +2399,12 @@ function insSourceBlock({ file, row, importedFrom }) {
     el('div', { class: 'insp-block' }, [
       el('div', { class: 'insp-row' }, [
         el('span', { class: 'k', text: 'File' }),
-        el('span', { class: 'v' }, [el('span', { class: 'path-chip', text: file })]),
+        el('span', { class: 'v' }, [
+          el('span', { class: 'path-chip' }, [
+            file,
+            el('span', { class: 'sync-badge sync-badge--available' }),
+          ]),
+        ]),
       ]),
       row != null ? el('div', { class: 'insp-row' }, [
         el('span', { class: 'k', text: 'Row' }),
@@ -2118,6 +2429,11 @@ function insSourceBlock({ file, row, importedFrom }) {
 // =====================================================================
 // Bootstrap
 // =====================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  const backdrop = document.getElementById('inspector-backdrop');
+  if (backdrop) backdrop.addEventListener('click', closeInspector);
+});
 
 renderSidebar();
 renderCenter();

@@ -489,10 +489,15 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       title: 'Missing required column',
       message: '`subcategory_id` column is missing.',
       file: 'Personal/transactions/2026-03.csv',
+      filePath: 'Personal/transactions/2026-03.csv',
       row: null,
       repairable: true,
       kind: 'missing-optional-column',
       preview: { add: '+ subcategory_id', context: 'transaction_id,date,account_id,merchant,description,amount,direction,category_id,subcategory_id,...' },
+      repairPreview: {
+        before: 'transaction_id,date,account_id,merchant,description,amount,direction,category_id',
+        after:  'transaction_id,date,account_id,merchant,description,amount,direction,category_id,subcategory_id',
+      },
     },
     {
       id: 'iss-002',
@@ -501,10 +506,12 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       title: 'Duplicate transaction ID',
       message: '`TX-2605-026` collides with `TX-2605-011`.',
       file: 'Personal/transactions/2026-05.csv',
+      filePath: 'Personal/transactions/2026-05.csv',
       row: 27,
       repairable: false,
       kind: 'duplicate-id',
       preview: null,
+      repairPreview: null,
     },
     {
       id: 'iss-003',
@@ -513,10 +520,12 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       title: 'Unknown category reference',
       message: '`category_id = food` not found in `Personal/categories.csv`. Did you mean `dining`?',
       file: 'Personal/transactions/2026-04.csv',
+      filePath: 'Personal/transactions/2026-04.csv',
       row: 18,
       repairable: false,
       kind: 'unknown-reference',
       preview: null,
+      repairPreview: null,
     },
     {
       id: 'iss-004',
@@ -525,10 +534,12 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       title: 'Orphan note link',
       message: 'Note `note-2026-05-review.md` references `goal_id = vacation-2026` which does not exist.',
       file: 'Notes/monthly/2026-05-review.md',
+      filePath: 'Notes/monthly/2026-05-review.md',
       row: null,
       repairable: false,
       kind: 'orphan-link',
       preview: null,
+      repairPreview: null,
     },
     {
       id: 'iss-005',
@@ -537,10 +548,15 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       title: 'Header casing mismatch',
       message: '`Account_ID` should be `account_id`.',
       file: 'Investments/holdings.csv',
+      filePath: 'Investments/holdings.csv',
       row: 1,
       repairable: true,
       kind: 'header-casing',
       preview: { del: '- Account_ID', add: '+ account_id' },
+      repairPreview: {
+        before: 'Account_ID,ticker,name,qty,price,basis,asset,sector',
+        after:  'account_id,ticker,name,qty,price,basis,asset,sector',
+      },
     },
     {
       id: 'iss-006',
@@ -549,10 +565,12 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       title: 'Missing benchmark data',
       message: '`Investments/benchmarks/sp500.csv` ends 2026-04-30. May closes are missing.',
       file: 'Investments/benchmarks/sp500.csv',
+      filePath: 'Investments/benchmarks/sp500.csv',
       row: null,
       repairable: false,
       kind: 'missing-data',
       preview: null,
+      repairPreview: null,
     },
     {
       id: 'iss-007',
@@ -561,10 +579,15 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       title: 'Missing schema version marker',
       message: '`schema_version` is missing from front matter.',
       file: 'Notes/strategy/business-strategy.md',
+      filePath: 'Notes/strategy/business-strategy.md',
       row: null,
       repairable: true,
       kind: 'missing-schema-version',
       preview: { add: '+ schema_version: 1' },
+      repairPreview: {
+        before: 'type: business-review\nnote_id: note-biz-strategy\nentity_ids: [consulting-llc]',
+        after:  'type: business-review\nnote_id: note-biz-strategy\nentity_ids: [consulting-llc]\nschema_version: 1',
+      },
     },
     {
       id: 'iss-008',
@@ -573,11 +596,91 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       title: 'Zero-amount transaction',
       message: '`TX-2605-022` has amount = 0.00. Likely placeholder for a future renewal.',
       file: 'Personal/transactions/2026-05.csv',
+      filePath: 'Personal/transactions/2026-05.csv',
       row: 23,
       repairable: false,
       kind: 'zero-amount',
       preview: null,
+      repairPreview: null,
     },
+  ];
+
+  // ----- Accounts (master registry) ----------------------------------------
+  const accounts = [
+    { id: 'checking-main',   name: 'Chase Checking',     institution: 'Chase',    group: 'Everyday Banking', type: 'checking',  monthlyInflow: 9651,  ytdNetIncome: 52080 },
+    { id: 'savings-marcus',  name: 'Marcus Savings',     institution: 'Marcus',   group: 'Everyday Banking', type: 'savings',   monthlyInflow: 200,   ytdNetIncome: 840 },
+    { id: 'credit-sapphire', name: 'Chase Sapphire',     institution: 'Chase',    group: 'Credit Cards',     type: 'credit',    monthlyInflow: 0,     ytdNetIncome: 0 },
+    { id: 'brokerage-main',  name: 'Fidelity Brokerage', institution: 'Fidelity', group: 'Investments',      type: 'brokerage', monthlyInflow: 1500,  ytdNetIncome: 10420 },
+    { id: 'ira-main',        name: 'Fidelity IRA',       institution: 'Fidelity', group: 'Investments',      type: 'ira',       monthlyInflow: 0,     ytdNetIncome: 4820 },
+    { id: 'biz-checking',    name: 'Brex Checking',      institution: 'Brex',     group: 'Business',         type: 'checking',  monthlyInflow: 17300, ytdNetIncome: 13693 },
+  ];
+
+  // ----- iCloud workspace states -------------------------------------------
+  const iCloudStates = [
+    { id: 'available',             label: 'Available',             icon: '✅', description: 'iCloud Drive is available and your workspace files are syncing normally.',                   recoveryAction: null },
+    { id: 'not-signed-in',         label: 'Not Signed In',         icon: '🔒', description: 'You are not signed into iCloud. Sign in via System Settings to enable workspace sync.',       recoveryAction: 'Open iCloud Settings' },
+    { id: 'container-unavailable', label: 'Container Unavailable', icon: '⚠️', description: 'The iCloud container for this app could not be accessed. This may be a temporary service outage.', recoveryAction: 'Retry' },
+    { id: 'syncing',               label: 'Syncing',               icon: '🔄', description: 'Workspace files are actively syncing with iCloud Drive. Changes may not be visible yet.',   recoveryAction: null },
+    { id: 'local-copy-stale',      label: 'Local Copy Stale',      icon: '🕐', description: 'Your local copy has not been updated recently. iCloud may have newer versions of some files.', recoveryAction: 'Force sync' },
+    { id: 'file-missing-locally',  label: 'File Missing Locally',  icon: '☁️', description: 'One or more workspace files exist in iCloud but have not been downloaded to this device.',  recoveryAction: 'Download now' },
+    { id: 'conflict-detected',     label: 'Conflict Detected',     icon: '⚡', description: 'A sync conflict was detected. Two versions of a file exist and need to be resolved.',        recoveryAction: 'Resolve conflict' },
+    { id: 'workspace-created',     label: 'Workspace Ready',       icon: '🎉', description: 'Your Finance workspace was created successfully. All folder structure is ready to use.',     recoveryAction: 'Start using app' },
+  ];
+
+  // ----- Benchmark return data (heat map) ----------------------------------
+  const benchmarkPeriods = ['D', 'W', 'M', '3M', '6M', '1Y', '3Y', '5Y'];
+
+  const benchmarkReturns = [
+    {
+      accountId: 'brokerage-main',
+      label: 'Brokerage',
+      returns: { D: 0.0042, W: 0.0118, M: 0.0214, '3M': 0.0486, '6M': 0.0823, '1Y': 0.178, '3Y': 0.412, '5Y': 0.724 },
+    },
+    {
+      accountId: 'ira-main',
+      label: 'IRA',
+      returns: { D: 0.0038, W: 0.0094, M: 0.0180, '3M': 0.0410, '6M': 0.0762, '1Y': 0.156, '3Y': 0.384, '5Y': 0.689 },
+    },
+    {
+      accountId: 'roth-main',
+      label: 'Roth IRA',
+      returns: { D: 0.0051, W: 0.0142, M: 0.0268, '3M': 0.0612, '6M': 0.0940, '1Y': 0.192, '3Y': null,  '5Y': null },
+    },
+    {
+      accountId: 'hsa-main',
+      label: 'HSA',
+      returns: { D: -0.0012, W: 0.0038, M: 0.0091, '3M': 0.0220, '6M': 0.0480, '1Y': 0.114, '3Y': null, '5Y': null },
+    },
+    {
+      accountId: 'sp500',
+      label: 'S&P 500',
+      returns: { D: 0.0031, W: 0.0087, M: 0.0162, '3M': 0.0384, '6M': 0.0714, '1Y': 0.144, '3Y': 0.328, '5Y': 0.618 },
+    },
+  ];
+
+  // ----- Tax deductions -----------------------------------------------------
+  const deductions = [
+    { id: 'ded-std-federal',  type: 'standard',   name: 'Federal Standard Deduction',   estimatedAmount: 14600, status: 'confirmed' },
+    { id: 'ded-std-colorado', type: 'standard',   name: 'Colorado Standard Deduction',  estimatedAmount: 14600, status: 'confirmed' },
+    { id: 'ded-ira',          type: 'above-line', name: 'Traditional IRA Contribution', estimatedAmount: 7000,  status: 'confirmed' },
+    { id: 'ded-hsa',          type: 'above-line', name: 'HSA Contribution',             estimatedAmount: 4150,  status: 'confirmed' },
+    { id: 'ded-stl',          type: 'above-line', name: 'Student Loan Interest',        estimatedAmount: 0,     status: 'estimated' },
+    { id: 'ded-salt',         type: 'schedule-a', name: 'State & Local Taxes (SALT)',   estimatedAmount: 8400,  status: 'estimated' },
+    { id: 'ded-charitable',   type: 'schedule-a', name: 'Charitable Contributions',     estimatedAmount: 1200,  status: 'confirmed' },
+    { id: 'ded-mortgage',     type: 'schedule-a', name: 'Mortgage Interest',            estimatedAmount: 0,     status: 'missing' },
+    { id: 'ded-homeofc',      type: 'schedule-c', name: 'Home Office Deduction',        estimatedAmount: 2640,  status: 'estimated' },
+    { id: 'ded-vehicle',      type: 'schedule-c', name: 'Vehicle Mileage (Business)',   estimatedAmount: 1840,  status: 'estimated' },
+    { id: 'ded-software',     type: 'schedule-c', name: 'Software & Subscriptions',     estimatedAmount: 1040,  status: 'confirmed' },
+    { id: 'ded-meals-biz',    type: 'schedule-c', name: 'Business Meals (50%)',         estimatedAmount: 426,   status: 'estimated' },
+  ];
+
+  // ----- Per-account effective tax rates -----------------------------------
+  const accountTaxRates = [
+    { accountId: 'checking-main',  accountName: 'Chase Checking',      taxableIncome: 96502, taxesPaid: 16800, taxesOwed: 19120, effectiveRate: 0.198 },
+    { accountId: 'brokerage-main', accountName: 'Fidelity Brokerage',  taxableIncome: 18240, taxesPaid: 0,     taxesOwed: 2736,  effectiveRate: 0.150 },
+    { accountId: 'ira-main',       accountName: 'Fidelity IRA',        taxableIncome: 0,     taxesPaid: 0,     taxesOwed: 0,     effectiveRate: 0.0   },
+    { accountId: 'roth-main',      accountName: 'Fidelity Roth IRA',   taxableIncome: 0,     taxesPaid: 0,     taxesOwed: 0,     effectiveRate: 0.0   },
+    { accountId: 'biz-checking',   accountName: 'Brex Checking (LLC)', taxableIncome: 52800, taxesPaid: 8400,  taxesOwed: 9840,  effectiveRate: 0.186 },
   ];
 
   // ----- Overview trend series --------------------------------------------
@@ -632,5 +735,11 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
     notes,
     issues,
     overview,
+    accounts,
+    iCloudStates,
+    benchmarkPeriods,
+    benchmarkReturns,
+    deductions,
+    accountTaxRates,
   };
 })();
