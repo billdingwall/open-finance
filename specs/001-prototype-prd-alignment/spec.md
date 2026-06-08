@@ -33,8 +33,7 @@ A designer or engineer opens the prototype and sees the correct v1 application s
 column layout with a stable left sidebar, a main content area, and a right inspector panel that
 is closed by default. The sidebar shows the correct top-level sections in order. The window
 chrome and toolbar show the actions, sync status, and issue indicators that will be present in
-the macOS app. The empty navigation state — what a user sees when no section is selected — is
-defined.
+the macOS app. The empty navigation state — what a user sees when no section is explicitly selected upon initial load — defaults to the Accounts screen.
 
 **Why this priority**: The shell is the frame for every other design decision. Navigation
 structure, column behavior, and the toolbar directly affect how all module views are designed.
@@ -51,7 +50,7 @@ absent on initial load. Confirm the sidebar shows exactly: Overview, Accounts, B
 2. **Given** the Budget section is expanded, **When** the reviewer reads sub-items, **Then** Rules does not appear. Overview, Budget History, and Categories are present.
 3. **Given** the Overview section is expanded, **When** the reviewer reads sub-items, **Then** Monthly Snapshots and Annual Snapshots do not appear. Only Dashboard is present.
 4. **Given** the Savings & Investments section is expanded, **When** the reviewer reads sub-items, **Then** both Goals (active goals, archived goals) and Portfolio (portfolio overview, accounts, sleeves, holdings, benchmarks) are accessible within one section.
-5. **Given** no section is selected, **When** the prototype loads, **Then** the right inspector panel is not visible. The main content area fills the full available width.
+5. **Given** no section is selected, **When** the prototype loads, **Then** the prototype defaults to the Accounts screen, and the right inspector panel is not visible. The main content area fills the full available width.
 6. **Given** the reviewer inspects the toolbar, **When** they read left to right, **Then** they can see a workspace identifier, a sync status indicator, and an issue count indicator — the same persistent elements that will appear in the macOS toolbar.
 
 ---
@@ -76,8 +75,9 @@ panel. Confirm it closes. Navigate to a different section. Confirm the panel rem
 
 1. **Given** the prototype loads on any module, **When** no item is selected, **Then** the right panel is not visible and the main content extends to the right edge.
 2. **Given** the reviewer selects any table row or KPI card, **When** the selection registers, **Then** the inspector slides in from the right as an overlay — the main content area width does not change.
-3. **Given** the inspector is open, **When** the reviewer clicks outside it, **Then** the panel closes and the full content area is restored.
-4. **Given** the inspector is open, **When** the reviewer navigates to a different section, **Then** the panel closes and the selection is cleared.
+3. **Given** the inspector is open, **When** the reviewer clicks on an empty area outside it, **Then** the panel closes and the full content area is restored.
+4. **Given** the inspector is open, **When** the reviewer clicks on a different item in the main content area, **Then** the panel remains open and its contents update to the new selection.
+5. **Given** the inspector is open, **When** the reviewer navigates to a different section, **Then** the panel closes and the selection is cleared.
 
 ---
 
@@ -85,8 +85,8 @@ panel. Confirm it closes. Navigate to a different section. Confirm the panel rem
 
 A designer opens the prototype and can walk through a first-launch experience: the app
 checks whether iCloud is available, creates or opens the Finance workspace, and guides
-the user through any setup steps needed. All seven iCloud availability states defined in
-the PRD are visually represented so the team can review and decide how each is communicated
+the user through any setup steps needed. All seven iCloud availability states are
+visually represented so the team can review and decide how each is communicated
 to the user.
 
 **Why this priority**: The onboarding and workspace resolution flow is the first thing every
@@ -161,7 +161,7 @@ in-editor and reveal-in-Finder actions.
 **Acceptance Scenarios**:
 
 1. **Given** the reviewer views the Overview Issues table, **When** they read an error-severity issue row, **Then** the row shows: a red severity indicator, the affected file path, a short description, and a "manual" or "repairable" badge.
-2. **Given** the reviewer views a warning-severity issue, **When** they compare it to an error-severity issue, **Then** the severity indicator is visually distinct (amber vs red) — color and icon both differ.
+2. **Given** the reviewer views a warning-severity or info-severity issue, **When** they compare severities, **Then** all three severity indicators (error, warning, info) are visually distinct from one another — color and icon all differ.
 3. **Given** the reviewer selects a repairable issue, **When** the inspector opens, **Then** a diff-style panel shows the before and after state of the affected rows, a note confirms a backup will be created, and Apply and Cancel buttons are present.
 4. **Given** the reviewer selects a manual-only issue, **When** the inspector opens, **Then** no diff panel or Apply button is shown. Instead, an explanation and Reveal in Finder / Open in Editor actions are present.
 5. **Given** the reviewer views any panel that references a source file, **When** they see a file path chip, **Then** the chip links to either the inspector source view or an open-in-editor action.
@@ -281,7 +281,7 @@ grid showing at least 2 mock account cards.
 - **FR-001**: The `NAV` array in `app.js` MUST contain exactly these top-level sections in order: Overview, Accounts, Budget, Savings & Investments, Business, Taxes, Settings.
 - **FR-002**: Monthly Snapshots, Annual Snapshots, and Budget Rules MUST be removed from all sub-item lists and their corresponding view functions MUST be unreachable from navigation.
 - **FR-003**: Savings Goals and Investments MUST be replaced by a single Savings & Investments top-level section with sub-navigation covering both goals and portfolio.
-- **FR-004**: Notes and Issues MUST be removed from top-level navigation. Issues data is surfaced in the Overview view instead.
+- **FR-004**: Notes, Issues, and Files MUST be removed from top-level navigation. Issues data is surfaced in the Overview view instead.
 
 **Right panel**
 - **FR-005**: The inspector panel MUST be hidden on initial load and on every navigation change.
@@ -310,7 +310,6 @@ grid showing at least 2 mock account cards.
 **Budget (Round 1 alignment)**
 - **FR-019**: The Budget Overview MUST include a pie or donut chart showing spending breakdown as a percentage of monthly net income.
 - **FR-020**: The category variance table MUST include a 3-month trailing average column.
-- **FR-021**: The Recurring KPI card referencing rules.csv MUST be removed from the Budget KPI grid.
 
 **Savings & Investments (Round 1 alignment)**
 - **FR-022**: The Benchmarks view MUST show a heat map table with columns for D, W, M, 3M, 6M, 1Y, 3Y, 5Y — one row per investment account plus an S&P 500 row.
@@ -338,7 +337,7 @@ grid showing at least 2 mock account cards.
 ### Measurable Outcomes
 
 - **SC-001**: Every open design task listed under Phase 1 and Phase 2 in `docs/roadmap-v1.md` is represented by at least one designed prototype screen — none remain undesigned.
-- **SC-002**: A reviewer walking through every sidebar section finds zero v2-deferred views (Notes, Issues standalone, Budget Rules, Monthly Snapshots, Annual Snapshots) reachable from navigation.
+- **SC-002**: A reviewer walking through every sidebar section finds zero v2-deferred views (Notes, Issues standalone, Files, Budget Rules, Monthly Snapshots, Annual Snapshots) reachable from navigation.
 - **SC-003**: Every v1 section (Overview, Accounts, Budget, Savings & Investments, Business, Taxes, Settings) renders without a JavaScript error in the browser console.
 - **SC-004**: A reviewer can identify the correct designed treatment for all 7 iCloud workspace states by navigating the onboarding flow — no state is missing or shown as a placeholder text block.
 - **SC-005**: A reviewer can walk through the full repair flow — select an issue, read the diff preview, read the backup confirmation note — without leaving the prototype.
