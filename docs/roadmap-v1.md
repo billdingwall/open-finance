@@ -25,6 +25,8 @@ a PRD amendment before proceeding.
 | Tax return filing engine | V2 |
 | Multi-workspace / multi-user support | V2 |
 | AI-driven analysis or recommendations | V2 |
+| Alternative cloud storage providers (Google Drive, Dropbox, local folder) | V2 |
+| xlsx and other spreadsheet format ingestion and export | V2 |
 
 ---
 
@@ -37,7 +39,7 @@ Phase 2: Parsing, Validation & Infrastructure
     ↓ (typed domain records required)
 Phase 3: Domain Layer I — Accounts, Budget & Overview
     ↓ (master account registry required by all other modules)
-Phase 4: Domain Layer II — Savings, Investments, Business & Tax
+Phase 4: Domain Layer II — Savings, Investments & Tax
     ↓ (all domain engines required for full projections)
 Phase 5: Presentation Layer — App Shell & Module Views
     ↓ (views and write flows are parallel once shell is stable)
@@ -99,9 +101,10 @@ and local-fallback modes.
 - [ ] Configure unit test target and basic test infrastructure
 
 #### Platform Layer
-- [ ] `ICloudContainerService` — resolve ubiquity container URL, expose availability state enum,
+- [ ] `CloudStorageProvider` protocol — define minimum interface: `resolveWorkspaceURL() async throws -> URL`, observable `syncState`, `isAvailable: Bool`; all storage backends conform to this protocol; `ICloudContainerService` is the v1 implementation
+- [ ] `ICloudContainerService` — conforms to `CloudStorageProvider`; resolve ubiquity container URL, expose availability state enum,
   provide diagnostics for missing entitlements or nil container
-- [ ] `WorkspaceManager` — resolve workspace URL from ubiquity container, create initial directory
+- [ ] `WorkspaceManager` — resolve workspace URL via the active `CloudStorageProvider`, create initial directory
   tree from templates, restore last active workspace path from `UserDefaults`, validate minimum
   required paths, expose `WorkspaceState` observable to UI
 - [ ] `BackupService` — create timestamped copies of files before any write or repair, manage
@@ -122,20 +125,19 @@ and local-fallback modes.
 - [ ] Define `Workspace`, `FileRecord`, `SyncStatus` models in `Platform/`
 - [ ] Define `ValidationIssue`, `RepairAction` models in `Validation/`
 - [ ] Define canonical entity models for all domains in `Domain/`:
-  `Account`, `AccountRule`, `AccountEstimate`, `PersonalTransaction`, `PersonalCategory`,
-  `PersonalBudget`, `SavingsGoal`, `SavingsProgress`, `InvestmentAccount`, `Holding`, `Trade`,
-  `PricePoint`, `BenchmarkPeriod`, `PortfolioSleeve`, `SleeveTarget`, `BusinessEntity`,
-  `BusinessTransaction`, `BusinessBudget`, `EstimatedPayment`, `DeductionRecord`,
-  `TaxArchiveYear`, `NoteDocument`
+  `Account`, `AccountRule`, `AccountEstimate`, `UnifiedTransaction`, `Category`,
+  `BudgetPlan`, `SavingsGoal`, `SavingsProgress`, `InvestmentAccount`, `Holding`, `Trade`,
+  `PricePoint`, `BenchmarkPeriod`, `PortfolioSleeve`, `SleeveTarget`, `OwnerDistribution`,
+  `EstimatedPayment`, `DeductionRecord`, `TaxArchiveYear`, `NoteDocument`
 - [ ] Define cross-domain projection models:
   `AccountSummaryCard`, `OverviewSummaryCard`, `MonthlySnapshot`, `GoalFundingLink`,
-  `SleeveFundingLink`, `TaxPrepSummary`, `TaxDeductionSummary`, `BusinessMonthlySummary`
+  `SleeveFundingLink`, `TaxPrepSummary`, `TaxDeductionSummary`
 
 #### Developer Script
 - [ ] `bootstrap-workspace.swift` — create standard folder tree, write seed CSV/Markdown
   templates with correct headers and `schema_version: 1`, seed standard deduction row in
-  `Taxes/deductions.csv` from filing status, create manifest, write default personal and business
-  categories
+  `Taxes/deductions.csv` from filing status, create manifest, write default categories in
+  `Budget/categories.csv`
 
 ### Milestone 1
 > **Foundation complete.** The app launches, resolves the iCloud workspace, creates the initial
@@ -243,6 +245,7 @@ dashboard projection.
   (reference `docs/PRD.md §5`)
 - [ ] Define default personal budget category set: group names, category names, default budget
   behavior (fixed/discretionary/savings/investment/transfer), and `tax_relevant` flag for each
+- [ ] Finalize the customizable account entities/themes taxonomy (personal, employment, business, custom)
 - [ ] Document the 3-month trailing average calculation: what to display when fewer than 3 months
   of transaction history are available (show partial average with a data-sufficiency indicator,
   not zero or blank)
@@ -250,7 +253,7 @@ dashboard projection.
   - Budget card: current month income vs estimated spending
   - Savings card: total savings balance, monthly contributions, estimated rate
   - Investments card: total investment value, monthly contributions, estimated rate
-  - Business card: YTD net income, total income, total expenses
+  - Business card: YTD net income for business entities/themes
   - Taxes card: estimated return, gross income, taxes paid
 - [ ] Define month-over-month panel data requirements: which periods to show, how to handle
   missing months gracefully
@@ -278,11 +281,10 @@ dashboard projection.
 - [ ] `AccountModels` — define `Account` (master registry), `AccountRule`, `AccountEstimate`,
   `AccountSummaryCard`, `AccountDetailProjection`
 - [ ] `AccountEngine` — build aggregate overview: iterate all accounts, compute monthly cash
-  inflow per account from personal + business + investment transactions, compute YTD net income
-  (gross − expenses − taxes), compute YTD cash inflow vs retained equity; build per-account
-  detail projection; apply account rules and estimates to project expected cash flow for accounts
-  with no transactions in the current period; cross-reference personal, business, and investment
-  transaction records by `account_id`
+  inflow per account from unified transaction files, compute YTD net income
+  (gross − expenses − taxes), compute YTD cash inflow vs retained equity; build per-theme
+  detail projections (personal, employment, business); apply account rules and estimates to project expected cash flow for accounts
+  with no transactions in the current period; cross-reference unified transactions by `account_id`
 
 #### BudgetEngine (`Domain/Budget/`)
 - [ ] `BudgetModels` — define `PersonalTransaction`, `PersonalCategory`, `PersonalBudget`,
@@ -298,7 +300,7 @@ dashboard projection.
   `SleeveFundingLink` (investment contributions → sleeves); resolve cross-domain relationships
   from all parsed domain records
 - [ ] `OverviewEngine` — compose `OverviewSummaryCard` set from AccountEngine, BudgetEngine,
-  PortfolioEngine (stub), BusinessEngine (stub), TaxEngine (stub); produce month-over-month
+  PortfolioEngine (stub), TaxEngine (stub); produce month-over-month
   panel data; aggregate validation issues for Overview issue table
 
 ### Milestone 3
@@ -309,9 +311,9 @@ dashboard projection.
 
 ---
 
-## Phase 4: Domain Layer II — Savings, Investments, Business & Tax
+## Phase 4: Domain Layer II — Savings, Investments & Tax
 
-**Goal**: Build the remaining four domain engine groups. These can be developed largely in
+**Goal**: Build the remaining domain engine groups. These can be developed largely in
 parallel once Phase 3 is complete, as they share only the master account registry.
 
 ### Product Tasks
@@ -329,19 +331,10 @@ parallel once Phase 3 is complete, as they share only the master account registr
 - [ ] Document the S&P 500 benchmark CSV import process: expected source, column format, how
   to handle gaps in price history
 
-#### Business
-- [ ] Finalize the default business category set with TurboTax-aligned tax groupings: map each
-  category to its Schedule C line item (or equivalent), define `deductible_flag` defaults,
-  and document any categories that are partially deductible
-- [ ] Define owner distribution handling: how distributions are classified (not an expense, but
-  affects retained equity calculation)
-- [ ] Document monthly P&L calculation formula per entity: `income − fixed_expenses −
-  discretionary_expenses = net_income`
-
 #### Taxes
 - [ ] Document standard deduction seeding: amount by filing status for current and prior tax
   years, source of amounts (hardcode per year vs derive from settings)
-- [ ] Define Schedule C cross-reference rules: which business categories feed which deduction
+- [ ] Define Schedule C cross-reference rules: map business categories to deduction
   line items, QBI calculation approach (simplified estimate vs full calculation)
 - [ ] Define the tax prep checklist: enumerate all required inputs (W-2 data, 1099s, estimated
   payments, deduction confirmations) and define what triggers each item as "missing" or
@@ -361,17 +354,11 @@ parallel once Phase 3 is complete, as they share only the master account registr
   target, linked strategy note
 - [ ] Empty states: no goals created, no holdings imported, no price data available
 
-#### Business
-- [ ] **Business overview**: entity selector (multi-entity sidebar or tab bar), monthly P&L
-  summary card, income vs expense chart
-- [ ] **Business transaction ledger**: filtering by category, merchant, account, period
-- [ ] **Business budget variance**: table matching budget module style
-
 #### Taxes
 - [ ] **Tax overview**: YTD taxable income panel, taxes paid vs owed comparison, effective rate
   per account table
 - [ ] **Deductions view**: standard vs itemized comparison, above-the-line section, Schedule A
-  section, Schedule C section (linked to business entities), taxable income minus deductibles
+  section, Schedule C section (linked to business themes/entities), taxable income minus deductibles
   projection
 - [ ] **Estimated payments**: quarterly schedule, paid vs due status
 - [ ] **Tax prep checklist**: checklist item anatomy, missing/unresolved indicators, source links
@@ -397,20 +384,14 @@ parallel once Phase 3 is complete, as they share only the master account registr
   (`BenchmarkPeriod` × account); compute sector performance weights from holdings and compare to
   benchmark sector weights
 
-#### BusinessEngine (`Domain/Business/`)
-- [ ] `BusinessEngine` — group transactions by `entity_id`; compute monthly net income per
-  entity (income − fixed − discretionary); compute YTD net income; compute budget variance per
-  category; produce `BusinessMonthlySummary` per entity; link entity-level notes by `entity_id`
-  cross-reference
-
-#### TaxEngine + TaxPrepEngine + DeductionEngine (`Domain/Taxes/`)
+#### TaxEngine + TaxPrepEngine + DeductionEngine
 - [ ] `TaxEngine` — compute YTD taxable income per account from income transaction records;
   compute taxes paid from `EstimatedPayment` records; derive effective tax rate per account
   (taxes paid / gross income); compute realized gain/loss from `Trade` + lot records; aggregate
   dividend and interest income from `Dividend` and transaction records
 - [ ] `DeductionEngine` — manage `DeductionRecord` CRUD; seed standard deduction row on first
   access using `WorkspaceSettings.filingStatus` and `taxYear`; compute taxable income minus
-  deductibles; cross-reference Schedule C deductions with `BusinessEngine` for entity-level
+  deductibles; cross-reference Schedule C deductions with `AccountEngine` for entity-level
   expense totals; produce `TaxDeductionSummary` with all deduction categories
 - [ ] `TaxPrepEngine` — evaluate tax prep checklist items against available data; classify each
   item as complete, incomplete, or missing; detect unresolved issues from `ValidationIssue` records
@@ -419,13 +400,13 @@ parallel once Phase 3 is complete, as they share only the master account registr
 
 #### CrossDomain Completion
 - [ ] Complete `LinkingEngine` — add portfolio-to-tax links (realized gains → tax engine),
-  business-to-tax links (Schedule C categories → deduction engine); update `OverviewEngine`
+  business entity tax links (Schedule C categories → deduction engine); update `OverviewEngine`
   to consume real projections from all engines (remove stubs from Phase 3)
 
 ### Milestone 4
 > **All domain engines functional.** Every module can produce complete projections from fixture
 > data. Cross-domain links are live: budget contributions feed goals, portfolio gains feed tax
-> summaries, business expenses feed Schedule C deductions. Overview engine composites all five
+> summaries, business entity expenses feed Schedule C deductions. Overview engine composites all five
 > KPI cards from real data.
 
 ---
@@ -533,16 +514,10 @@ is connected. Module views are blocked on their respective domain engines from P
   sector performance section
 - [ ] `HoldingDetailView` — security detail, tax lot drill-down, trade history, dividend summary
 
-#### Business Module (`UI/Business/`)
-- [ ] `BusinessView` — entity selector, monthly P&L summary, expense category view
-- [ ] `BusinessTransactionView` — transaction ledger with filters (category, merchant, account,
-  period)
-- [ ] `BusinessBudgetView` — budget variance table matching personal budget style
-
 #### Taxes Module (`UI/Taxes/`)
 - [ ] `TaxOverviewView` — YTD taxable income, taxes paid vs owed, effective rate per account table
 - [ ] `TaxDeductionsView` — standard vs itemized comparison, above-the-line section, Schedule A
-  section, Schedule C section linked to business entities, taxable income projection
+  section, Schedule C section linked to business themes/entities, taxable income projection
 - [ ] `EstimatedPaymentsView` — quarterly schedule table, paid/due status per quarter
 - [ ] `TaxPrepChecklistView` — checklist with complete/incomplete/missing item states, source links
 - [ ] `TaxArchiveView` — prior-year read-only archive selector, archived deductions and payments
@@ -603,10 +578,9 @@ backed up, and previewable.
 
 #### Structured Write Flows (per entity)
 - [ ] Add/edit `Account` → writes to `Accounts/accounts.csv`
-- [ ] Import CSV transactions → column mapper → appends to `Personal/transactions/YYYY-MM.csv`
-  or `Business/transactions/{entity}-YYYY-MM.csv`
-- [ ] Add/edit `PersonalTransaction` inline → writes to correct monthly file
-- [ ] Add/edit `PersonalCategory` / `PersonalBudget` rows
+- [ ] Import CSV transactions → column mapper → appends to `Accounts/transactions/YYYY-MM.csv`
+- [ ] Add/edit `Transaction` inline → writes to correct monthly file
+- [ ] Add/edit `Category` / `BudgetPlan` rows
 - [ ] Add/edit `SavingsGoal`
 - [ ] Add/edit `DeductionRecord` → writes to `Taxes/deductions.csv`
 - [ ] Add/edit `AccountRule` → writes to `Accounts/account-rules.csv`
@@ -645,7 +619,7 @@ No new features — this phase hardens everything built in phases 1–6.
 - [ ] Write the complete validation fixture suite: one valid and one invalid file per file type,
   covering all repairable and manual-only issue types
 - [ ] Define performance acceptance criteria: initial indexing time for a realistic dataset
-  (12 months × 4 transaction files × 3 business entities), UI frame rate during re-index,
+  (12 months × unified transactions × 3 entities), UI frame rate during re-index,
   time-to-first-projection on cold launch
 - [ ] Write the first-launch onboarding acceptance test: empty iCloud container → bootstrap →
   all required files created → workspace validates cleanly
@@ -701,7 +675,7 @@ No new features — this phase hardens everything built in phases 1–6.
   re-validate
 - [ ] Integration test for each auto-repair flow
 - [ ] Test against realistic personal finance dataset: 12 months transactions, 3 investment
-  accounts, 2 business entities, full deduction set
+  accounts, 2 business themes/entities, full deduction set
 
 #### Developer Script
 - [ ] `fixture-generate.swift` — generate a realistic fixture workspace for QA and development
@@ -724,7 +698,7 @@ No new features — this phase hardens everything built in phases 1–6.
 | 1 | Foundation & Architecture | Workspace resolves, files indexed, models defined | — |
 | 2 | Parsing & Validation | All file types parsed, validation engine live | Phase 1 |
 | 3 | Domain I — Accounts, Budget, Overview | Core projections, master account registry | Phase 2 |
-| 4 | Domain II — S&I, Business, Tax | All domain engines functional | Phase 3 (AccountEngine) |
+| 4 | Domain II — S&I, Tax | All domain engines functional | Phase 3 (AccountEngine) |
 | 5 | Presentation — Shell & All Views | Full UI connected to domain projections | Phase 3 + 4 |
 | 6 | Write Flows, Repair & Export | App is writable, repair is guided | Phase 5 |
 | 7 | Polish & Launch Readiness | Performance, accessibility, test coverage | Phase 6 |
@@ -738,6 +712,7 @@ begins. Until locked, downstream specs that depend on them are provisional.
 
 | Decision | Options | Impact |
 |---|---|---|
+| `CloudStorageProvider` protocol surface | Confirm minimum interface before `ICloudContainerService` is implemented | Storage layer extensibility, `WorkspaceManager` dependency |
 | Master registry vs investment accounts | Unified file with optional fields, or two files linked by `account_id` | Account file specs, `AccountEngine` cross-reference logic |
 | Savings/ and Investments/ folder separation | Keep separate (confirmed intent), or merge | File classifier, navigation mental model for Finder users |
 | Deductions file structure | One `deductions.csv` (all types), or per-type files | `DeductionEngine` load path, repair classification |

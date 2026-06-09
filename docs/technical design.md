@@ -19,6 +19,7 @@ The app is not the owner of the data model in the database sense. Instead, it di
 - Support personal, portfolio, business, and tax workflows in one connected workspace.
 - Provide safe structured writes, file repair, and source traceability.
 - Keep the architecture modular enough for rapid prototyping and later automation.
+- Design the storage layer behind a provider protocol so that iCloud, Google Drive, Dropbox, and local-folder modes can be added as independent backends in V2 without changing the parsing or domain layers.
 
 ### Non-goals
 
@@ -66,7 +67,6 @@ Top-level navigation (v1):
 - Accounts
 - Budget
 - Savings & Investments
-- Business
 - Taxes
 - Settings
 
@@ -84,13 +84,12 @@ Examples:
   - Dashboard
 - **Accounts**
   - All accounts
-  - Employment
-  - Business
-  - Credit Cards
-  - Investments
-  - Savings
-  - Checking
-  - Loans & Debt
+  - Themes & Entities (user-customizable, loaded from `Accounts/entities.csv`):
+    - Personal Assets (Personal)
+    - Place of Employment (Employment)
+    - Consulting LLC (Business)
+    - Freelance (Business)
+    - Rental LLC (Business)
   - Specific account links
 - **Budget**
   - Overview
@@ -111,12 +110,6 @@ Examples:
     - Benchmarks
     - Specific account links
     - Specific sleeve links
-- **Business**
-  - All entities
-  - Monthly performance
-  - Categories
-  - Budgets
-  - Specific entity links
 - **Taxes**
   - Current tax year
   - Estimated payments
@@ -227,6 +220,26 @@ Support two workspace modes:
 
 Recommendation: implement app-owned container first because Apple’s ubiquity container pathing is more predictable and is the native document-store model for app-managed files.
 
+### Storage provider abstraction
+
+In v1 the only supported backend is iCloud via the app-owned ubiquity container. The storage layer must be built around a `CloudStorageProvider` protocol so that alternative backends — Google Drive, Dropbox, local folder — can be added in V2 without restructuring workspace management, parsing, or domain logic.
+
+`ICloudContainerService` is the v1 conforming implementation. `WorkspaceManager` resolves the workspace URL through the active provider rather than calling iCloud APIs directly.
+
+Minimum protocol surface:
+```swift
+protocol CloudStorageProvider {
+    var syncState: SyncState { get }
+    var isAvailable: Bool { get }
+    func resolveWorkspaceURL() async throws -> URL
+}
+```
+
+Providers planned for V2:
+- Google Drive (via Drive File Stream or Files API)
+- Dropbox (via Dropbox SDK)
+- Local folder (for users who manage sync externally)
+
 ### Workspace resolution
 
 Primary path pattern:
@@ -261,8 +274,7 @@ Finance/
     manifest.json
     schemas/
       account.schema.json
-      budget-transaction.schema.json
-      business-transaction.schema.json
+      transaction.schema.json
       holdings.schema.json
       tax-deductions.schema.json
       markdown-note.schema.json
@@ -272,11 +284,12 @@ Finance/
       import-log.csv
   Accounts/
     accounts.csv
+    entities.csv
     account-rules.csv
-  Personal/
     transactions/
       2026-01.csv
       2026-02.csv
+  Budget/
     categories.csv
     budgets.csv
     savings-goal-contributions.csv
@@ -294,13 +307,6 @@ Finance/
     sleeve-targets.csv
     benchmarks/
       sp500.csv
-  Business/
-    entities.csv
-    transactions/
-      consulting-llc-2026-01.csv
-      freelance-2026-01.csv
-    categories.csv
-    budgets.csv
   Taxes/
     estimated-payments.csv
     settings.csv
@@ -357,6 +363,7 @@ Recommended UTType handling:
 - Markdown: custom or mapped plain text/markdown type depending on platform availability.
 - JSON: internal metadata only.
 - Plain text fallback for unsupported note content.
+- xlsx (`com.microsoft.excel.xlsx`): V2 only. At the parsing layer boundary, xlsx files will be converted to CSV-equivalent row dictionaries before reaching domain engines, preserving the plain-files contract and keeping the canonical source of truth in CSV.
 
 ## 8. File specifications
 
@@ -379,10 +386,10 @@ timezone: America/Denver
 ***
 ```
 
-### 8.2 Personal transactions CSV
+### 8.2 Unified transactions CSV
 
 Path:
-`Personal/transactions/YYYY-MM.csv`
+`Accounts/transactions/YYYY-MM.csv`
 
 Required columns:
 
@@ -399,6 +406,7 @@ Required columns:
 | subcategory_id | string | Optional |
 | transfer_group | string | Optional |
 | savings_goal_id | string | Optional |
+| deductible | boolean | Flag for tax module inclusion (Schedule C) |
 | notes | string | Optional |
 | source_file | string | Optional provenance |
 | source_row | integer | Optional provenance |
@@ -408,31 +416,33 @@ Behavior:
 - Amount sign rules must be documented and enforced.
 - `transaction_id` must remain stable across recategorizations.
 
-### 8.3 Personal categories CSV
+### 8.3 Unified categories CSV
 
 Path:
-`Personal/categories.csv`
+`Budget/categories.csv`
 
 Required columns:
 
-| Column | Type |
-|---|---|
-| category_id | string |
-| group_id | string |
-| name | string |
-| type | enum |
-| default_budget_behavior | enum |
-| is_active | boolean |
-| tax_relevant | boolean |
+| Column | Type | Notes |
+|---|---|---|
+| category_id | string | |
+| group_id | string | |
+| name | string | |
+| type | enum | |
+| default_budget_behavior | enum | |
+| is_active | boolean | |
+| tax_relevant | boolean | |
+| entity_id | string | Optional — links to a specific theme/entity |
+| tax_group | string | Optional — maps category to Schedule C/tax lines |
 
 Notes:
 - Seed with default category groups aligned to common card and personal finance reporting patterns.
 - Support user-editable category naming without changing IDs.
 
-### 8.4 Personal budgets CSV
+### 8.4 Unified budgets CSV
 
 Path:
-`Personal/budgets.csv`
+`Budget/budgets.csv`
 
 Required columns:
 
@@ -600,73 +610,27 @@ Required columns:
 | min_weight | decimal |
 | max_weight | decimal |
 
-### 8.14 Business entities CSV
+### 8.14 Customizable entities/themes CSV
 
 Path:
-`Business/entities.csv`
+`Accounts/entities.csv`
 
 Required columns:
 
-| Column | Type |
-|---|---|
-| entity_id | string |
-| legal_name | string |
-| display_name | string |
-| entity_type | enum |
-| tax_id_hint | string |
-| is_active | boolean |
+| Column | Type | Notes |
+|---|---|---|
+| entity_id | string | Unique entity key |
+| display_name | string | User-visible name |
+| legal_name | string | Legal business name (optional) |
+| entity_type | enum | `personal`, `employment`, `business`, `custom` |
+| tax_id_hint | string | Tax ID / EIN (optional) |
+| is_active | boolean | Status flag |
 
-### 8.15 Business transactions CSV
+### 8.15 Reserved (Absorbed into Unified Transactions)
 
-Path:
-`Business/transactions/{entity-slug}-YYYY-MM.csv`
+### 8.16 Reserved (Absorbed into Unified Categories)
 
-Required columns:
-
-| Column | Type |
-|---|---|
-| transaction_id | string |
-| entity_id | string |
-| date | date |
-| account_id | string |
-| merchant | string |
-| description | string |
-| amount | decimal |
-| category_id | string |
-| expense_type | enum |
-| deductible_flag | boolean |
-| notes | string |
-
-### 8.16 Business categories CSV
-
-Path:
-`Business/categories.csv`
-
-Required columns:
-
-| Column | Type |
-|---|---|
-| category_id | string |
-| name | string |
-| tax_group | string |
-| default_behavior | enum |
-| is_active | boolean |
-
-These should default to common business expense groupings used for tax preparation, but remain editable.
-
-### 8.17 Business budgets CSV
-
-Path:
-`Business/budgets.csv`
-
-Required columns:
-
-| Column | Type |
-|---|---|
-| entity_id | string |
-| period | yyyy-mm |
-| category_id | string |
-| planned_amount | decimal |
+### 8.17 Reserved (Absorbed into Unified Budgets)
 
 ### 8.18 Tax settings CSV
 
@@ -747,7 +711,7 @@ Required columns:
 | is_active | boolean | |
 | tax_relevant | boolean | Flag for tax module inclusion |
 | tax_year_opened | integer | Optional |
-| linked_entity_id | string | Optional — links business accounts to a BusinessEntity |
+| entity_id | string | Required — links account to a theme/entity in Accounts/entities.csv |
 | notes | string | Optional |
 
 Notes:
@@ -929,7 +893,8 @@ FinanceWorkspaceApp/
     AppState.swift
   Platform/
     WorkspaceManager.swift
-    ICloudContainerService.swift
+    CloudStorageProvider.swift       (protocol)
+    ICloudContainerService.swift     (v1 CloudStorageProvider implementation)
     FileIndexService.swift
     FileWatcherService.swift
     BackupService.swift
@@ -991,14 +956,20 @@ FinanceWorkspaceApp/
 
 ## 12. Service responsibilities
 
+### CloudStorageProvider (protocol)
+- defines the minimum interface all storage backends must implement: `resolveWorkspaceURL()`, `syncState`, `isAvailable`
+- `ICloudContainerService` is the v1 conforming implementation
+- additional backends (Google Drive, Dropbox, local folder) conform to this protocol in V2
+
 ### WorkspaceManager
-- resolve workspace URL
+- resolve workspace URL via the active `CloudStorageProvider`
 - create initial directory tree
 - restore last active workspace
 - validate minimum required paths
 - expose workspace state to UI
 
 ### ICloudContainerService
+- conforms to `CloudStorageProvider`
 - resolve ubiquity container
 - expose availability state
 - provide diagnostics for missing entitlements or unavailable container
@@ -1042,16 +1013,15 @@ FinanceWorkspaceApp/
 - create backup before every write
 
 ### Domain engines
-- `AccountEngine`: aggregate account overview (all accounts, monthly inflow, YTD net income, cash inflow vs retained equity); per-account view (monthly gross vs expenses/tax, YTD net income); account rule and estimate projections; cross-references personal, business, and investment transaction records
+- `AccountEngine`: aggregate account overview (all accounts, monthly inflow, YTD net income, cash inflow vs retained equity); theme/entity grouping (personal, employment, business, custom); per-theme detail dashboard (business P&L, paycheck/stock details, personal net worth & cash flow trends); per-account detail view (monthly gross vs expenses/tax, YTD net income); account rule and estimate projections; cross-references all unified transactions and investment records
 - `BudgetEngine`: budget totals, category variance, 3-month trailing averages, contribution planning
 - `SavingsGoalEngine`: goal progress, target gap, funding schedule
 - `PortfolioEngine`: holdings, sleeves, allocation, performance
 - `BenchmarkEngine`: S&P comparison windows across D/W/M/3M/6M/1Y/3Y/5Y periods, sector performance weighting
-- `BusinessEngine`: net income, expense summaries, entity budgets
 - `TaxEngine`: realized gains, estimated payments, income summary, per-account effective rate
 - `TaxPrepEngine`: prep checklist, missing input detection, tax archive read/write, year-close flow
-- `DeductionEngine`: deduction record management, standard deduction seeding from filing status and tax year, Schedule C cross-reference with BusinessEngine, taxable income minus deductibles projection
-- `LinkingEngine`: connect budget-to-goal, portfolio-to-tax, business-to-tax, account-to-all-modules
+- `DeductionEngine`: deduction record management, standard deduction seeding from filing status and tax year, Schedule C cross-reference with AccountEngine, taxable income minus deductibles projection
+- `LinkingEngine`: connect budget-to-goal, portfolio-to-tax, account-to-all-modules
 
 ## 13. Read, write, and repair flows
 
@@ -1203,8 +1173,12 @@ Must show:
 
 ### Accounts
 Must show:
-- Card grid: one card per account showing institution, account type, monthly cash inflow, YTD net income
-- Aggregate header: total monthly cash inflow, YTD net income, YTD cash inflow vs retained equity
+- Card grid: grouped by customizable theme/entity (Personal Assets, Place of Employment, Business Entities) showing institution, type, monthly cash inflow, YTD net income
+- Aggregate header: total monthly cash inflow, YTD net income, total active accounts across the workspace
+- Theme-specific detail dashboards:
+  - **Business Theme**: Entity selector, monthly P&L-style summary (income, fixed expenses, discretionary, net income), expense category view, transaction ledger, category budgets, and linked entity notes/monthly reviews.
+  - **Employment Theme**: Payroll deposits, HSA/FSA benefits, employer stock vests (ESPP/RSU).
+  - **Personal Theme**: Net worth and cash flow trends, personal savings goals link.
 - Per-account detail: monthly gross income vs expenses/tax, YTD net income, transaction list
 - Transaction import, add, and edit within account context
 - Account rules and estimates view
@@ -1234,15 +1208,6 @@ Investments side must show:
 - Sector performance weighted against S&P 500
 - Account allocation view
 - Tax-lot drill-down
-
-### Business
-Must show:
-- Entity selector
-- Monthly P&L-style summary (income, fixed expenses, discretionary, net income)
-- Expense category view
-- Transaction ledger
-- Budget variance
-- Linked entity notes and monthly reviews
 
 ### Taxes
 Must show:
@@ -1336,6 +1301,8 @@ These decisions are settled and should not be reopened for v1:
 
 ### Still open — decide before build starts
 
+- **CloudStorageProvider protocol surface:** The protocol must be finalized before `ICloudContainerService` is implemented so the interface is designed for extension rather than retrofitted. Confirm the minimum surface (`resolveWorkspaceURL() async throws -> URL`, observable `syncState`, `isAvailable: Bool`) and whether sync-conflict resolution belongs on the protocol or is iCloud-specific. Decide before Phase 1 build starts.
+
 - **Accounts master registry vs investment accounts file:** `Accounts/accounts.csv` is the master registry for all account groups. `Investments/accounts.csv` holds investment-specific metadata. The relationship is: investment accounts file adds columns (tax treatment, etc.) to master registry records via `account_id`. Confirm this two-file model, or fold investment-specific columns into the master registry as optional fields.
 
 - **Savings and Investments folder structure:** The UI merges Savings Goals and Investments into one module, but `Savings/` and `Investments/` remain as separate folders at the file level. Confirm this separation is intentional and won't confuse users who inspect the workspace in Finder.
@@ -1406,6 +1373,16 @@ Left sidebar with collapsible navigation sections that open and close independen
 - `overview-updated.svg` — Revised Overview with Issues table inline
 
 ## 24. Changelog
+
+### Round 2 — 2026-06-09
+Source: User direction — future-proofing for multi-cloud and additional file formats.
+
+- §2: Added storage provider abstraction as a primary design goal
+- §5: Added "Storage provider abstraction" subsection with `CloudStorageProvider` protocol shape and V2 provider list (Google Drive, Dropbox, local folder)
+- §7: Added xlsx UTType note with V2 designation and CSV-boundary conversion strategy
+- §11: Added `CloudStorageProvider.swift` (protocol) to Platform module layout; annotated `ICloudContainerService` as v1 conforming implementation
+- §12: Added `CloudStorageProvider` protocol service entry; updated `WorkspaceManager` and `ICloudContainerService` descriptions to reflect protocol relationship
+- §21: Added `CloudStorageProvider` protocol surface as a new open decision
 
 ### Round 1 — 2026-06-08
 Source: `docs/PRD.md` (post Round 1 updates), `docs/_reviews/technical-design-update-plan.md`

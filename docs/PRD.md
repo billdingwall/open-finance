@@ -13,13 +13,13 @@ Deliver a finance workspace that combines the transparency of plain files with t
 The app should allow a user to:
 - Store finance data in iCloud Drive.
 - Inspect and edit selected data safely.
-- View unified dashboards for cash flow, investments, small business accounting, and taxes.
+- View unified dashboards for cash flow, investments, accounts (grouped by customizable themes/entities), and taxes.
 - Trace every summary back to the source file and source row.
 - Continue working directly in Finder, Numbers, Excel, or a text editor when needed.
 
 ## Problem statement
 
-Personal finance workflows often fragment across spreadsheets, notes apps, brokerage dashboards, bookkeeping tools, and tax software, which makes it difficult to keep budgeting, portfolio management, small business accounting, and tax planning connected in one workflow. Finder and iCloud Drive already provide transparent file access on macOS, but they do not provide normalized finance-specific views, validation, file repair flows, or derived reporting.[cite:21][cite:22]
+Personal finance workflows often fragment across spreadsheets, notes apps, brokerage dashboards, bookkeeping tools, and tax software, which makes it difficult to keep budgeting, portfolio management, account tracking, and tax planning connected in one workflow. Finder and iCloud Drive already provide transparent file access on macOS, but they do not provide normalized finance-specific views, validation, file repair flows, or derived reporting.[cite:21][cite:22]
 
 A file-first macOS app solves that gap by indexing structured CSV data and Markdown notes, validating schema quality, helping create missing required files, and projecting clean finance views over the top of those files.
 
@@ -40,9 +40,9 @@ A file-first macOS app solves that gap by indexing structured CSV data and Markd
 - Review monthly progress toward those goals.
 - Create investment organizers for different portfolio sleeves to define strategy, monthly contributions, and target weights for each holding.
 - Track holdings and performance of each investment in the near, middle, and long terms and compare to the S&P 500.
-- Create small business entities to track income and expenses.
-- Review business performance based on monthly net income.
-- Import, organize, and review transactions for both personal spending and business-related spending.
+- Group accounts into customizable entities/themes (personal assets, place of employment, business, etc.).
+- Manage business entities and review business performance (monthly net income, tax deductions) directly under the corresponding business accounts view.
+- Import, organize, and review transactions for personal spending, place of employment, and business-related spending under unified account ledgers.
 - Monitor tax-relevant events and estimated payments.
 - Write monthly and quarterly finance notes in Markdown.
 - Understand where every number came from and where it is going.
@@ -62,7 +62,7 @@ A file-first macOS app solves that gap by indexing structured CSV data and Markd
 
 ### Primary user
 
-A Mac power user who prefers transparent local files, already uses iCloud Drive, and wants one native interface for budgeting, investing, small business accounting, and tax planning.
+A Mac power user who prefers transparent local files, already uses iCloud Drive, and wants one native interface for budgeting, investing, and tax planning.
 
 ### Secondary user
 
@@ -75,7 +75,7 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - **Native over generic:** macOS conventions, keyboard support, and Finder compatibility come first.
 - **Safe writes only:** structured edits should be constrained, validated, and reversible.
 - **Traceability always:** users should be able to inspect the source behind aggregated values.
-- **Cross-domain visibility:** personal, portfolio, business, and tax workflows should be connected rather than siloed.
+- **Cross-domain visibility:** personal, portfolio, and tax workflows should be connected rather than siloed.
 - **Repair when safe:** the app should help create missing files and repair invalid files when the fix is deterministic, previewable, and low risk.
 
 ## Scope
@@ -87,7 +87,7 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - CSV ingestion for structured personal, investment, business, and tax records.
 - Markdown ingestion for notes and reports.
 - Account management with per-account income, expense, and tax summaries across a defined account type taxonomy.
-- Budget, savings, investments, business, and tax summary views.
+- Budget, savings, investments, accounts (grouped by themes/entities), and tax summary views.
 - Savings goals and investment portfolio in a unified Savings & Investments module.
 - File validation and issue reporting surfaced in the Overview dashboard.
 - Source traceability from summaries to files.
@@ -110,6 +110,8 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - Issues management view (V2).
 - Files explorer view (V2).
 - Budget rules and automation (post-MVP).
+- Alternative cloud storage providers: Google Drive, Dropbox, local-folder-only mode (V2).
+- xlsx and other spreadsheet format ingestion and export (V2).
 
 ## User stories
 
@@ -122,8 +124,11 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 
 ### Accounts
 
-- As a user, the app should let me add accounts with a defined type (employment, business, credit card, investment, savings, checking, or loan).
-- As a user, the app should show an aggregate accounts overview with a card for each account, total monthly cash inflow, YTD net income, and YTD cash inflow vs retained equity.
+- As a user, the app should let me group accounts into customizable themes / entities (e.g., personal assets, place of employment, and business entities).
+- As a user, the app should show an aggregate accounts overview with a card for each account grouped by theme/entity, with aggregate metrics for monthly inflow, YTD net income, and total active accounts.
+- As a user, selecting a customizable Business theme/entity should show a dedicated business dashboard with monthly net income (revenue vs expenses), YTD net income, tax-deductible expense tracking, business category budgets, and a dedicated transaction ledger.
+- As a user, selecting a customizable Place of Employment theme/entity should show paycheck details, employer benefits (HSA/FSA), employer stock plans (ESPP/RSU), and related paycheck transaction ledger.
+- As a user, selecting a customizable Personal Assets theme/entity should show net worth and cash flow trends.
 - As a user, the app should show a per-account view with monthly gross income vs expenses, YTD net income, and the ability to import, add, or edit transactions and account rules.
 
 ### Budget
@@ -141,13 +146,6 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - As a user, the app should let me inspect transactions and tax lots behind each holding.
 - As a user, the app should compare current allocation with target allocation per portfolio sleeve.
 - As a user, the app should compare portfolio performance to the S&P 500 across defined time periods.
-
-### Business
-
-- As a user, the app should be able to manage budgets and monitor transactions for different small businesses and freelancing LLCs.
-- As a user, the app should show income, fixed expenses, discretionary spend, and budget variance by month.
-- As a user, the app should let me inspect transactions by category, merchant, account, and period.
-- As a user, the app should have default category definitions that align with TurboTax-style expense reporting categories and let me maintain category definitions and monthly budget targets.
 
 ### Taxes
 
@@ -176,6 +174,7 @@ Requirements:
 - Support a future extension for advanced user-selected folders.
 - Create required missing files and folders from app templates.
 - Offer guided repair flows for supported invalid file states.
+- Design the workspace storage layer around a provider abstraction so that alternative backends (Google Drive, Dropbox, local folder) can be implemented in V2 without restructuring parsing or domain layers.
 
 ### 2. File discovery and indexing
 
@@ -214,7 +213,7 @@ Requirements:
 
 ### 5. Accounts module
 
-The Accounts module is the income and expense management layer for each taxable account in the workspace. It provides both an aggregate overview and per-account detail.
+The Accounts module is the master data and actuals hub for all accounts, grouped into user-customizable **Themes or Entities** (such as Personal, Place of Employment, and Business).
 
 Account types supported:
 
@@ -229,9 +228,21 @@ Account types supported:
 | Loans & Debt | Mortgage, auto, student, personal, BNPL |
 
 Requirements:
-- Support adding accounts with type, name, and key tax metadata.
-- Show an aggregate accounts overview: card per account, total monthly cash inflow, YTD net income (gross − expenses − tax), YTD cash inflow vs retained equity.
+- Support user-defined, customizable themes and entities (e.g. personal assets, place of employment, W-2 compensation, specific small businesses and LLCs) as the primary organizational structure.
+- Show an aggregate accounts overview: card per account grouped by theme/entity, total monthly cash inflow, YTD net income (gross − expenses − tax), YTD cash inflow vs retained equity.
 - Show a per-account view: monthly gross income vs expenses/tax, YTD net income, YTD cash inflow vs retained equity.
+- For `business` type themes/entities:
+  - Support multiple business entities in one workspace.
+  - Track business income, fixed expenses, discretionary expenses, transfers, and owner distributions.
+  - Show monthly net income and category budget variance by business entity.
+  - Support entity-specific category definitions and monthly budget targets.
+  - Include default business categories aligned with common tax-prep expense groupings.
+  - Support transaction review by category, merchant, account, and period.
+- For `employment` type themes/entities:
+  - Track paycheck deposits, HSA/FSA contributions, ESPP/RSU vests.
+  - Show paycheck metrics and YTD gross pay.
+- For `personal` type themes/entities:
+  - Show net worth and cash flow trends.
 - Support import, add, and edit of transactions per account.
 - Support account-level rules and estimates.
 
@@ -267,18 +278,7 @@ Requirements:
   - Performance table/heat map across periods: D, W, M, 3M, 6M, 1Y, 3Y, 5Y.
   - Sector performance weighted against S&P 500.
 
-### 8. Business module
-
-Requirements:
-- Support multiple small business entities in one workspace.
-- Track business income, fixed expenses, discretionary expenses, transfers, and owner distributions.
-- Show monthly net income and budget variance by business entity.
-- Support entity-specific category definitions and monthly budget targets.
-- Include default business categories aligned with common tax-prep expense groupings.
-- Support transaction review by category, merchant, account, and period.
-- Link entity-level notes and monthly reviews.
-
-### 9. Tax module
+### 8. Tax module
 
 Requirements:
 - Show YTD taxable income, taxes paid vs taxes owed, and effective rate per account.
@@ -296,7 +296,7 @@ Requirements:
 - Show source traceability for all tax-relevant calculations.
 - Surface business-related tax-prep summaries derived from categorized business expenses.
 
-### 10. Validation and issues
+### 9. Validation and issues
 
 Issues are surfaced in the Overview dashboard in v1 rather than as a standalone navigation section.
 
@@ -308,7 +308,7 @@ Requirements:
 - Distinguish between issues that can be repaired automatically and those requiring manual review.
 - Require preview and confirmation before applying fixes.
 
-### 11. Traceability and inspection
+### 10. Traceability and inspection
 
 Requirements:
 - Every KPI and chart point must link to a filtered detail view.
@@ -316,13 +316,14 @@ Requirements:
 - The app must distinguish raw imported values from derived values.
 - The app must show cross-domain relationships, such as budget contributions feeding savings goals, portfolio activity affecting tax summaries, and business expenses feeding tax-prep views.
 
-### 12. Export
+### 11. Export
 
 Requirements:
 - Export filtered tables as CSV.
 - Export monthly review summaries as Markdown.
 - Export business summaries as CSV or Markdown.
 - Preserve traceability context in exports where practical.
+- xlsx export is deferred to V2.
 
 ## Non-functional requirements
 
@@ -365,10 +366,9 @@ Without live sync, month-over-month continuity depends on user-imported transact
 
 Recommended primary navigation:
 - Overview
-- Accounts
+- Accounts (listing customizable themes/entities)
 - Budget
 - Savings & Investments
-- Business
 - Taxes
 - Settings
 - Notes *(V2)*
@@ -386,10 +386,9 @@ Recommended shell:
 
 | Domain | Entities |
 |---|---|
-| Accounts | Account, AccountType, AccountRule, AccountEstimate |
+| Accounts | Theme/Entity, Account, AccountType, AccountRule, AccountEstimate, OwnerDistribution |
 | Budget | Transaction, Category, BudgetPlan, BudgetContribution, Merchant |
 | Savings & Investments | SavingsGoal, GoalContribution, GoalStatusSnapshot, Security, Trade, Lot, Position, Dividend, PricePoint, PortfolioSleeve, SleeveTarget, BenchmarkSeries, BenchmarkPeriod |
-| Business | BusinessEntity, BusinessTransaction, BusinessCategory, BusinessBudgetPlan, OwnerDistribution |
 | Taxes | TaxSetting, RealizedGain, IncomeEvent, EstimatedPayment, TaxPrepIssue, DeductionRecord, TaxArchiveYear |
 | Notes | NoteDocument, MonthlyReview, StrategyNote |
 | Platform | Workspace, FileRecord, ImportIssue, RepairAction, SchemaVersion, SyncStatus |
@@ -438,21 +437,19 @@ Parsing Layer
   ValidationEngine
 
 Domain Layer
-  AccountEngine
+  AccountEngine (including theme grouping and business P&L calculations)
   BudgetEngine
   SavingsGoalEngine
   PortfolioEngine
-  BusinessEngine
   TaxEngine
   ReportingEngine
   CrossDomainLinkingEngine
 
 Presentation Layer
   OverviewView
-  AccountsView
+  AccountsView (grouped by customizable themes/entities, integrating business dashboards)
   BudgetView
   SavingsInvestmentsView
-  BusinessView
   TaxesView
   NotesView       (V2)
   IssuesView      (V2)
@@ -460,6 +457,14 @@ Presentation Layer
 ```
 
 ## Changelog
+
+### Round 2 — 2026-06-09
+Source: User direction — future-proofing for multi-cloud and additional file formats.
+
+- Added alternative cloud storage providers (Google Drive, Dropbox, local folder) to Out of Scope for v1 as V2 items
+- Added xlsx and other spreadsheet format ingestion and export to Out of Scope for v1 as V2 items
+- §1 Workspace management: added storage provider abstraction requirement
+- §11 Export: noted xlsx export deferred to V2
 
 ### Round 1 — 2026-06-08
 Sources: `docs/_reviews/round-1.md`, `docs/_reviews/Account types.md`, `docs/_reviews/Deduction types.md`
