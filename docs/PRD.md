@@ -111,7 +111,7 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - Files explorer view (V2).
 - Budget rules and automation (post-MVP).
 - Alternative cloud storage providers: Google Drive, Dropbox, local-folder-only mode (V2).
-- xlsx and other spreadsheet format ingestion and export (V2).
+- xlsx and other file format ingestion and export (V2).
 
 ## User stories
 
