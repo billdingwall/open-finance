@@ -110,6 +110,8 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - Issues management view (V2).
 - Files explorer view (V2).
 - Budget rules and automation (post-MVP).
+- Alternative cloud storage providers: Google Drive, Dropbox, local-folder-only mode (V2).
+- xlsx and other spreadsheet format ingestion and export (V2).
 
 ## User stories
 
@@ -172,6 +174,7 @@ Requirements:
 - Support a future extension for advanced user-selected folders.
 - Create required missing files and folders from app templates.
 - Offer guided repair flows for supported invalid file states.
+- Design the workspace storage layer around a provider abstraction so that alternative backends (Google Drive, Dropbox, local folder) can be implemented in V2 without restructuring parsing or domain layers.
 
 ### 2. File discovery and indexing
 
@@ -320,6 +323,7 @@ Requirements:
 - Export monthly review summaries as Markdown.
 - Export business summaries as CSV or Markdown.
 - Preserve traceability context in exports where practical.
+- xlsx export is deferred to V2.
 
 ## Non-functional requirements
 
@@ -453,6 +457,14 @@ Presentation Layer
 ```
 
 ## Changelog
+
+### Round 2 — 2026-06-09
+Source: User direction — future-proofing for multi-cloud and additional file formats.
+
+- Added alternative cloud storage providers (Google Drive, Dropbox, local folder) to Out of Scope for v1 as V2 items
+- Added xlsx and other spreadsheet format ingestion and export to Out of Scope for v1 as V2 items
+- §1 Workspace management: added storage provider abstraction requirement
+- §11 Export: noted xlsx export deferred to V2
 
 ### Round 1 — 2026-06-08
 Sources: `docs/_reviews/round-1.md`, `docs/_reviews/Account types.md`, `docs/_reviews/Deduction types.md`

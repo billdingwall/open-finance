@@ -19,6 +19,7 @@ The app is not the owner of the data model in the database sense. Instead, it di
 - Support personal, portfolio, business, and tax workflows in one connected workspace.
 - Provide safe structured writes, file repair, and source traceability.
 - Keep the architecture modular enough for rapid prototyping and later automation.
+- Design the storage layer behind a provider protocol so that iCloud, Google Drive, Dropbox, and local-folder modes can be added as independent backends in V2 without changing the parsing or domain layers.
 
 ### Non-goals
 
@@ -219,6 +220,26 @@ Support two workspace modes:
 
 Recommendation: implement app-owned container first because Apple’s ubiquity container pathing is more predictable and is the native document-store model for app-managed files.
 
+### Storage provider abstraction
+
+In v1 the only supported backend is iCloud via the app-owned ubiquity container. The storage layer must be built around a `CloudStorageProvider` protocol so that alternative backends — Google Drive, Dropbox, local folder — can be added in V2 without restructuring workspace management, parsing, or domain logic.
+
+`ICloudContainerService` is the v1 conforming implementation. `WorkspaceManager` resolves the workspace URL through the active provider rather than calling iCloud APIs directly.
+
+Minimum protocol surface:
+```swift
+protocol CloudStorageProvider {
+    var syncState: SyncState { get }
+    var isAvailable: Bool { get }
+    func resolveWorkspaceURL() async throws -> URL
+}
+```
+
+Providers planned for V2:
+- Google Drive (via Drive File Stream or Files API)
+- Dropbox (via Dropbox SDK)
+- Local folder (for users who manage sync externally)
+
 ### Workspace resolution
 
 Primary path pattern:
@@ -342,6 +363,7 @@ Recommended UTType handling:
 - Markdown: custom or mapped plain text/markdown type depending on platform availability.
 - JSON: internal metadata only.
 - Plain text fallback for unsupported note content.
+- xlsx (`com.microsoft.excel.xlsx`): V2 only. At the parsing layer boundary, xlsx files will be converted to CSV-equivalent row dictionaries before reaching domain engines, preserving the plain-files contract and keeping the canonical source of truth in CSV.
 
 ## 8. File specifications
 
@@ -871,7 +893,8 @@ FinanceWorkspaceApp/
     AppState.swift
   Platform/
     WorkspaceManager.swift
-    ICloudContainerService.swift
+    CloudStorageProvider.swift       (protocol)
+    ICloudContainerService.swift     (v1 CloudStorageProvider implementation)
     FileIndexService.swift
     FileWatcherService.swift
     BackupService.swift
@@ -933,14 +956,20 @@ FinanceWorkspaceApp/
 
 ## 12. Service responsibilities
 
+### CloudStorageProvider (protocol)
+- defines the minimum interface all storage backends must implement: `resolveWorkspaceURL()`, `syncState`, `isAvailable`
+- `ICloudContainerService` is the v1 conforming implementation
+- additional backends (Google Drive, Dropbox, local folder) conform to this protocol in V2
+
 ### WorkspaceManager
-- resolve workspace URL
+- resolve workspace URL via the active `CloudStorageProvider`
 - create initial directory tree
 - restore last active workspace
 - validate minimum required paths
 - expose workspace state to UI
 
 ### ICloudContainerService
+- conforms to `CloudStorageProvider`
 - resolve ubiquity container
 - expose availability state
 - provide diagnostics for missing entitlements or unavailable container
@@ -1272,6 +1301,8 @@ These decisions are settled and should not be reopened for v1:
 
 ### Still open — decide before build starts
 
+- **CloudStorageProvider protocol surface:** The protocol must be finalized before `ICloudContainerService` is implemented so the interface is designed for extension rather than retrofitted. Confirm the minimum surface (`resolveWorkspaceURL() async throws -> URL`, observable `syncState`, `isAvailable: Bool`) and whether sync-conflict resolution belongs on the protocol or is iCloud-specific. Decide before Phase 1 build starts.
+
 - **Accounts master registry vs investment accounts file:** `Accounts/accounts.csv` is the master registry for all account groups. `Investments/accounts.csv` holds investment-specific metadata. The relationship is: investment accounts file adds columns (tax treatment, etc.) to master registry records via `account_id`. Confirm this two-file model, or fold investment-specific columns into the master registry as optional fields.
 
 - **Savings and Investments folder structure:** The UI merges Savings Goals and Investments into one module, but `Savings/` and `Investments/` remain as separate folders at the file level. Confirm this separation is intentional and won't confuse users who inspect the workspace in Finder.
@@ -1342,6 +1373,16 @@ Left sidebar with collapsible navigation sections that open and close independen
 - `overview-updated.svg` — Revised Overview with Issues table inline
 
 ## 24. Changelog
+
+### Round 2 — 2026-06-09
+Source: User direction — future-proofing for multi-cloud and additional file formats.
+
+- §2: Added storage provider abstraction as a primary design goal
+- §5: Added "Storage provider abstraction" subsection with `CloudStorageProvider` protocol shape and V2 provider list (Google Drive, Dropbox, local folder)
+- §7: Added xlsx UTType note with V2 designation and CSV-boundary conversion strategy
+- §11: Added `CloudStorageProvider.swift` (protocol) to Platform module layout; annotated `ICloudContainerService` as v1 conforming implementation
+- §12: Added `CloudStorageProvider` protocol service entry; updated `WorkspaceManager` and `ICloudContainerService` descriptions to reflect protocol relationship
+- §21: Added `CloudStorageProvider` protocol surface as a new open decision
 
 ### Round 1 — 2026-06-08
 Source: `docs/PRD.md` (post Round 1 updates), `docs/_reviews/technical-design-update-plan.md`

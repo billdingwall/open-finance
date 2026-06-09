@@ -25,6 +25,8 @@ a PRD amendment before proceeding.
 | Tax return filing engine | V2 |
 | Multi-workspace / multi-user support | V2 |
 | AI-driven analysis or recommendations | V2 |
+| Alternative cloud storage providers (Google Drive, Dropbox, local folder) | V2 |
+| xlsx and other spreadsheet format ingestion and export | V2 |
 
 ---
 
@@ -99,9 +101,10 @@ and local-fallback modes.
 - [ ] Configure unit test target and basic test infrastructure
 
 #### Platform Layer
-- [ ] `ICloudContainerService` — resolve ubiquity container URL, expose availability state enum,
+- [ ] `CloudStorageProvider` protocol — define minimum interface: `resolveWorkspaceURL() async throws -> URL`, observable `syncState`, `isAvailable: Bool`; all storage backends conform to this protocol; `ICloudContainerService` is the v1 implementation
+- [ ] `ICloudContainerService` — conforms to `CloudStorageProvider`; resolve ubiquity container URL, expose availability state enum,
   provide diagnostics for missing entitlements or nil container
-- [ ] `WorkspaceManager` — resolve workspace URL from ubiquity container, create initial directory
+- [ ] `WorkspaceManager` — resolve workspace URL via the active `CloudStorageProvider`, create initial directory
   tree from templates, restore last active workspace path from `UserDefaults`, validate minimum
   required paths, expose `WorkspaceState` observable to UI
 - [ ] `BackupService` — create timestamped copies of files before any write or repair, manage
@@ -709,6 +712,7 @@ begins. Until locked, downstream specs that depend on them are provisional.
 
 | Decision | Options | Impact |
 |---|---|---|
+| `CloudStorageProvider` protocol surface | Confirm minimum interface before `ICloudContainerService` is implemented | Storage layer extensibility, `WorkspaceManager` dependency |
 | Master registry vs investment accounts | Unified file with optional fields, or two files linked by `account_id` | Account file specs, `AccountEngine` cross-reference logic |
 | Savings/ and Investments/ folder separation | Keep separate (confirmed intent), or merge | File classifier, navigation mental model for Finder users |
 | Deductions file structure | One `deductions.csv` (all types), or per-type files | `DeductionEngine` load path, repair classification |
