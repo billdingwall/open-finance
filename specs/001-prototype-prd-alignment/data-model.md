@@ -49,11 +49,12 @@ See [contracts/nav-structure.md](contracts/nav-structure.md) for the canonical N
   group: string,          // e.g. 'Everyday Banking'
   type: string,           // e.g. 'checking'
   monthlyInflow: number,  // mock monthly cash inflow in USD
-  ytdNetIncome: number    // mock YTD net income in USD
+  ytdNetIncome: number,   // mock YTD net income in USD
+  entityId: string        // links account to an entity/theme in DATA.entities
 }]
 ```
 
-Minimum 4 mock accounts covering at least 3 distinct account groups.
+Minimum 6 mock accounts covering at least 3 distinct themes/entities.
 
 ### `DATA.iCloudStates` — onboarding flow states (NEW)
 
@@ -127,18 +128,16 @@ At least 2 entries per deduction type for prototype display.
 
 ---
 
-## Existing mock data unchanged
+## Unified mock data registry
 
-- `DATA.transactions` — personal transactions
-- `DATA.categories` — personal categories
-- `DATA.budgets` — budget rows
+- `DATA.transactions` — unified cash transactions (merged personal and business transactions)
+- `DATA.categories` — unified categories list (merged personal and business categories, with optional `entity_id` and `tax_group` for business expense mapping)
+- `DATA.budgets` — unified budgets rows (merged personal and business budgets)
 - `DATA.goals` — savings goals
 - `DATA.investmentAccounts` — investment accounts
 - `DATA.holdings` — portfolio holdings
 - `DATA.sleeves` — portfolio sleeves
-- `DATA.entities` — business entities
-- `DATA.businessTransactions` — business transactions
-- `DATA.businessCategories` — business categories
+- `DATA.entities` — customizable entities/themes (contains `personal`, `employment`, `business`, and `custom` types)
 - `DATA.issues` — validation issues (extended with additional mock entries for prototype display)
 
 ---
@@ -149,11 +148,12 @@ These are the main render functions being added or changed. Full implementations
 
 | Function | Status | Description |
 |---|---|---|
-| `viewOverviewDashboard()` | Modified | Remove filter bar; fix KPI card set to exactly 5; add inline Issues table |
-| `viewBudgetOverview()` | Modified | Rename from `viewBudgetCurrent()`; add pie chart; add trailing average column |
+| `viewOverviewDashboard()` | Modified | Remove filter bar; fix KPI card set to exactly 5 (Business links to accounts-entity-consulting-llc); add inline Issues table |
+| `viewBudgetOverview()` | Modified | Rename from `viewBudgetCurrent()`; add pie chart; add trailing average column; uses unified categories and budgets |
 | `viewSavingsInvestments()` | New (hub) | Top-level Savings & Investments view, replaces separate savings/investments entry points |
 | `viewInvestmentsBenchmarks()` | Modified | Replace line chart with `heatMapTable()` |
-| `viewAccounts()` | New | Card grid with aggregate header; uses `DATA.accounts` |
+| `viewAccounts()` | Modified | Card grid grouped by customizable theme/entity, with aggregate headers; uses `DATA.accounts` |
+| `viewAccountEntity(entityId)` | New | Custom detail views for selected entity/theme: business P&L dashboard, W-2 payroll deposits, or personal asset trends |
 | `viewTaxesDeductions()` | New | Four deduction group sections; uses `DATA.deductions` |
 | `viewTaxesCurrent()` | Modified | Add per-account effective rate table; uses `DATA.accountTaxRates` |
 | `viewOnboarding()` | New | 7-state iCloud card grid; uses `DATA.iCloudStates` |

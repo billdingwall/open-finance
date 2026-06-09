@@ -1439,3 +1439,17 @@ a { color: var(--accent); text-decoration: none; }
 ::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.14); border-radius: 5px; border: 2px solid var(--bg); }
 ::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.22); }
 ::-webkit-scrollbar-track { background: transparent; }
+
+.accounts-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-top: 24px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 6px;
+  letter-spacing: -0.005em;
+}
+.accounts-group-title:first-of-type {
+  margin-top: 8px;
+}

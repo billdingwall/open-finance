@@ -42,15 +42,15 @@ This needs to be correct before any module-level review is useful.
 **Independent Test**: Open the prototype. Inspect the sidebar top-to-bottom. Inspect the
 toolbar. Resize the window to verify minimum usable width. Check that the right panel is
 absent on initial load. Confirm the sidebar shows exactly: Overview, Accounts, Budget, Savings
-& Investments, Business, Taxes, Settings — nothing else in v1.
+& Investments, Taxes, Settings — nothing else in v1.
 
 **Acceptance Scenarios**:
 
-1. **Given** the prototype is open, **When** a reviewer reads the sidebar, **Then** top-level sections appear in this exact order: Overview, Accounts, Budget, Savings & Investments, Business, Taxes, Settings. Notes, Issues, and Files do not appear.
+1. **Given** the prototype is open, **When** a reviewer reads the sidebar, **Then** top-level sections appear in this exact order: Overview, Accounts, Budget, Savings & Investments, Taxes, Settings. Notes, Issues, and Files do not appear.
 2. **Given** the Budget section is expanded, **When** the reviewer reads sub-items, **Then** Rules does not appear. Overview, Budget History, and Categories are present.
 3. **Given** the Overview section is expanded, **When** the reviewer reads sub-items, **Then** Monthly Snapshots and Annual Snapshots do not appear. Only Dashboard is present.
 4. **Given** the Savings & Investments section is expanded, **When** the reviewer reads sub-items, **Then** both Goals (active goals, archived goals) and Portfolio (portfolio overview, accounts, sleeves, holdings, benchmarks) are accessible within one section.
-5. **Given** no section is selected, **When** the prototype loads, **Then** the prototype defaults to the Accounts screen, and the right inspector panel is not visible. The main content area fills the full available width.
+5. **Given** no section is selected, **When** the prototype loads, **Then** the prototype defaults to the Accounts screen, and the right inspector panel is not visible. The main content area fills the full available width (grouped by themes: Personal Assets, Place of Employment, Business Entities).
 6. **Given** the reviewer inspects the toolbar, **When** they read left to right, **Then** they can see a workspace identifier, a sync status indicator, and an issue count indicator — the same persistent elements that will appear in the macOS toolbar.
 
 ---
@@ -184,9 +184,9 @@ Annual Snapshots — neither should be reachable.
 **Acceptance Scenarios**:
 
 1. **Given** the reviewer is on Overview, **When** they look above the KPI grid, **Then** no filter bar, period selector, search field, or view switcher is present.
-2. **Given** the Overview is shown, **When** the reviewer counts the KPI cards, **Then** exactly five appear: Budget (monthly cash flow), Savings (total savings balance), Investments (total investment value), Business (YTD net income), Taxes (estimated return).
+2. **Given** the Overview is shown, **When** the reviewer counts the KPI cards, **Then** exactly five appear: Budget (monthly cash flow), Savings (total savings balance), Investments (total investment value), Business NI (YTD net income for Consulting LLC), Taxes (estimated return).
 3. **Given** the Overview is shown, **When** the reviewer scrolls down, **Then** an Issues table is present showing validation issues grouped by severity with repairable badges — using the issue card design from User Story 5.
-4. **Given** the reviewer clicks any KPI card, **When** navigation occurs, **Then** they land on the corresponding module view.
+4. **Given** the reviewer clicks any KPI card, **When** navigation occurs, **Then** they land on the corresponding module view (with Business NI navigating to the Consulting LLC detail under Accounts).
 
 ---
 
@@ -278,7 +278,7 @@ grid showing at least 2 mock account cards.
 ### Functional Requirements
 
 **Navigation and shell (Round 1 alignment)**
-- **FR-001**: The `NAV` array in `app.js` MUST contain exactly these top-level sections in order: Overview, Accounts, Budget, Savings & Investments, Business, Taxes, Settings.
+- **FR-001**: The `NAV` array in `app.js` MUST contain exactly these top-level sections in order: Overview, Accounts, Budget, Savings & Investments, Taxes, Settings.
 - **FR-002**: Monthly Snapshots, Annual Snapshots, and Budget Rules MUST be removed from all sub-item lists and their corresponding view functions MUST be unreachable from navigation.
 - **FR-003**: Savings Goals and Investments MUST be replaced by a single Savings & Investments top-level section with sub-navigation covering both goals and portfolio.
 - **FR-004**: Notes, Issues, and Files MUST be removed from top-level navigation. Issues data is surfaced in the Overview view instead.
@@ -305,7 +305,7 @@ grid showing at least 2 mock account cards.
 
 **Overview (Round 1 alignment)**
 - **FR-017**: The Overview view MUST NOT render a filter bar.
-- **FR-018**: The Overview KPI grid MUST contain exactly five cards: Budget, Savings, Investments, Business, Taxes.
+- **FR-018**: The Overview KPI grid MUST contain exactly five cards: Budget, Savings, Investments, Business, Taxes (where Business NI links to accounts-entity-consulting-llc).
 
 **Budget (Round 1 alignment)**
 - **FR-019**: The Budget Overview MUST include a pie or donut chart showing spending breakdown as a percentage of monthly net income.
@@ -319,7 +319,7 @@ grid showing at least 2 mock account cards.
 - **FR-024**: The Current Tax Year view MUST include a per-account effective rate table.
 
 **Accounts (new section)**
-- **FR-025**: An Accounts section MUST render a card grid with at least 2 mock account cards and an aggregate header row.
+- **FR-025**: An Accounts section MUST render a card grid grouped by customizable theme/entity (Personal Assets, Place of Employment, Business Entities) and support dedicated detail dashboards for each theme type (including business P&L dashboard for Business entities).
 
 ### Key Entities
 
@@ -337,8 +337,8 @@ grid showing at least 2 mock account cards.
 ### Measurable Outcomes
 
 - **SC-001**: Every open design task listed under Phase 1 and Phase 2 in `docs/roadmap-v1.md` is represented by at least one designed prototype screen — none remain undesigned.
-- **SC-002**: A reviewer walking through every sidebar section finds zero v2-deferred views (Notes, Issues standalone, Files, Budget Rules, Monthly Snapshots, Annual Snapshots) reachable from navigation.
-- **SC-003**: Every v1 section (Overview, Accounts, Budget, Savings & Investments, Business, Taxes, Settings) renders without a JavaScript error in the browser console.
+- **SC-002**: A reviewer walking through every sidebar section finds zero v2-deferred views (Notes, Issues standalone, Files, Budget Rules, Monthly Snapshots, Annual Snapshots) and no top-level Business section reachable from navigation.
+- **SC-003**: Every v1 section (Overview, Accounts, Budget, Savings & Investments, Taxes, Settings) renders without a JavaScript error in the browser console.
 - **SC-004**: A reviewer can identify the correct designed treatment for all 7 iCloud workspace states by navigating the onboarding flow — no state is missing or shown as a placeholder text block.
 - **SC-005**: A reviewer can walk through the full repair flow — select an issue, read the diff preview, read the backup confirmation note — without leaving the prototype.
 - **SC-006**: A reviewer opening the prototype on a fresh load observes the right panel is not visible anywhere before they make a selection.

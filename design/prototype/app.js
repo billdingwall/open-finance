@@ -120,13 +120,6 @@ const NAV = [
     { id: 'investments-holdings',     label: 'Holdings' },
     { id: 'investments-benchmarks',   label: 'Benchmarks' },
   ]},
-  { id: 'business', label: 'Business', items: [
-    { id: 'business-all-entities',   label: 'All Entities' },
-    { id: 'business-monthly',        label: 'Monthly Performance' },
-    { id: 'business-categories',     label: 'Categories' },
-    { id: 'business-budgets',        label: 'Budgets' },
-    { id: 'business-entity',         label: 'Consulting LLC' },
-  ]},
   { id: 'taxes', label: 'Taxes', items: [
     { id: 'taxes-current',    label: 'Current Tax Year' },
     { id: 'taxes-deductions', label: 'Deductions' },
@@ -164,7 +157,10 @@ function renderSidebar() {
         el('span', { text: group.label }),
         el('span', { class: 'nav-group-caret' }),
       ]),
-      el('div', { class: 'nav-items' }, group.items.map(item => {
+      el('div', { class: 'nav-items' }, (group.id === 'accounts' ? [
+        { id: 'accounts-overview', label: 'All Accounts' },
+        ...DATA.entities.filter(e => e.active).map(e => ({ id: `accounts-entity-${e.id}`, label: e.display }))
+      ] : group.items).map(item => {
         const active = state.view === item.id;
         return el('div', {
           class: 'nav-item' + (active ? ' active' : ''),
@@ -391,6 +387,10 @@ function renderCenter() {
   content.innerHTML = '';
   // route
   const v = state.view;
+  if (v.startsWith('accounts-entity-')) {
+    const entityId = v.replace('accounts-entity-', '');
+    return viewAccountEntity(entityId);
+  }
   if (v === 'overview-dashboard')                                                        return viewOverviewDashboard();
   if (v === 'accounts-overview')                                                         return viewAccounts();
   if (v === 'budget-overview')                                                           return viewBudgetOverview();
@@ -437,7 +437,7 @@ function viewOverviewDashboard() {
     { id: 'budget',      label: 'Budget',       value: fmtUSD(o.budgetVariance.value, { sign: true }), delta: 'over plan',  deltaCls: 'neg', foot: 'Travel +$364, Groceries +$78', nav: 'budget-overview' },
     { id: 'savings',     label: 'Savings',       value: fmtPct(o.savingsProgress.value, 0), delta: fmtPctSigned(o.savingsProgress.change), deltaCls: 'pos', foot: '$58,640 of $96,000 plan', nav: 'savings-goals' },
     { id: 'investments', label: 'Investments',   value: fmtUSD(o.portfolioValue.value), delta: fmtPctSigned(o.portfolioValue.change), deltaCls: 'pos', foot: '+$4,640 MoM', nav: 'investments-portfolio' },
-    { id: 'business',    label: 'Business NI',   value: fmtUSD(o.businessNetIncome.value, { sign: true }), delta: fmtPctSigned(o.businessNetIncome.change), deltaCls: 'pos', foot: 'Consulting LLC · May', nav: 'business-entity' },
+    { id: 'business',    label: 'Business NI',   value: fmtUSD(o.businessNetIncome.value, { sign: true }), delta: fmtPctSigned(o.businessNetIncome.change), deltaCls: 'pos', foot: 'Consulting LLC · May', nav: 'accounts-entity-consulting-llc' },
     { id: 'taxes',       label: 'Taxes',         value: o.taxStatus.value, delta: o.taxStatus.subtle, deltaCls: 'flat', foot: '4 estimated payments planned', nav: 'taxes-current' },
   ];
 
@@ -1863,6 +1863,319 @@ function viewIndexingProgress() {
   ]));
 }
 
+// ---------- Account Entities (Dynamic Themes) ---------------------------------
+
+function viewAccountEntity(entityId) {
+  const entity = DATA.entities.find(e => e.id === entityId);
+  if (!entity) return;
+
+  state.entityTabs = state.entityTabs || {};
+  const activeTab = state.entityTabs[entityId] || 'dashboard';
+
+  if (entity.type === 'business') {
+    setHeader({
+      title: 'Business · ' + entity.display,
+      breadcrumb: ['Finance', 'Accounts', entity.display],
+      actions: [
+        { label: 'Import CSV', variant: '' },
+        { label: 'Export P&L', variant: 'btn-ghost' },
+      ],
+    });
+    renderFilterBar([
+      { label: 'Entity', value: entity.display, active: true },
+      { label: 'Period', value: 'May 2026', active: true },
+      { label: 'Account', value: 'All' },
+      { kind: 'spacer' },
+      { kind: 'search', placeholder: 'Search transactions', onChange: () => {} },
+    ]);
+
+    const c = $('#content');
+
+    // Tab bar navigation
+    const tabs = [
+      { id: 'dashboard', label: 'Dashboard' },
+      { id: 'transactions', label: 'Transactions' },
+      { id: 'budgets', label: 'Budgets' },
+      { id: 'categories', label: 'Categories' }
+    ];
+    const tabContainer = el('div', { class: 'entity-strip' });
+    for (const t of tabs) {
+      tabContainer.appendChild(el('div', {
+        class: 'entity-pill' + (t.id === activeTab ? ' active' : ''),
+        onclick: () => {
+          state.entityTabs[entityId] = t.id;
+          renderCenter();
+        }
+      }, [
+        el('span', { text: t.label })
+      ]));
+    }
+    c.appendChild(tabContainer);
+
+    const txs = DATA.transactions.filter(t => t.entityId === entityId);
+
+    if (activeTab === 'dashboard') {
+      // KPIs
+      const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+      const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+      const ni = revenue - expenses;
+      const deductible = txs.filter(t => t.amount < 0 && t.deductible).reduce((s, t) => s + Math.abs(t.amount), 0);
+
+      const kpis = [
+        { id: 'rev',  label: 'Revenue · May', value: fmtUSD(revenue), delta: '+22% MoM', deltaCls: 'pos', foot: '2 invoices billed' },
+        { id: 'exp',  label: 'Expenses',      value: fmtUSD(expenses), delta: 'Within plan', deltaCls: 'flat', foot: txs.filter(t => t.amount < 0).length + ' transactions' },
+        { id: 'ni',   label: 'Net income',    value: fmtUSD(ni, { sign: true }), delta: fmtPctSigned(ni / Math.max(revenue,1)), deltaCls: 'pos', foot: 'Margin ' + fmtPct(ni / Math.max(revenue,1), 0) },
+        { id: 'ded',  label: 'Deductible',    value: fmtUSD(deductible), delta: fmtPct(deductible / Math.max(expenses,1), 0) + ' of expenses', deltaCls: 'flat', foot: 'Feeds Taxes › Prep' },
+      ];
+      const kpiGrid = el('div', { class: 'kpi-grid' });
+      for (const k of kpis) {
+        kpiGrid.appendChild(el('div', { class: 'kpi-card', onclick: () => select({ kind: 'biz-kpi', id: k.id }) }, [
+          el('div', { class: 'kpi-label', text: k.label }),
+          el('div', { class: 'kpi-value', text: k.value }),
+          el('div', { class: 'kpi-delta ' + k.deltaCls, text: k.delta }),
+          el('div', { class: 'kpi-foot', text: k.foot }),
+        ]));
+      }
+      c.appendChild(kpiGrid);
+
+      // P&L Chart
+      const labels = DATA.bizSeries.labels;
+      const niSeries = labels.map((_, i) => DATA.bizSeries.revenue[i] - DATA.bizSeries.expenses[i]);
+
+      c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+        el('div', { class: 'panel-head' }, [
+          el('h3', { text: 'Monthly Net Income · Trailing 12 months' }),
+          el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+        ]),
+        el('div', { class: 'panel-body' }, [
+          el('div', { class: 'chart-wrap', html: barChart(niSeries, { labels }) }),
+        ]),
+      ]));
+    } else if (activeTab === 'transactions') {
+      // Transactions table
+      c.appendChild(el('div', { class: 'panel' }, [
+        el('div', { class: 'panel-head' }, [
+          el('h3', { text: 'Transaction Ledger · ' + entity.display }),
+          el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
+          el('div', { class: 'panel-actions' }, [
+            el('span', { class: 'imported-tag', text: 'Imported' }),
+          ]),
+        ]),
+        el('div', { class: 'panel-body flush' }, [(() => {
+          const BC = bizCatById();
+          const table = el('table', { class: 'tbl' });
+          table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Merchant</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Tax</th></tr></thead><tbody></tbody>`;
+          const tbody = table.querySelector('tbody');
+          for (const t of txs) {
+            const tr = el('tr', {
+              class: state.selection?.kind === 'biz-tx' && state.selection?.id === t.id ? 'selected' : '',
+              onclick: () => openInspector('biz-tx', t.id),
+            });
+            tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
+            tr.appendChild(el('td', { text: t.merchant }));
+            tr.appendChild(el('td', { class: 'muted', text: t.description }));
+            tr.appendChild(el('td', { text: t.category === 'income' ? 'Income' : (BC[t.category]?.name || t.category) }));
+            tr.appendChild(el('td', { class: 'num ' + (t.amount < 0 ? '' : 'pos'), text: fmtUSD2(t.amount) }));
+            tr.appendChild(el('td', {}, [
+              t.deductible ? el('span', { class: 'tag tag-info', text: 'deductible' }) : el('span', { class: 'tag tag-muted', text: '—' }),
+            ]));
+            tbody.appendChild(tr);
+          }
+          return table;
+        })()]),
+      ]));
+    } else if (activeTab === 'budgets') {
+      // Budgets table
+      c.appendChild(el('div', { class: 'panel' }, [
+        el('div', { class: 'panel-head' }, [
+          el('h3', { text: 'Category Budget · ' + entity.display }),
+          el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+        ]),
+        el('div', { class: 'panel-body' }, [(() => {
+          const BC = bizCatById();
+          const wrap = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px' } });
+          for (const b of DATA.businessBudgets) {
+            const spend = txs.filter(t => t.category === b.category && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+            const pct = spend / Math.max(b.planned, 1);
+            wrap.appendChild(el('div', { onclick: () => select({ kind: 'biz-cat', id: b.category }), style: { cursor: 'pointer' } }, [
+              el('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' } }, [
+                el('span', { text: BC[b.category]?.name }),
+                el('span', { style: { color: 'var(--muted)' }, text: fmtUSD(spend) + ' / ' + fmtUSD(b.planned) }),
+              ]),
+              el('div', { class: 'bar-inline ' + (pct > 1.05 ? 'err' : pct > 0.95 ? 'warn' : 'ok') }, [
+                el('span', { style: { width: Math.min(pct, 1) * 100 + '%' } }),
+              ]),
+            ]));
+          }
+          return wrap;
+        })()]),
+      ]));
+    } else if (activeTab === 'categories') {
+      // Categories table
+      c.appendChild(el('div', { class: 'panel' }, [
+        el('div', { class: 'panel-head' }, [
+          el('h3', { text: 'Business Categories' }),
+          el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+        ]),
+        el('div', { class: 'panel-body flush' }, [(() => {
+          const table = el('table', { class: 'tbl' });
+          table.innerHTML = `<thead><tr><th>Category</th><th>Tax group</th><th>Default behavior</th></tr></thead><tbody></tbody>`;
+          const tbody = table.querySelector('tbody');
+          for (const cat of DATA.businessCategories) {
+            const tr = el('tr');
+            tr.appendChild(el('td', { text: cat.name }));
+            tr.appendChild(el('td', { class: 'muted', text: cat.taxGroup }));
+            tr.appendChild(el('td', { class: 'muted', text: 'Variable' }));
+            tbody.appendChild(tr);
+          }
+          return table;
+        })()]),
+      ]));
+    }
+  } else if (entity.type === 'employment') {
+    setHeader({
+      title: 'Employment · ' + entity.display,
+      breadcrumb: ['Finance', 'Accounts', entity.display],
+      actions: [
+        { label: 'Import Paystub', variant: '' },
+      ],
+    });
+    renderFilterBar([
+      { label: 'Period', value: 'May 2026', active: true },
+    ]);
+
+    const c = $('#content');
+    
+    // Group of accounts for Employment
+    const empAccounts = DATA.accounts.filter(a => a.entityId === entityId);
+    
+    // Calculate metrics
+    const payrollAccount = empAccounts.find(a => a.type === 'payroll');
+    const hsaAccount = empAccounts.find(a => a.type === 'hsa');
+    
+    const ytdGross = payrollAccount ? payrollAccount.ytdNetIncome : 38604;
+    const monthlyInflow = payrollAccount ? payrollAccount.monthlyInflow : 9651;
+    const hsaBal = hsaAccount ? hsaAccount.ytdNetIncome : 1380;
+    
+    const kpis = [
+      { label: 'Gross Pay (Monthly)', value: fmtUSD(monthlyInflow), foot: 'Base Salary' },
+      { label: 'YTD Gross Pay', value: fmtUSD(ytdGross), foot: 'Tax Year 2026' },
+      { label: 'HSA Balance YTD', value: fmtUSD(hsaBal), foot: 'Fidelity HSA' },
+      { label: 'Employer stock vests', value: '$8,450', foot: 'Next vest Jun 15' },
+    ];
+    const kpiGrid = el('div', { class: 'kpi-grid' });
+    for (const k of kpis) {
+      kpiGrid.appendChild(el('div', { class: 'kpi-card' }, [
+        el('div', { class: 'kpi-label', text: k.label }),
+        el('div', { class: 'kpi-value', text: k.value }),
+        el('div', { class: 'kpi-foot', text: k.foot }),
+      ]));
+    }
+    c.appendChild(kpiGrid);
+
+    // Paycheck deposits ledger
+    const txs = DATA.transactions.filter(t => t.entityId === entityId);
+    c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Paycheck Deposits & Benefits' }),
+        el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
+      ]),
+      el('div', { class: 'panel-body flush' }, [(() => {
+        const table = el('table', { class: 'tbl' });
+        table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Employer</th><th>Description</th><th>Account</th><th class="num">Amount</th></tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        for (const t of txs) {
+          const tr = el('tr', {
+            class: state.selection?.kind === 'transaction' && state.selection?.id === t.id ? 'selected' : '',
+            onclick: () => openInspector('transaction', t.id),
+          });
+          tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
+          tr.appendChild(el('td', { text: t.merchant }));
+          tr.appendChild(el('td', { class: 'muted', text: t.description }));
+          tr.appendChild(el('td', { text: t.account }));
+          tr.appendChild(el('td', { class: 'num pos', text: fmtUSD2(t.amount) }));
+          tbody.appendChild(tr);
+        }
+        return table;
+      })()]),
+    ]));
+  } else if (entity.type === 'personal') {
+    setHeader({
+      title: 'Personal · ' + entity.display,
+      breadcrumb: ['Finance', 'Accounts', entity.display],
+      actions: [
+        { label: 'Add Asset', variant: '' },
+      ],
+    });
+    renderFilterBar([
+      { label: 'Period', value: 'May 2026', active: true },
+    ]);
+
+    const c = $('#content');
+    
+    // Accounts and metrics
+    const persAccounts = DATA.accounts.filter(a => a.entityId === entityId);
+    const totalInflow = persAccounts.reduce((s, a) => s + a.monthlyInflow, 0);
+    const totalYtd = persAccounts.reduce((s, a) => s + a.ytdNetIncome, 0);
+
+    const kpis = [
+      { label: 'Net Worth', value: fmtUSD(DATA.overview.netWorth[DATA.overview.netWorth.length - 1]), foot: '+$8,540 MoM' },
+      { label: 'Monthly Inflow', value: fmtUSD(totalInflow), foot: 'Everyday Banking' },
+      { label: 'YTD Net Income', value: fmtUSD(totalYtd), foot: 'Savings & Investments' },
+    ];
+    const kpiGrid = el('div', { class: 'kpi-grid' });
+    for (const k of kpis) {
+      kpiGrid.appendChild(el('div', { class: 'kpi-card' }, [
+        el('div', { class: 'kpi-label', text: k.label }),
+        el('div', { class: 'kpi-value', text: k.value }),
+        el('div', { class: 'kpi-foot', text: k.foot }),
+      ]));
+    }
+    c.appendChild(kpiGrid);
+
+    // Cash flow trend chart
+    const labels = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'];
+    const netWorthSeries = DATA.overview.netWorth;
+
+    c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Net Worth Trend' }),
+        el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+      ]),
+      el('div', { class: 'panel-body' }, [
+        el('div', { class: 'chart-wrap', html: lineChart([netWorthSeries], { labels, colors: ['#3651d3'] }) }),
+      ]),
+    ]));
+
+    // Personal transactions ledger
+    const txs = DATA.transactions.filter(t => t.entityId === entityId);
+    c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Recent Personal Ledger' }),
+        el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
+      ]),
+      el('div', { class: 'panel-body flush' }, [(() => {
+        const table = el('table', { class: 'tbl' });
+        table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Merchant</th><th>Description</th><th>Account</th><th class="num">Amount</th></tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        for (const t of txs) {
+          const tr = el('tr', {
+            class: state.selection?.kind === 'transaction' && state.selection?.id === t.id ? 'selected' : '',
+            onclick: () => openInspector('transaction', t.id),
+          });
+          tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
+          tr.appendChild(el('td', { text: t.merchant }));
+          tr.appendChild(el('td', { class: 'muted', text: t.description }));
+          tr.appendChild(el('td', { text: t.account }));
+          tr.appendChild(el('td', { class: 'num ' + (t.amount < 0 ? '' : 'pos'), text: fmtUSD2(t.amount) }));
+          tbody.appendChild(tr);
+        }
+        return table;
+      })()]),
+    ]));
+  }
+}
+
 // ---------- Accounts (T041) --------------------------------------------------
 
 function viewAccounts() {
@@ -1903,28 +2216,41 @@ function viewAccounts() {
     ]),
   ]));
 
-  const grid = el('div', { class: 'accounts-grid' });
-  for (const a of DATA.accounts) {
-    grid.appendChild(el('div', {
-      class: 'account-card' + (state.selection?.kind === 'account' && state.selection?.id === a.id ? ' selected' : ''),
-      onclick: () => openInspector('account', a.id),
-    }, [
-      el('div', { class: 'ac-name', text: a.name }),
-      el('div', { class: 'ac-inst', text: a.institution }),
-      el('div', { class: 'ac-group', text: a.group }),
-      el('div', { class: 'ac-metrics' }, [
-        el('div', {}, [
-          el('div', { class: 'ac-metric-label', text: 'Monthly inflow' }),
-          el('div', { class: 'ac-metric-value', text: fmtUSD(a.monthlyInflow) }),
+  const themes = [
+    { type: 'personal',   heading: 'Personal Assets' },
+    { type: 'employment', heading: 'Place of Employment' },
+    { type: 'business',   heading: 'Business Entities' },
+  ];
+
+  for (const theme of themes) {
+    const themeEntities = DATA.entities.filter(e => e.type === theme.type);
+    const themeAccounts = DATA.accounts.filter(a => themeEntities.some(e => e.id === a.entityId));
+    if (themeAccounts.length === 0) continue;
+
+    c.appendChild(el('h3', { class: 'accounts-group-title', text: theme.heading }));
+    const grid = el('div', { class: 'accounts-grid' });
+    for (const a of themeAccounts) {
+      grid.appendChild(el('div', {
+        class: 'account-card' + (state.selection?.kind === 'account' && state.selection?.id === a.id ? ' selected' : ''),
+        onclick: () => openInspector('account', a.id),
+      }, [
+        el('div', { class: 'ac-name', text: a.name }),
+        el('div', { class: 'ac-inst', text: a.institution }),
+        el('div', { class: 'ac-group', text: a.group }),
+        el('div', { class: 'ac-metrics' }, [
+          el('div', {}, [
+            el('div', { class: 'ac-metric-label', text: 'Monthly inflow' }),
+            el('div', { class: 'ac-metric-value', text: fmtUSD(a.monthlyInflow) }),
+          ]),
+          el('div', { style: { textAlign: 'right' } }, [
+            el('div', { class: 'ac-metric-label', text: 'YTD net' }),
+            el('div', { class: 'ac-metric-value', text: fmtUSD(a.ytdNetIncome) }),
+          ]),
         ]),
-        el('div', { style: { textAlign: 'right' } }, [
-          el('div', { class: 'ac-metric-label', text: 'YTD net' }),
-          el('div', { class: 'ac-metric-value', text: fmtUSD(a.ytdNetIncome) }),
-        ]),
-      ]),
-    ]));
+      ]));
+    }
+    c.appendChild(grid);
   }
-  c.appendChild(grid);
 }
 
 // ---------- Taxes: Deductions (T039) -----------------------------------------

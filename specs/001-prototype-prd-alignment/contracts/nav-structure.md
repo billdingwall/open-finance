@@ -17,6 +17,11 @@ const NAV = [
   ]},
   { id: 'accounts', label: 'Accounts', items: [
     { id: 'accounts-overview', label: 'All Accounts' },
+    { id: 'accounts-entity-personal', label: 'Personal Assets' },
+    { id: 'accounts-entity-employment', label: 'Place of Employment' },
+    { id: 'accounts-entity-consulting-llc', label: 'Consulting LLC' },
+    { id: 'accounts-entity-freelance', label: 'Freelance' },
+    { id: 'accounts-entity-rental-llc', label: 'Rental LLC' },
   ]},
   { id: 'budget', label: 'Budget', items: [
     { id: 'budget-overview',    label: 'Overview' },
@@ -32,13 +37,6 @@ const NAV = [
     { id: 'investments-sleeves',      label: 'Sleeves' },
     { id: 'investments-holdings',     label: 'Holdings' },
     { id: 'investments-benchmarks',   label: 'Benchmarks' },
-  ]},
-  { id: 'business', label: 'Business', items: [
-    { id: 'business-all-entities',  label: 'All Entities' },
-    { id: 'business-monthly',       label: 'Monthly Performance' },
-    { id: 'business-categories',    label: 'Categories' },
-    { id: 'business-budgets',       label: 'Budgets' },
-    { id: 'business-entity',        label: 'Consulting LLC' },
   ]},
   { id: 'taxes', label: 'Taxes', items: [
     { id: 'taxes-current',    label: 'Current Tax Year' },
@@ -70,6 +68,7 @@ const NAV = [
 | `investments` group | Merged into `savings-investments` group (FR-003) |
 | `notes` group | Notes deferred to V2 (FR-004) |
 | `issues` group | Issues surfaced inline in Overview (FR-004) |
+| `business` group | Removed Business top-level and merged into customizable Accounts themes/entities (FR-001) |
 
 ---
 
@@ -79,6 +78,7 @@ const NAV = [
 |---|---|
 | `accounts` group | New Accounts section (FR-025) |
 | `accounts-overview` | Accounts card grid view |
+| `accounts-entity-*` | Customizable themes/entities detail views under Accounts |
 | `savings-investments` group | Merged Savings & Investments (FR-003) |
 | `taxes-deductions` | Deductions sub-view (FR-023) |
 | `budget-overview` | Replaces `personal-budget-current`; renamed for clarity |
@@ -98,6 +98,11 @@ selected (US1, acceptance scenario 5). This is set as the initial `state.view` v
 |---|---|---|
 | `overview-dashboard` | `viewOverviewDashboard()` | Overview |
 | `accounts-overview` | `viewAccounts()` | Accounts |
+| `accounts-entity-personal` | `viewAccountEntity('personal')` | Accounts |
+| `accounts-entity-employment` | `viewAccountEntity('employment')` | Accounts |
+| `accounts-entity-consulting-llc` | `viewAccountEntity('consulting-llc')` | Accounts |
+| `accounts-entity-freelance` | `viewAccountEntity('freelance')` | Accounts |
+| `accounts-entity-rental-llc` | `viewAccountEntity('rental-llc')` | Accounts |
 | `budget-overview` | `viewBudgetOverview()` | Budget |
 | `budget-history` | `viewBudgetHistory()` | Budget |
 | `budget-categories` | `viewBudgetCategories()` | Budget |
@@ -109,11 +114,6 @@ selected (US1, acceptance scenario 5). This is set as the initial `state.view` v
 | `investments-sleeves` | `viewInvestmentsSleeves()` | Savings & Investments |
 | `investments-holdings` | `viewInvestmentsHoldings()` | Savings & Investments |
 | `investments-benchmarks` | `viewInvestmentsBenchmarks()` | Savings & Investments |
-| `business-all-entities` | `viewBusinessAllEntities()` | Business |
-| `business-monthly` | `viewBusinessMonthly()` | Business |
-| `business-categories` | `viewBusinessCategories()` | Business |
-| `business-budgets` | `viewBusinessBudgets()` | Business |
-| `business-entity` | `viewBusinessEntity()` | Business |
 | `taxes-current` | `viewTaxesCurrent()` | Taxes |
 | `taxes-deductions` | `viewTaxesDeductions()` | Taxes |
 | `taxes-estimated` | `viewTaxesEstimated()` | Taxes |
