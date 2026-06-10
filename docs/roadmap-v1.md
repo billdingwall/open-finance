@@ -3,7 +3,7 @@
 **Project**: Personal Finance Workspace for macOS
 **Scope**: v1 as defined in `docs/PRD.md` and `docs/technical design.md`
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
-**Last updated**: 2026-06-08
+**Last updated**: 2026-06-10
 
 ---
 
@@ -347,7 +347,7 @@ parallel once Phase 3 is complete, as they share only the master account registr
 #### Savings & Investments
 - [ ] **Goals overview**: goal card anatomy (name, target amount, current balance, progress bar,
   monthly contribution, time-to-goal estimate), active vs archived tabs
-- [ ] **Portfolio overview**: holdings table columns, allocation donut chart, sleeve switcher
+- [ ] **Assets view**: holdings table columns, allocation donut chart, sleeve switcher
 - [ ] **Benchmark heat map**: table design for 8 time periods × N accounts, color scale for
   positive/negative % growth, S&P 500 comparison row, sector performance section
 - [ ] **Sleeve detail**: target weights table with actual vs target, drift indicator, contribution
@@ -504,11 +504,11 @@ is connected. Module views are blocked on their respective domain engines from P
 - [ ] `BudgetCategoriesView` — category and subcategory management, manual create/edit forms
 
 #### Savings & Investments Module (`UI/SavingsInvestments/`)
-- [ ] `SavingsInvestmentsView` — top-level view with Goals and Portfolio sub-navigation
+- [ ] `SavingsInvestmentsView` — top-level view with Overview, Goals, Assets, and Categories sub-navigation
 - [ ] `GoalsListView` — active/archived tabs, goal cards with progress bar, tap → goal detail
 - [ ] `GoalDetailView` — progress history chart, funding source links, monthly contribution
   tracker, source traceability
-- [ ] `PortfolioOverviewView` — aggregate holdings table, allocation donut, account selector
+- [ ] `AssetsView` — aggregate holdings table, allocation donut, account selector
 - [ ] `SleeveDetailView` — target vs actual weights, contribution target, drift indicator
 - [ ] `BenchmarkView` — heat map table (8 periods × accounts), S&P 500 comparison row,
   sector performance section

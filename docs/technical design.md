@@ -77,46 +77,31 @@ Deferred to V2:
 
 ### Left sidebar structure
 
-The left sidebar should support expandable groups under the relevant top-level section. The sidebar is for navigation only, not for temporary or view-specific filters.
+The left sidebar is static and should only support expandable groups under the relevant top-level section when specified. The sidebar is for navigation only, not for temporary or view-specific filters.
 
 Examples:
 - **Overview**
-  - Dashboard
 - **Accounts**
-  - All accounts
-  - Themes & Entities (user-customizable, loaded from `Accounts/entities.csv`):
+  - Overview
+  - Themes / entities (user-customizable, loaded from `Accounts/entities.csv`):
     - Personal Assets (Personal)
     - Place of Employment (Employment)
     - Consulting LLC (Business)
     - Freelance (Business)
     - Rental LLC (Business)
-  - Specific account links
 - **Budget**
   - Overview
   - Budget history
   - Categories
-  - Specific category links
 - **Savings & Investments**
   - Overview
   - Goals
-    - Active goals
-    - Archived goals
-    - Specific goal links
-  - Portfolio
-    - Portfolio overview
-    - Accounts
-    - Sleeves
-    - Holdings
-    - Benchmarks
-    - Specific account links
-    - Specific sleeve links
+  - Assets
+  - Categories
 - **Taxes**
   - Current tax year
-  - Estimated payments
-  - Gains & income
-  - Deductions
-  - Tax archive
   - Prep checklist
+  - Tax archive
 - **Notes** *(V2)*
   - Monthly reviews
   - Strategy notes
@@ -1373,6 +1358,11 @@ Left sidebar with collapsible navigation sections that open and close independen
 - `overview-updated.svg` — Revised Overview with Issues table inline
 
 ## 24. Changelog
+
+### Round 3 — 2026-06-10
+Source: User direction — sidebar navigation structure refinement.
+
+- §4: Clarified sidebar definition: static, expandable groups only where specified; removed "Dashboard" sub-item from Overview (now a leaf item); renamed "All accounts" → "Overview" and "Themes & Entities" → "Themes / entities" under Accounts; removed "Specific account links" and "Specific category links"; replaced Savings & Investments nested Goals/Portfolio structure with flat items (Overview, Goals, Assets, Categories); simplified Taxes to three items (Current tax year, Prep checklist, Tax archive), removing Estimated payments, Gains & income, and Deductions as sidebar navigation items
 
 ### Round 2 — 2026-06-09
 Source: User direction — future-proofing for multi-cloud and additional file formats.
