@@ -62,20 +62,22 @@ and local-fallback modes.
 
 ### Product Tasks
 
-- [ ] Lock the five open architectural decisions documented in `docs/technical design.md §21`:
-  - Confirm two-file model for `Accounts/accounts.csv` (master) vs `Investments/accounts.csv` (investment-specific)
-  - Confirm Savings/ and Investments/ stay as separate folders at the file level
-  - Decide deductions file structure (unified `deductions.csv` vs per-type files)
-  - Define tax year-close trigger (explicit in-app action, automatic rollover, or both)
-  - Confirm right detail pane default-closed applies globally, with no per-section exceptions
-- [ ] Finalize iCloud container identifier and entitlement strategy for development and distribution
+- [x] Lock the Phase 1 architectural decisions documented in `docs/technical design.md §21` ✓ 2026-06-10
+  - Unified `Accounts/accounts.csv` — no separate `Investments/accounts.csv`
+  - Savings/ and Investments/ stay as separate folders at the file level
+  - One `Taxes/deductions.csv` with `deduction_type` column
+  - Tax year-close is an explicit in-app action only
+  - Right detail pane is closed by default globally, no per-section exceptions
+  - iCloud container identifier: `OpenFinance`
+  - Bootstrap seeds: personal bank, personal credit card, business bank, business credit card, savings, investment
+- [ ] Finalize iCloud entitlement strategy for development and distribution (container: `OpenFinance`)
 - [ ] Document the 7 required iCloud sync states and define how each surfaces in the UI:
   Available, Not signed in, Container unavailable, Syncing, Local copy stale, File missing locally,
   Conflict detected
 - [ ] Define the complete workspace folder structure and file naming conventions (confirm against
   `docs/technical design.md §6`)
-- [ ] Document workspace bootstrap behavior: what files and folders are created on first launch,
-  what seed data is included, and in what order
+- [ ] Document workspace bootstrap behavior: full sequence — folders created, seed files written,
+  six starter accounts written to `Accounts/accounts.csv`, manifest created
 - [ ] Define the `.finance-meta/manifest.json` shape and update contract
 
 ### Design Tasks
@@ -707,14 +709,15 @@ No new features — this phase hardens everything built in phases 1–6.
 
 ## Open Decisions (Pre-Build)
 
-These items from `docs/technical design.md §21` must be resolved before Phase 1 development
-begins. Until locked, downstream specs that depend on them are provisional.
+All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs/technical design.md §21` for the full locked-decision record.
 
-| Decision | Options | Impact |
-|---|---|---|
-| `CloudStorageProvider` protocol surface | Confirm minimum interface before `ICloudContainerService` is implemented | Storage layer extensibility, `WorkspaceManager` dependency |
-| Master registry vs investment accounts | Unified file with optional fields, or two files linked by `account_id` | Account file specs, `AccountEngine` cross-reference logic |
-| Savings/ and Investments/ folder separation | Keep separate (confirmed intent), or merge | File classifier, navigation mental model for Finder users |
-| Deductions file structure | One `deductions.csv` (all types), or per-type files | `DeductionEngine` load path, repair classification |
-| Tax year-close trigger | In-app action only, automatic rollover, or both | `TaxPrepEngine` archive write flow, UI affordance |
-| Right pane default-closed scope | Global (all sections), or section-specific exceptions | `AppState` detail pane logic, onboarding UX |
+| Decision | Resolution |
+|---|---|
+| `CloudStorageProvider` protocol surface | Minimum surface confirmed: `resolveWorkspaceURL()`, `syncState`, `isAvailable`. Conflict resolution stays iCloud-specific. |
+| Master registry vs investment accounts | Unified `Accounts/accounts.csv` with optional investment columns. No separate `Investments/accounts.csv`. |
+| Savings/ and Investments/ folder separation | Keep separate at the file level. |
+| Deductions file structure | One `Taxes/deductions.csv` with `deduction_type` column. |
+| Tax year-close trigger | Explicit in-app "Close Tax Year" action only. |
+| Right pane default-closed scope | Global — closed by default, opens on main-panel interaction, no section exceptions. |
+| iCloud container identifier | `OpenFinance` |
+| Workspace bootstrap seed accounts | Personal bank, personal credit card, business bank, business credit card, savings, investment |
