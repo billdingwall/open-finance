@@ -160,16 +160,14 @@ typed domain records. This is the prerequisite for every domain engine in Phase 
 ### Product Tasks
 
 - [ ] Finalize and document all 24 CSV file specifications (schemas, required vs optional columns,
-  enum value sets, amount sign conventions) — reference `docs/technical design.md §8`
+  enum value sets) — reference `docs/technical design.md §8`
 - [ ] Define the complete validation rule catalog across three tiers:
   - File-level: missing required file, invalid CSV header, bad date, bad decimal, invalid enum
   - Cross-file: unknown account/category/entity/sleeve/goal reference, duplicate transaction ID
   - Domain: budget period without rows, holding without account, trade without valid ticker
 - [ ] For each validation issue, classify: error vs warning vs info, and repairable vs manual-only
-- [ ] Document amount sign conventions for personal transactions (negative = debit, positive = credit
-  or vice versa) — pick one and enforce consistently across all transaction file types
-- [ ] Define `schema_version` migration policy: what constitutes a breaking schema change and
-  what the repair path is for each known migration
+- [x] Document amount sign conventions ✓ 2026-06-10 — negative = debit (money out), positive = credit (money in); applies to all transaction file types; `CSVNormalizer` flips signs from external sources during import
+- [x] Define `schema_version` migration policy ✓ 2026-06-10 — breaking change = any modification to a column or front matter field in use; repair path = migration script shipped with the release (`Scripts/migrate-{file-type}-v{old}-to-v{new}.swift`); `RepairService` detects version mismatches and prompts user to run script
 
 ### Design Tasks
 

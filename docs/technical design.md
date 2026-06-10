@@ -383,8 +383,8 @@ Required columns:
 | account_id | string | Links to account |
 | merchant | string | Raw merchant |
 | description | string | User-facing text |
-| amount | decimal | Signed |
-| direction | enum | debit, credit |
+| amount | decimal | Signed: negative = debit (money out), positive = credit (money in) |
+| direction | enum | debit, credit — redundant with sign but kept for readability and import mapping |
 | category_id | string | Normalized category |
 | subcategory_id | string | Optional |
 | transfer_group | string | Optional |
@@ -396,7 +396,8 @@ Required columns:
 
 Behavior:
 - Must support import from external CSV then normalization into canonical monthly files.
-- Amount sign rules must be documented and enforced.
+- Amount sign convention (locked): negative = debit (money out of account), positive = credit (money into account). This applies to all transaction file types. The `direction` column is redundant with the sign but retained to simplify import column mapping from external sources.
+- During import normalization, if a source file uses the opposite convention, the `CSVNormalizer` must flip the sign before writing to the canonical file.
 - `transaction_id` must remain stable across recategorizations.
 
 ### 8.3 Unified categories CSV
@@ -760,7 +761,7 @@ Each file should have machine-readable metadata at one of three levels:
 
 | Attribute | Applies to | Purpose |
 |---|---|---|
-| schema_version | CSV, Markdown | Validation and migration |
+| schema_version | CSV, Markdown | Validation and migration. Increment on any breaking change. |
 | domain | All | budget, savings, investments, business, taxes, notes |
 | subtype | All | transactions, goals, note, budget, prices, etc. |
 | period | Monthly files | Time grouping |
@@ -770,6 +771,19 @@ Each file should have machine-readable metadata at one of three levels:
 | created_at | Markdown preferred | Audit trail |
 | updated_at | Optional | UI freshness |
 | source | Optional | Imported origin |
+
+### Schema version migration policy
+
+A **breaking change** is any modification to a CSV column or Markdown front matter field that is currently in use — including: renaming a column, removing a column, changing a column's type or enum values, or adding a required column to an existing file type.
+
+Adding a new optional column is **not** a breaking change.
+
+When a breaking change is introduced:
+- The `schema_version` integer in that file type's schema definition is incremented.
+- A migration script is supplied as part of the release that introduces the change.
+- Migration scripts live in `Scripts/` and follow the naming convention `migrate-{file-type}-v{old}-to-v{new}.swift`.
+- The `RepairService` detects version mismatches during validation and prompts the user to run the applicable migration script. It does not auto-migrate breaking changes.
+- After migration, the `schema_version` header value in the affected CSV files is updated to the new version.
 
 ### App-managed manifest
 
@@ -1304,6 +1318,12 @@ These decisions are settled and should not be reopened for v1:
 
 - **Workspace bootstrap seed accounts** ✓ — On first launch, bootstrap seeds six starter accounts in `Accounts/accounts.csv`: personal bank account, personal credit card, business bank account, business credit card, savings account, and investment account.
 
+### Locked — 2026-06-10 (Phase 2)
+
+- **Amount sign convention** ✓ — Negative = debit (money out), positive = credit (money in). Applies consistently across all transaction file types. The `direction` column is retained alongside the sign for import mapping readability. The `CSVNormalizer` flips signs from source files that use the opposite convention during import.
+
+- **`schema_version` migration policy** ✓ — A breaking change is any modification to a CSV column or Markdown front matter field currently in use (rename, remove, type change, enum change, or new required column). Adding an optional column is not breaking. Breaking changes increment `schema_version` and require a migration script (`Scripts/migrate-{file-type}-v{old}-to-v{new}.swift`) shipped with the release. The `RepairService` detects version mismatches and prompts the user to run the script; it does not auto-migrate breaking changes.
+
 ## 22. Recommended implementation stance
 
 Build v1 as:
@@ -1375,9 +1395,11 @@ Source: User direction — sidebar navigation structure refinement; user decisio
 - §8.7: Removed separate `Investments/accounts.csv` spec; replaced with note redirecting to unified `Accounts/accounts.csv`
 - §8.21: Added optional investment-specific columns (`tax_treatment`, `performance_tracking`) to master accounts registry; updated bootstrap note to list six seed accounts
 - §10: Updated `Account` entity note to remove `InvestmentAccount` as a separate type; investment-specific fields are optional properties on `Account`
+- §8.2: Clarified `amount` column note with locked sign convention; updated behavior note with normalization rule for import
+- §9: Updated `schema_version` metadata attribute description; added "Schema version migration policy" subsection
 - §14: Updated `bootstrap-workspace` purpose to list six seed accounts
 - §16: Restructured Savings & Investments requirements under nav item headings (Goals, Assets, Portfolio) — sleeve content explicitly assigned to Portfolio; restructured Taxes requirements under nav item headings (Current tax year, Prep checklist, Tax archive) — Estimated payments, Gains & income, and Deductions explicitly placed within Current tax year
-- §21: Locked all six previously-open Phase 1 decisions; added iCloud container identifier and workspace bootstrap seed accounts as additional locked decisions
+- §21: Locked all six previously-open Phase 1 decisions; added iCloud container identifier and workspace bootstrap seed accounts as additional locked decisions; added Phase 2 locked section with amount sign convention and schema_version migration policy
 
 ### Round 2 — 2026-06-09
 Source: User direction — future-proofing for multi-cloud and additional file formats.
