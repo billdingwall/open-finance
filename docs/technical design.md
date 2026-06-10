@@ -77,46 +77,31 @@ Deferred to V2:
 
 ### Left sidebar structure
 
-The left sidebar should support expandable groups under the relevant top-level section. The sidebar is for navigation only, not for temporary or view-specific filters.
+The left sidebar is static and should only support expandable groups under the relevant top-level section when specified. The sidebar is for navigation only, not for temporary or view-specific filters.
 
 Examples:
 - **Overview**
-  - Dashboard
 - **Accounts**
-  - All accounts
-  - Themes & Entities (user-customizable, loaded from `Accounts/entities.csv`):
+  - Overview
+  - Themes / entities (user-customizable, loaded from `Accounts/entities.csv`):
     - Personal Assets (Personal)
     - Place of Employment (Employment)
     - Consulting LLC (Business)
     - Freelance (Business)
     - Rental LLC (Business)
-  - Specific account links
 - **Budget**
   - Overview
   - Budget history
   - Categories
-  - Specific category links
 - **Savings & Investments**
   - Overview
   - Goals
-    - Active goals
-    - Archived goals
-    - Specific goal links
+  - Assets
   - Portfolio
-    - Portfolio overview
-    - Accounts
-    - Sleeves
-    - Holdings
-    - Benchmarks
-    - Specific account links
-    - Specific sleeve links
 - **Taxes**
   - Current tax year
-  - Estimated payments
-  - Gains & income
-  - Deductions
-  - Tax archive
   - Prep checklist
+  - Tax archive
 - **Notes** *(V2)*
   - Monthly reviews
   - Strategy notes
@@ -127,16 +112,15 @@ Examples:
   - Repairable
   - Manual review
 
+The Themes / entities group under Accounts is the primary example of data-driven nested links — items are populated from `Accounts/entities.csv` rather than hardcoded. Other sections may add entity- or item-specific links under their parent section using the same pattern. These data-driven links are part of the fixed sidebar structure, not view-specific filters.
+
 ### App shell
 
 #### Left sidebar
 
 Primary navigation only:
-- Workspace root
 - Top-level domains
 - Nested entity links
-- Nested saved views
-- Nested report links
 - Nested note groups
 
 #### Main panel
@@ -174,7 +158,7 @@ Main-panel structure:
 
 Filters should always live in the main panel directly above or beside the content they affect. Filters should never be treated as global unless they are explicitly designed as workspace-wide state.
 
-The **Overview section has no filters**. It is a fixed read-only dashboard. Filters apply only within module sections (Accounts, Budget, Savings & Investments, Business, Taxes).
+The **Overview section has no filters**. It is a fixed read-only dashboard. Filters apply only within module sections (Accounts, Budget, Savings & Investments, Taxes).
 
 #### Right detail pane
 
@@ -245,12 +229,12 @@ Providers planned for V2:
 Primary path pattern:
 ```swift
 FileManager.default
-  .url(forUbiquityContainerIdentifier: nil)?
+  .url(forUbiquityContainerIdentifier: "OpenFinance")?
   .appendingPathComponent("Documents")
   .appendingPathComponent("Finance")
 ```
 
-This is the common way to construct a Documents path inside the app’s ubiquity container.
+The container identifier is `OpenFinance`. This must match the `com.apple.developer.ubiquity-container-identifiers` entitlement value in the Xcode project.
 
 ### Sync considerations
 
@@ -297,7 +281,6 @@ Finance/
     goals.csv
     progress.csv
   Investments/
-    accounts.csv
     holdings.csv
     transactions.csv
     prices.csv
@@ -334,7 +317,7 @@ Finance/
 - Front matter or schema metadata is the third classifier.
 - `.finance-meta/` is app-managed support data, but not the source of truth for finance content.
 - Backups live inside `.finance-meta/backups/` and use timestamped copies.
-- `Accounts/accounts.csv` is the master account registry for all account types. `Investments/accounts.csv` holds investment-specific metadata and links to the master registry via `account_id`.
+- `Accounts/accounts.csv` is the unified master account registry for all account types, including investment accounts. Investment-specific metadata (tax treatment, performance tracking) is stored as optional columns in this file. There is no separate `Investments/accounts.csv`.
 - `Personal/rules.csv` is not included in v1. Budget rules and recurring-rule automation are deferred post-MVP.
 
 ## 7. File classification rules
@@ -400,8 +383,8 @@ Required columns:
 | account_id | string | Links to account |
 | merchant | string | Raw merchant |
 | description | string | User-facing text |
-| amount | decimal | Signed |
-| direction | enum | debit, credit |
+| amount | decimal | Signed: negative = debit (money out), positive = credit (money in) |
+| direction | enum | debit, credit — redundant with sign but kept for readability and import mapping |
 | category_id | string | Normalized category |
 | subcategory_id | string | Optional |
 | transfer_group | string | Optional |
@@ -413,7 +396,8 @@ Required columns:
 
 Behavior:
 - Must support import from external CSV then normalization into canonical monthly files.
-- Amount sign rules must be documented and enforced.
+- Amount sign convention (locked): negative = debit (money out of account), positive = credit (money into account). This applies to all transaction file types. The `direction` column is redundant with the sign but retained to simplify import column mapping from external sources.
+- During import normalization, if a source file uses the opposite convention, the `CSVNormalizer` must flip the sign before writing to the canonical file.
 - `transaction_id` must remain stable across recategorizations.
 
 ### 8.3 Unified categories CSV
@@ -495,21 +479,9 @@ Required columns:
 | contributed_mtd | decimal |
 | contributed_ytd | decimal |
 
-### 8.7 Investment accounts CSV
+### 8.7 Investment accounts
 
-Path:
-`Investments/accounts.csv`
-
-Required columns:
-
-| Column | Type |
-|---|---|
-| account_id | string |
-| name | string |
-| institution | string |
-| account_type | enum |
-| tax_treatment | enum |
-| is_active | boolean |
+Investment accounts are stored in `Accounts/accounts.csv` (spec 8.21), the unified master registry. There is no separate `Investments/accounts.csv` file. Investment-specific metadata is carried as optional columns in the master registry (see §8.21). This file type and path are removed from the workspace structure.
 
 ### 8.8 Holdings CSV
 
@@ -712,11 +684,13 @@ Required columns:
 | tax_relevant | boolean | Flag for tax module inclusion |
 | tax_year_opened | integer | Optional |
 | entity_id | string | Required — links account to a theme/entity in Accounts/entities.csv |
+| tax_treatment | string | Optional — investment accounts only (e.g. taxable, roth_ira, traditional_ira, hsa) |
+| performance_tracking | boolean | Optional — investment accounts only; enables portfolio projection |
 | notes | string | Optional |
 
 Notes:
-- `Investments/accounts.csv` (spec 8.7) remains for investment-specific metadata (tax treatment, performance tracking). It references `account_id` from this master file.
-- On workspace bootstrap, seed with any accounts present in `Investments/accounts.csv` to avoid requiring duplicate entry.
+- All account types, including investment accounts, are stored in this single file. Investment-specific columns (`tax_treatment`, `performance_tracking`) are optional and apply only to rows with `account_group: investment`.
+- On workspace bootstrap, seed six starter accounts: personal bank, personal credit card, business bank, business credit card, savings, and investment (see §21 bootstrap decision).
 
 ### 8.22 Account rules CSV
 
@@ -787,7 +761,7 @@ Each file should have machine-readable metadata at one of three levels:
 
 | Attribute | Applies to | Purpose |
 |---|---|---|
-| schema_version | CSV, Markdown | Validation and migration |
+| schema_version | CSV, Markdown | Validation and migration. Increment on any breaking change. |
 | domain | All | budget, savings, investments, business, taxes, notes |
 | subtype | All | transactions, goals, note, budget, prices, etc. |
 | period | Monthly files | Time grouping |
@@ -797,6 +771,19 @@ Each file should have machine-readable metadata at one of three levels:
 | created_at | Markdown preferred | Audit trail |
 | updated_at | Optional | UI freshness |
 | source | Optional | Imported origin |
+
+### Schema version migration policy
+
+A **breaking change** is any modification to a CSV column or Markdown front matter field that is currently in use — including: renaming a column, removing a column, changing a column's type or enum values, or adding a required column to an existing file type.
+
+Adding a new optional column is **not** a breaking change.
+
+When a breaking change is introduced:
+- The `schema_version` integer in that file type's schema definition is incremented.
+- A migration script is supplied as part of the release that introduces the change.
+- Migration scripts live in `Scripts/` and follow the naming convention `migrate-{file-type}-v{old}-to-v{new}.swift`.
+- The `RepairService` detects version mismatches during validation and prompts the user to run the applicable migration script. It does not auto-migrate breaking changes.
+- After migration, the `schema_version` header value in the affected CSV files is updated to the new version.
 
 ### App-managed manifest
 
@@ -860,7 +847,7 @@ Canonical entities:
 - NoteDocument
 
 Notes:
-- `Account` is the master registry entity (all account groups). `InvestmentAccount` extends it with investment-specific fields (tax treatment, performance metadata) and references `Account` via `account_id`.
+- `Account` is the master registry entity (all account groups, including investment). Investment-specific fields (`tax_treatment`, `performance_tracking`) are optional properties on `Account`, not a separate `InvestmentAccount` type. The `PortfolioEngine` filters to `account_group: investment` rows when building portfolio projections.
 - `BenchmarkPeriod` models the discrete comparison windows (D, W, M, 3M, 6M, 1Y, 3Y, 5Y) used in the benchmark heat map.
 
 Cross-domain entities:
@@ -1068,6 +1055,7 @@ Purpose:
 - create seed CSV/Markdown templates
 - create manifest
 - create default categories and budgets
+- seed six starter accounts in `Accounts/accounts.csv`: personal bank, personal credit card, business bank, business credit card, savings, investment
 
 CLI example:
 ```bash
@@ -1194,32 +1182,45 @@ Must show:
 - Contribution-to-goals summary
 
 ### Savings & Investments
-Savings side must show:
+
+**Goals** must show:
 - Goal cards with progress bar, target amount, current balance, monthly contribution
 - Monthly funding status per goal
 - Goal-to-budget contribution links
 - Linked transactions and notes per goal
 
-Investments side must show:
+**Assets** must show:
 - Holdings table (account-level and aggregate)
-- Sleeve views with target vs actual weights
+- Account allocation view
 - Benchmark heat map: % growth per period (D, W, M, 3M, 6M, 1Y, 3Y, 5Y) per account
 - S&P 500 % growth comparison per account (Brokerage, Savings, IRA)
 - Sector performance weighted against S&P 500
-- Account allocation view
 - Tax-lot drill-down
 
+**Portfolio** must show:
+- Sleeve list with strategy description and monthly contribution target
+- Target vs actual weights per sleeve
+- Drift indicator per sleeve
+- Linked strategy notes per sleeve
+
 ### Taxes
-Must show:
+
+**Current tax year** must show:
 - YTD taxable income, taxes paid vs taxes owed, effective rate per account
 - Estimated payment schedule by quarter and year
 - Realized gain/loss summary
 - Income summary (dividends, interest)
 - Deductions view: standard vs itemized comparison, above-the-line deductions, Schedule C items linked to business entities
 - Taxable income minus deductibles projection
-- Tax prep checklist with missing-input warnings
-- Tax archive for prior years (read-only after year is closed)
 - Business tax-prep summary derived from categorized business expenses
+
+**Prep checklist** must show:
+- Tax prep checklist with complete, incomplete, and missing-input states
+- Source links for each checklist item
+
+**Tax archive** must show:
+- Prior-year read-only archive selector
+- Archived deductions and estimated payment history per closed year
 
 ### Notes *(V2)*
 Must show:
@@ -1299,19 +1300,29 @@ These decisions are settled and should not be reopened for v1:
 - **Budget rules and automation deferred post-MVP** ✓
 - **Benchmark import manual in v1** ✓
 
-### Still open — decide before build starts
+### Locked — 2026-06-10
 
-- **CloudStorageProvider protocol surface:** The protocol must be finalized before `ICloudContainerService` is implemented so the interface is designed for extension rather than retrofitted. Confirm the minimum surface (`resolveWorkspaceURL() async throws -> URL`, observable `syncState`, `isAvailable: Bool`) and whether sync-conflict resolution belongs on the protocol or is iCloud-specific. Decide before Phase 1 build starts.
+- **CloudStorageProvider protocol surface** ✓ — Minimum surface confirmed: `resolveWorkspaceURL() async throws -> URL`, observable `syncState`, `isAvailable: Bool`. The protocol exposes the storage connection status for display in the app settings. Sync-conflict resolution is iCloud-specific and stays on `ICloudContainerService`, not on the protocol.
 
-- **Accounts master registry vs investment accounts file:** `Accounts/accounts.csv` is the master registry for all account groups. `Investments/accounts.csv` holds investment-specific metadata. The relationship is: investment accounts file adds columns (tax treatment, etc.) to master registry records via `account_id`. Confirm this two-file model, or fold investment-specific columns into the master registry as optional fields.
+- **Accounts master registry — unified file** ✓ — `Accounts/accounts.csv` is the single master registry for all account types including investment accounts. Investment-specific metadata (tax treatment, performance tracking) is stored as optional columns in the master file. `Investments/accounts.csv` (spec 8.7) is removed. Budget, Savings & Investments, and Taxes modules use the master registry as their base and add domain-specific views and calculations on top.
 
-- **Savings and Investments folder structure:** The UI merges Savings Goals and Investments into one module, but `Savings/` and `Investments/` remain as separate folders at the file level. Confirm this separation is intentional and won't confuse users who inspect the workspace in Finder.
+- **Savings/ and Investments/ folder separation** ✓ — Keep as separate folders at the file level. The UI presents them as a unified module; the file layer keeps them separate.
 
-- **Deductions file structure:** One unified `Taxes/deductions.csv` covering all deduction types (standard, above-the-line, itemized, Schedule C), distinguished by the `deduction_type` column. Alternatively, separate files per type. Unified file is simpler; separate files are easier to hand-edit. Decide before writing the DeductionEngine.
+- **Deductions file structure — unified file** ✓ — One `Taxes/deductions.csv` with a `deduction_type` column covering all types (standard, above-the-line, itemized, Schedule C).
 
-- **Tax year-close trigger:** Tax archive files are written when a year is closed. Should this be: (a) an explicit in-app "Close Tax Year" action; (b) triggered automatically when the year rolls over; or (c) both? The archive files are read-only after creation — the trigger determines when that lock takes effect.
+- **Tax year-close trigger — explicit in-app action** ✓ — Tax archive files are written only when the user explicitly triggers "Close Tax Year" in the app. No automatic rollover in v1.
 
-- **Right panel default state per section:** PRD says closed by default globally. Confirm whether any section should open the panel automatically on first use (e.g. a repair preview flow might warrant it).
+- **Right panel default state — global closed** ✓ — Right pane is closed by default across all sections. It opens when the user interacts with content in the main panel (selection, KPI tap, row inspection). No section-specific auto-open exceptions in v1.
+
+- **iCloud container identifier** ✓ — Container is identified as `OpenFinance`.
+
+- **Workspace bootstrap seed accounts** ✓ — On first launch, bootstrap seeds six starter accounts in `Accounts/accounts.csv`: personal bank account, personal credit card, business bank account, business credit card, savings account, and investment account.
+
+### Locked — 2026-06-10 (Phase 2)
+
+- **Amount sign convention** ✓ — Negative = debit (money out), positive = credit (money in). Applies consistently across all transaction file types. The `direction` column is retained alongside the sign for import mapping readability. The `CSVNormalizer` flips signs from source files that use the opposite convention during import.
+
+- **`schema_version` migration policy** ✓ — A breaking change is any modification to a CSV column or Markdown front matter field currently in use (rename, remove, type change, enum change, or new required column). Adding an optional column is not breaking. Breaking changes increment `schema_version` and require a migration script (`Scripts/migrate-{file-type}-v{old}-to-v{new}.swift`) shipped with the release. The `RepairService` detects version mismatches and prompts the user to run the script; it does not auto-migrate breaking changes.
 
 ## 22. Recommended implementation stance
 
@@ -1373,6 +1384,22 @@ Left sidebar with collapsible navigation sections that open and close independen
 - `overview-updated.svg` — Revised Overview with Issues table inline
 
 ## 24. Changelog
+
+### Round 3 — 2026-06-10
+Source: User direction — sidebar navigation structure refinement; user decision — locked all Phase 1 open architectural decisions before build starts.
+
+- §4 (initial): Clarified sidebar definition: static, expandable groups only where specified; removed "Dashboard" sub-item from Overview (now a leaf item); renamed "All accounts" → "Overview" and "Themes & Entities" → "Themes / entities" under Accounts; removed "Specific account links" and "Specific category links"; replaced Savings & Investments nested Goals/Portfolio structure with flat items (Overview, Goals, Assets, Categories); simplified Taxes to three items (Current tax year, Prep checklist, Tax archive), removing Estimated payments, Gains & income, and Deductions as sidebar navigation items
+- §4 (audit resolution): Added data-driven links note explaining the Themes / entities pattern; added "Portfolio" back to Savings & Investments sidebar for sleeve navigation; removed "Workspace root", "Nested saved views", and "Nested report links" from App shell Left sidebar abstract list; removed "Business" from the module-sections filter note (Business is a theme type, not a top-level section); removed undefined "Categories" item from Savings & Investments sidebar (deferred — category and tag systems for Budget and S&I to be considered together)
+- §5: Updated workspace resolution path to use confirmed iCloud container identifier `OpenFinance`; updated code example
+- §6: Removed `Investments/accounts.csv` from folder tree; updated folder design rule to reflect unified master registry
+- §8.7: Removed separate `Investments/accounts.csv` spec; replaced with note redirecting to unified `Accounts/accounts.csv`
+- §8.21: Added optional investment-specific columns (`tax_treatment`, `performance_tracking`) to master accounts registry; updated bootstrap note to list six seed accounts
+- §10: Updated `Account` entity note to remove `InvestmentAccount` as a separate type; investment-specific fields are optional properties on `Account`
+- §8.2: Clarified `amount` column note with locked sign convention; updated behavior note with normalization rule for import
+- §9: Updated `schema_version` metadata attribute description; added "Schema version migration policy" subsection
+- §14: Updated `bootstrap-workspace` purpose to list six seed accounts
+- §16: Restructured Savings & Investments requirements under nav item headings (Goals, Assets, Portfolio) — sleeve content explicitly assigned to Portfolio; restructured Taxes requirements under nav item headings (Current tax year, Prep checklist, Tax archive) — Estimated payments, Gains & income, and Deductions explicitly placed within Current tax year
+- §21: Locked all six previously-open Phase 1 decisions; added iCloud container identifier and workspace bootstrap seed accounts as additional locked decisions; added Phase 2 locked section with amount sign convention and schema_version migration policy
 
 ### Round 2 — 2026-06-09
 Source: User direction — future-proofing for multi-cloud and additional file formats.
