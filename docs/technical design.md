@@ -97,6 +97,7 @@ Examples:
   - Overview
   - Goals
   - Assets
+  - Portfolio
   - Categories
 - **Taxes**
   - Current tax year
@@ -112,16 +113,15 @@ Examples:
   - Repairable
   - Manual review
 
+The Themes / entities group under Accounts is the primary example of data-driven nested links — items are populated from `Accounts/entities.csv` rather than hardcoded. Other sections may add entity- or item-specific links under their parent section using the same pattern. These data-driven links are part of the fixed sidebar structure, not view-specific filters.
+
 ### App shell
 
 #### Left sidebar
 
 Primary navigation only:
-- Workspace root
 - Top-level domains
 - Nested entity links
-- Nested saved views
-- Nested report links
 - Nested note groups
 
 #### Main panel
@@ -159,7 +159,7 @@ Main-panel structure:
 
 Filters should always live in the main panel directly above or beside the content they affect. Filters should never be treated as global unless they are explicitly designed as workspace-wide state.
 
-The **Overview section has no filters**. It is a fixed read-only dashboard. Filters apply only within module sections (Accounts, Budget, Savings & Investments, Business, Taxes).
+The **Overview section has no filters**. It is a fixed read-only dashboard. Filters apply only within module sections (Accounts, Budget, Savings & Investments, Taxes).
 
 #### Right detail pane
 
@@ -1179,32 +1179,45 @@ Must show:
 - Contribution-to-goals summary
 
 ### Savings & Investments
-Savings side must show:
+
+**Goals** must show:
 - Goal cards with progress bar, target amount, current balance, monthly contribution
 - Monthly funding status per goal
 - Goal-to-budget contribution links
 - Linked transactions and notes per goal
 
-Investments side must show:
+**Assets** must show:
 - Holdings table (account-level and aggregate)
-- Sleeve views with target vs actual weights
+- Account allocation view
 - Benchmark heat map: % growth per period (D, W, M, 3M, 6M, 1Y, 3Y, 5Y) per account
 - S&P 500 % growth comparison per account (Brokerage, Savings, IRA)
 - Sector performance weighted against S&P 500
-- Account allocation view
 - Tax-lot drill-down
 
+**Portfolio** must show:
+- Sleeve list with strategy description and monthly contribution target
+- Target vs actual weights per sleeve
+- Drift indicator per sleeve
+- Linked strategy notes per sleeve
+
 ### Taxes
-Must show:
+
+**Current tax year** must show:
 - YTD taxable income, taxes paid vs taxes owed, effective rate per account
 - Estimated payment schedule by quarter and year
 - Realized gain/loss summary
 - Income summary (dividends, interest)
 - Deductions view: standard vs itemized comparison, above-the-line deductions, Schedule C items linked to business entities
 - Taxable income minus deductibles projection
-- Tax prep checklist with missing-input warnings
-- Tax archive for prior years (read-only after year is closed)
 - Business tax-prep summary derived from categorized business expenses
+
+**Prep checklist** must show:
+- Tax prep checklist with complete, incomplete, and missing-input states
+- Source links for each checklist item
+
+**Tax archive** must show:
+- Prior-year read-only archive selector
+- Archived deductions and estimated payment history per closed year
 
 ### Notes *(V2)*
 Must show:
@@ -1360,9 +1373,11 @@ Left sidebar with collapsible navigation sections that open and close independen
 ## 24. Changelog
 
 ### Round 3 — 2026-06-10
-Source: User direction — sidebar navigation structure refinement.
+Source: User direction — sidebar navigation structure refinement and conflict resolution.
 
-- §4: Clarified sidebar definition: static, expandable groups only where specified; removed "Dashboard" sub-item from Overview (now a leaf item); renamed "All accounts" → "Overview" and "Themes & Entities" → "Themes / entities" under Accounts; removed "Specific account links" and "Specific category links"; replaced Savings & Investments nested Goals/Portfolio structure with flat items (Overview, Goals, Assets, Categories); simplified Taxes to three items (Current tax year, Prep checklist, Tax archive), removing Estimated payments, Gains & income, and Deductions as sidebar navigation items
+- §4 (initial): Clarified sidebar definition: static, expandable groups only where specified; removed "Dashboard" sub-item from Overview (now a leaf item); renamed "All accounts" → "Overview" and "Themes & Entities" → "Themes / entities" under Accounts; removed "Specific account links" and "Specific category links"; replaced Savings & Investments nested Goals/Portfolio structure with flat items (Overview, Goals, Assets, Categories); simplified Taxes to three items (Current tax year, Prep checklist, Tax archive), removing Estimated payments, Gains & income, and Deductions as sidebar navigation items
+- §4 (audit resolution): Added data-driven links note explaining the Themes / entities pattern; added "Portfolio" back to Savings & Investments sidebar for sleeve navigation; removed "Workspace root", "Nested saved views", and "Nested report links" from App shell Left sidebar abstract list; removed "Business" from the module-sections filter note (Business is a theme type, not a top-level section)
+- §16: Restructured Savings & Investments requirements under nav item headings (Goals, Assets, Portfolio) — sleeve content explicitly assigned to Portfolio; restructured Taxes requirements under nav item headings (Current tax year, Prep checklist, Tax archive) — Estimated payments, Gains & income, and Deductions explicitly placed within Current tax year
 
 ### Round 2 — 2026-06-09
 Source: User direction — future-proofing for multi-cloud and additional file formats.

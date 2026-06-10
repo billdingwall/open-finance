@@ -346,7 +346,7 @@ parallel once Phase 3 is complete, as they share only the master account registr
 
 #### Savings & Investments
 - [ ] **Goals overview**: goal card anatomy (name, target amount, current balance, progress bar,
-  monthly contribution, time-to-goal estimate), active vs archived tabs
+  monthly contribution, time-to-goal estimate)
 - [ ] **Assets view**: holdings table columns, allocation donut chart, sleeve switcher
 - [ ] **Benchmark heat map**: table design for 8 time periods × N accounts, color scale for
   positive/negative % growth, S&P 500 comparison row, sector performance section
@@ -505,7 +505,7 @@ is connected. Module views are blocked on their respective domain engines from P
 
 #### Savings & Investments Module (`UI/SavingsInvestments/`)
 - [ ] `SavingsInvestmentsView` — top-level view with Overview, Goals, Assets, and Categories sub-navigation
-- [ ] `GoalsListView` — active/archived tabs, goal cards with progress bar, tap → goal detail
+- [ ] `GoalsListView` — goal cards with progress bar, tap → goal detail
 - [ ] `GoalDetailView` — progress history chart, funding source links, monthly contribution
   tracker, source traceability
 - [ ] `AssetsView` — aggregate holdings table, allocation donut, account selector
