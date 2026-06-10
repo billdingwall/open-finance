@@ -98,7 +98,6 @@ Examples:
   - Goals
   - Assets
   - Portfolio
-  - Categories
 - **Taxes**
   - Current tax year
   - Prep checklist
@@ -1376,7 +1375,7 @@ Left sidebar with collapsible navigation sections that open and close independen
 Source: User direction — sidebar navigation structure refinement and conflict resolution.
 
 - §4 (initial): Clarified sidebar definition: static, expandable groups only where specified; removed "Dashboard" sub-item from Overview (now a leaf item); renamed "All accounts" → "Overview" and "Themes & Entities" → "Themes / entities" under Accounts; removed "Specific account links" and "Specific category links"; replaced Savings & Investments nested Goals/Portfolio structure with flat items (Overview, Goals, Assets, Categories); simplified Taxes to three items (Current tax year, Prep checklist, Tax archive), removing Estimated payments, Gains & income, and Deductions as sidebar navigation items
-- §4 (audit resolution): Added data-driven links note explaining the Themes / entities pattern; added "Portfolio" back to Savings & Investments sidebar for sleeve navigation; removed "Workspace root", "Nested saved views", and "Nested report links" from App shell Left sidebar abstract list; removed "Business" from the module-sections filter note (Business is a theme type, not a top-level section)
+- §4 (audit resolution): Added data-driven links note explaining the Themes / entities pattern; added "Portfolio" back to Savings & Investments sidebar for sleeve navigation; removed "Workspace root", "Nested saved views", and "Nested report links" from App shell Left sidebar abstract list; removed "Business" from the module-sections filter note (Business is a theme type, not a top-level section); removed undefined "Categories" item from Savings & Investments sidebar (deferred — category and tag systems for Budget and S&I to be considered together)
 - §16: Restructured Savings & Investments requirements under nav item headings (Goals, Assets, Portfolio) — sleeve content explicitly assigned to Portfolio; restructured Taxes requirements under nav item headings (Current tax year, Prep checklist, Tax archive) — Estimated payments, Gains & income, and Deductions explicitly placed within Current tax year
 
 ### Round 2 — 2026-06-09
