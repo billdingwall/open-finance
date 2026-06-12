@@ -2,7 +2,7 @@
 
 Source review: `docs/_refinement/r4-review.md`
 Target: `docs/product-requirements.md`
-Status: Proposed 2026-06-12
+Status: Applied 2026-06-12
 
 ---
 

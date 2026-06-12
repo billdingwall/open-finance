@@ -112,6 +112,10 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - Budget rules and automation (post-MVP).
 - Alternative cloud storage providers: Google Drive, Dropbox, local-folder-only mode (V2).
 - xlsx and other file format ingestion and export (V2).
+- Savings goal lifecycle states — active/archived (V2, general configurable dashboard). In v1 every listed goal is active; the user adds and removes goals directly.
+- Dedicated sleeves screen (V2, general configurable dashboard). The sleeve table lives at the bottom of the Portfolio overview in v1.
+- Dedicated benchmark screen. The benchmark heat map is a view toggle on the holdings table in v1.
+- Dedicated estimated payments, gains & income, and deductions screens. Their content surfaces within the Current Tax Year view in v1.
 
 ## User stories
 
@@ -140,7 +144,7 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 
 ### Savings & Investments
 
-- As a user, the app should let me create and manage savings goals with target amount, target date, monthly contribution, and status.
+- As a user, the app should let me create and manage savings goals with target amount, target date, and monthly contribution.
 - As a user, the app should show monthly progress toward each savings goal.
 - As a user, the app should show holdings, allocation, cost basis, dividends, and gain/loss summaries.
 - As a user, the app should let me inspect transactions and tax lots behind each holding.
@@ -263,22 +267,25 @@ Requirements:
 Savings goals and investment portfolio are presented as a unified module covering liquid savings, long-term goals, and investment accounts.
 
 Requirements:
-- Create and manage savings goals with target amount, target date, monthly contribution target, and status.
+- Create and manage savings goals with target amount, target date, and monthly contribution target. Goals have no active/archived lifecycle state in v1 — every listed goal is treated as active; the user adds and removes goals as needed.
 - Show monthly progress toward each savings goal.
 - Link savings goals to budgeted monthly contributions.
 - Show source traceability from contributions and balances back to transactions or budget entries.
+- Present the holdings table as the primary surface of the portfolio view; supporting tables and summaries are secondary to it.
 - Show account-level and aggregate holdings.
 - Compute position values from holdings and price files.
 - Support trade history, lots, dividends, and cash.
 - Show gain/loss summaries and allocation views.
 - Support security-level drill-down with source records.
-- Support portfolio sleeves with strategy notes, monthly contribution targets, and target weights per holding.
-- Compare portfolio and sleeve performance to the S&P 500:
+- Support portfolio sleeves with strategy notes, monthly contribution targets, and target weights per holding. The sleeve table is presented at the bottom of the Portfolio overview; there is no dedicated sleeve screen in v1.
+- Compare portfolio and sleeve performance to the S&P 500, presented as a view toggle on the holdings table (standard holdings table ⇄ heat map table) rather than a dedicated benchmark screen:
   - Totals vs S&P 500 (% growth) per account: Brokerage, Savings, IRA.
   - Performance table/heat map across periods: D, W, M, 3M, 6M, 1Y, 3Y, 5Y.
   - Sector performance weighted against S&P 500.
 
 ### 8. Tax module
+
+The tax module presents three screens in v1: Current Tax Year, Prep Checklist, and Tax Archive. Estimated payments, gains & income, and deductions have no dedicated screens — their content surfaces within the Current Tax Year view.
 
 Requirements:
 - Show YTD taxable income, taxes paid vs taxes owed, and effective rate per account.
@@ -291,7 +298,7 @@ Requirements:
   - Itemized deductions (Schedule A): SALT, mortgage interest, medical expenses exceeding 7.5% AGI, charitable donations.
   - Self-employed deductions (Schedule C): QBI deduction, home office, vehicle expenses, self-employed health insurance premiums, retirement contributions (SEP IRA, SIMPLE IRA, Solo 401k), operating expenses.
 - Show taxable income minus deductibles and estimated payment or return.
-- Provide a tax prep checklist for the current year highlighting missing inputs and unresolved issues.
+- Provide a tax prep checklist for the current year highlighting missing inputs and unresolved issues. The checklist is the focal point of its own screen: full width of the main panel, with educational content that helps the user understand each tax-prep step. It does not appear on the Current Tax Year screen.
 - Maintain a tax archive for prior-year deductions and estimated payment history.
 - Show source traceability for all tax-relevant calculations.
 - Surface business-related tax-prep summaries derived from categorized business expenses.
@@ -375,6 +382,8 @@ Recommended primary navigation:
 - Issues *(V2)*
 - Files *(V2)*
 
+Within modules, screens are kept few and dense. Savings & Investments presents Overview, Goals, and Portfolio (holdings and the sleeve table live inside the Portfolio view — no separate Accounts, Sleeves, or Benchmark screens). Taxes presents Current Tax Year, Prep Checklist, and Tax Archive (estimated payments, gains & income, and deductions surface within Current Tax Year). Removed screens fold their content into these parents; nothing is dropped from v1 except goal lifecycle states.
+
 Recommended shell:
 - Left sidebar for primary navigation.
 - Center pane for list, period, account, business entity, sleeve, goal, or report selection.
@@ -388,7 +397,7 @@ Recommended shell:
 |---|---|
 | Accounts | Theme/Entity, Account, AccountType, AccountRule, AccountEstimate, OwnerDistribution |
 | Budget | Transaction, Category, BudgetPlan, BudgetContribution, Merchant |
-| Savings & Investments | SavingsGoal, GoalContribution, GoalStatusSnapshot, Security, Trade, Lot, Position, Dividend, PricePoint, PortfolioSleeve, SleeveTarget, BenchmarkSeries, BenchmarkPeriod |
+| Savings & Investments | SavingsGoal, GoalContribution, GoalProgressSnapshot, Security, Trade, Lot, Position, Dividend, PricePoint, PortfolioSleeve, SleeveTarget, BenchmarkSeries, BenchmarkPeriod |
 | Taxes | TaxSetting, RealizedGain, IncomeEvent, EstimatedPayment, TaxPrepIssue, DeductionRecord, TaxArchiveYear |
 | Notes | NoteDocument, MonthlyReview, StrategyNote |
 | Platform | Workspace, FileRecord, ImportIssue, RepairAction, SchemaVersion, SyncStatus |
@@ -457,6 +466,17 @@ Presentation Layer
 ```
 
 ## Changelog
+
+### Round 4 — 2026-06-12
+Source: `docs/_refinement/r4-review.md` (second prototype review); update plan `docs/_refinement/r4-update-product-requirements.md`
+
+- Savings & Investments: holdings table is now the primary portfolio surface; benchmark heat map folded into a holdings table view toggle (dedicated benchmark screen removed)
+- Sleeve table moved to bottom of Portfolio overview; dedicated sleeves screen deferred to V2
+- Removed Accounts screen under Savings & Investments (duplicated Portfolio overview)
+- Removed goal status (active/archived) from v1; all listed goals assumed active — lifecycle states deferred to V2; renamed GoalStatusSnapshot → GoalProgressSnapshot in the data model
+- Taxes: removed dedicated Estimated Payments, Gains & Income, and Deductions screens; functionality retained within Current Tax Year (three tax screens in v1: Current Tax Year, Prep Checklist, Tax Archive)
+- Prep checklist is now a full-width focal screen with educational content; removed from the Current Tax Year screen
+- Information architecture: added module-screen consolidation note (S&I = Overview, Goals, Portfolio)
 
 ### Round 2 — 2026-06-09
 Source: User direction — future-proofing for multi-cloud and additional file formats.

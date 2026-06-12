@@ -232,6 +232,7 @@ A feature branch contains only the Spec Kit artifacts for that feature. The proj
   sidebar refinement + Phase 1 decision lock) — applied. Rounds 2–3 were originally applied
   directly to the docs and were documented retroactively in `_refinement/` on 2026-06-12 so the
   changelogs and refinement files line up. Round 4 (2026-06-12, second prototype review:
-  screen consolidation) — update plans written, **not yet applied** to the docs.
+  screen consolidation) — applied to the PRD, technical design, roadmap, and prototype on
+  2026-06-12.
 - **Architectural decisions**: all Phase 1 decisions locked 2026-06-10; record in `docs/technical-design.md §21`. Remaining pre-build items tracked in `docs/project-management.md`.
 - **Features completed**: `001-prototype-prd-alignment` (prototype brought into alignment with the post-Round-1 PRD).

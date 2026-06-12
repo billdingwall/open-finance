@@ -3,7 +3,7 @@ round: 4
 date: 2026-06-12
 type: prototype-review
 summary: Second prototype review — screen-consolidation pass for MVP
-status: in progress
+status: applied
 ---
 
 ## Remove for MVP

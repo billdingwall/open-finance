@@ -2,7 +2,7 @@
 
 Source: `docs/product-requirements.md` + `docs/technical-design.md` (post r4-review), `docs/_refinement/r4-review.md`
 Target: `docs/product-roadmap.md`
-Status: Proposed 2026-06-12
+Status: Applied 2026-06-12
 
 ---
 

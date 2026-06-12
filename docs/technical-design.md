@@ -96,7 +96,6 @@ Examples:
 - **Savings & Investments**
   - Overview
   - Goals
-  - Assets
   - Portfolio
 - **Taxes**
   - Current tax year
@@ -453,13 +452,14 @@ Required columns:
 | target_date | date |
 | monthly_target | decimal |
 | source_account_id | string |
-| status | enum |
 | linked_note_id | string |
 
 Optional:
 - sleeve_id
 - priority
 - auto_fund_from_budget
+
+Goal lifecycle states (active/archived) are V2. In v1 every row in `goals.csv` is an active goal; the user adds and removes rows directly. No `status` column is read or written.
 
 ### 8.6 Savings progress CSV
 
@@ -831,7 +831,6 @@ Canonical entities:
 - PersonalBudget
 - SavingsGoal
 - SavingsProgress
-- InvestmentAccount
 - Holding
 - Trade
 - PricePoint
@@ -1002,7 +1001,7 @@ FinanceWorkspaceApp/
 ### Domain engines
 - `AccountEngine`: aggregate account overview (all accounts, monthly inflow, YTD net income, cash inflow vs retained equity); theme/entity grouping (personal, employment, business, custom); per-theme detail dashboard (business P&L, paycheck/stock details, personal net worth & cash flow trends); per-account detail view (monthly gross vs expenses/tax, YTD net income); account rule and estimate projections; cross-references all unified transactions and investment records
 - `BudgetEngine`: budget totals, category variance, 3-month trailing averages, contribution planning
-- `SavingsGoalEngine`: goal progress, target gap, funding schedule
+- `SavingsGoalEngine`: goal progress, target gap, funding schedule. No goal lifecycle states in v1 — every goal in `goals.csv` is active; the engine does not branch on status
 - `PortfolioEngine`: holdings, sleeves, allocation, performance
 - `BenchmarkEngine`: S&P comparison windows across D/W/M/3M/6M/1Y/3Y/5Y periods, sector performance weighting
 - `TaxEngine`: realized gains, estimated payments, income summary, per-account effective rate
@@ -1188,34 +1187,32 @@ Must show:
 - Monthly funding status per goal
 - Goal-to-budget contribution links
 - Linked transactions and notes per goal
-
-**Assets** must show:
-- Holdings table (account-level and aggregate)
-- Account allocation view
-- Benchmark heat map: % growth per period (D, W, M, 3M, 6M, 1Y, 3Y, 5Y) per account
-- S&P 500 % growth comparison per account (Brokerage, Savings, IRA)
-- Sector performance weighted against S&P 500
-- Tax-lot drill-down
+- A single flat goal list — no active/archived grouping (goal lifecycle states are V2)
 
 **Portfolio** must show:
-- Sleeve list with strategy description and monthly contribution target
-- Target vs actual weights per sleeve
-- Drift indicator per sleeve
-- Linked strategy notes per sleeve
+- Holdings table as the primary surface (account-level and aggregate)
+- Holdings table view toggle: standard holdings table ⇄ heat map table showing % growth per period (D, W, M, 3M, 6M, 1Y, 3Y, 5Y) — this replaces the dedicated benchmark view
+- S&P 500 % growth comparison per account (Brokerage, Savings, IRA) and sector performance weighted against S&P 500, presented within the heat-map mode
+- Account allocation view
+- Tax-lot drill-down
+- Sleeve table appended at the bottom: sleeve list with strategy description, monthly contribution target, target vs actual weights, drift indicator, linked strategy notes
 
 ### Taxes
 
 **Current tax year** must show:
 - YTD taxable income, taxes paid vs taxes owed, effective rate per account
-- Estimated payment schedule by quarter and year
-- Realized gain/loss summary
-- Income summary (dividends, interest)
-- Deductions view: standard vs itemized comparison, above-the-line deductions, Schedule C items linked to business entities
+- Estimated payment schedule by quarter and year (no separate Estimated Payments screen)
+- Realized gain/loss summary and income summary — dividends, interest (no separate Gains & Income screen)
+- Deductions view: standard vs itemized comparison, above-the-line deductions, Schedule C items linked to business entities (no separate Deductions screen)
 - Taxable income minus deductibles projection
 - Business tax-prep summary derived from categorized business expenses
 
+It must NOT show the prep checklist — the checklist lives on its own screen.
+
 **Prep checklist** must show:
-- Tax prep checklist with complete, incomplete, and missing-input states
+- The prep checklist as the full-width, focal content of the screen — no competing elements
+- Educational content explaining each tax-prep step to the user
+- Complete, incomplete, and missing-input states
 - Source links for each checklist item
 
 **Tax archive** must show:
@@ -1275,9 +1272,9 @@ Recommended macOS commands:
 3. Overview projections (simplified dashboard, no filters, issues table inline)
 4. Accounts module (master registry, per-account views, account rules)
 5. Budget module (pie chart overview, category management, 3-month trailing averages)
-6. Savings & Investments (goals, portfolio, benchmark heat map)
+6. Savings & Investments (flat goal list; holdings-focal portfolio with heat-map toggle and sleeve table)
 7. Business entity reporting
-8. Tax module (deductions, per-account rates, prep checklist, archive)
+8. Tax module (consolidated current-year view with payments, gains/income, and deductions inline; per-account rates; full-width prep checklist screen; archive)
 9. Structured write flows
 10. Repair workflows
 11. Notes viewer *(V2)*
@@ -1352,18 +1349,18 @@ Left sidebar with collapsible navigation sections that open and close independen
 
 #### Savings Goals
 ![Savings Goals wireframe](04-savings-goals.svg)
-> **Outdated (Round 1):** Savings Goals is now part of the unified Savings & Investments module. Needs to be replaced by a combined wireframe.
+> **Outdated (Rounds 1, 4):** Savings Goals is now part of the unified Savings & Investments module. Active/archived states removed — goals are a flat list. Needs to be replaced by a combined wireframe.
 
 #### Investments
 ![Investments wireframe](05-investments.svg)
-> **Outdated (Round 1):** Investments is now part of the unified Savings & Investments module. Benchmark heat map (D/W/M/3M/6M/1Y/3Y/5Y) added. Needs to be replaced by a combined wireframe.
+> **Outdated (Rounds 1, 4):** Investments is now part of the unified Savings & Investments module. Holdings table is now the primary surface; the benchmark heat map is a holdings table view toggle; the sleeve table moves to the bottom of the Portfolio overview. Needs to be replaced by a combined wireframe.
 
 #### Business
 ![Business wireframe](06-business.svg)
 
 #### Taxes
 ![Taxes wireframe](07-taxes.svg)
-> **Outdated (Round 1):** Deductions view, per-account tax summary, and tax archive not represented. Needs a new wireframe.
+> **Outdated (Rounds 1, 4):** Deductions view, per-account tax summary, and tax archive not represented. Estimated payments and gains & income are now merged into Current Tax Year; the prep checklist is its own full-width screen. Needs a new wireframe.
 
 #### Notes
 ![Notes wireframe](08-notes.svg)
@@ -1378,12 +1375,26 @@ Left sidebar with collapsible navigation sections that open and close independen
 #### Wireframes needed (not yet produced)
 
 - `accounts-overview.svg` — Accounts card grid and per-account detail view
-- `savings-investments.svg` — Unified Savings & Investments module
 - `budget-updated.svg` — Budget pie chart overview with trailing averages
-- `taxes-updated.svg` — Taxes with deductions view, per-account rates, tax archive
 - `overview-updated.svg` — Revised Overview with Issues table inline
+- `portfolio-overview.svg` — Holdings-focal Portfolio with standard ⇄ heat-map toggle and sleeve table at bottom (replaces `savings-investments.svg`)
+- `taxes-current-year.svg` — Consolidated Current Tax Year with payments, gains/income, and deductions inline (replaces `taxes-updated.svg`)
+- `taxes-prep-checklist.svg` — Full-width prep checklist with educational content
 
 ## 24. Changelog
+
+### Round 4 — 2026-06-12
+Source: `docs/_refinement/r4-review.md` (second prototype review); update plan `docs/_refinement/r4-update-technical-design.md`
+
+- §4: Savings & Investments sidebar reduced to Overview, Goals, Portfolio (Assets removed — holdings live inside the Portfolio view); Taxes sidebar confirmed already trimmed (Round 3)
+- §8.5: Removed `status` column from `Savings/goals.csv`; goal active/archived lifecycle deferred to V2 with explanatory note
+- §10: Removed stray `InvestmentAccount` from the canonical entity list (Round 3 leftover — the entity was already folded into `Account`)
+- §12: `SavingsGoalEngine` noted as having no goal lifecycle states — no status branching in v1
+- §16: Restructured Savings & Investments — holdings table is the primary Portfolio surface; benchmark heat map is now a holdings table view toggle; sleeve table appended at the bottom of the Portfolio view; removed the standalone Assets and sleeve-only Portfolio subsections; Goals shows a flat list
+- §16: Taxes — Estimated payments, Gains & income, and Deductions confirmed inline within Current tax year with explicit no-separate-screen notes; added "must NOT show the prep checklist" to Current tax year; Prep checklist rewritten as a full-width focal screen with educational content
+- §20: Reworded prototype order to fold removed screens into parent steps
+- §23: Flagged Savings Goals, Investments, and Taxes wireframes as outdated (Round 4); replaced two planned wireframes and added `taxes-prep-checklist.svg` to the needed list
+- No CSV file specs removed — sleeves (§8.12/§8.13), benchmark (§8.11), and estimated payments (§8.19) all retained; only presentation surfaces changed
 
 ### Round 3 — 2026-06-10
 Source: User direction — sidebar navigation structure refinement; user decision — locked all Phase 1 open architectural decisions before build starts.
