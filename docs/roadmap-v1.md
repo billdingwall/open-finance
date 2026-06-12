@@ -719,3 +719,19 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 | Right pane default-closed scope | Global — closed by default, opens on main-panel interaction, no section exceptions. |
 | iCloud container identifier | `OpenFinance` |
 | Workspace bootstrap seed accounts | Personal bank, personal credit card, business bank, business credit card, savings, investment |
+
+---
+
+## Changelog
+
+### 2026-06-10
+- **Phase 2 decisions locked**: Amount sign convention locked — negative = debit (money out), positive = credit (money in); `CSVNormalizer` normalizes signs on import. `schema_version` migration policy locked — breaking change = any column or front matter field modification; repair path = versioned migration script in `Scripts/`.
+- **Phase 1 decisions locked**: All seven Phase 1 architectural decisions resolved and recorded in `docs/technical design.md §21` — unified `Accounts/accounts.csv`, one `Taxes/deductions.csv` with `deduction_type`, explicit tax year-close action, right pane globally closed by default, iCloud container `OpenFinance`, six bootstrap seed accounts.
+- **S&I sidebar and Goals audit**: Renamed "Portfolio overview" → "Assets view" across design and development tasks; `SavingsInvestmentsView` sub-navigation updated to Overview/Goals/Assets/Categories; `PortfolioOverviewView` → `AssetsView`. Removed active/archived tab distinction from Goals list.
+
+### 2026-06-09
+- **Multi-cloud extensibility**: Added `CloudStorageProvider` protocol to Platform layer; `WorkspaceManager` and `ICloudContainerService` refactored to depend on the protocol. Alternative cloud providers (Google Drive, Dropbox, local folder) and xlsx ingestion/export deferred to V2.
+- **Business module absorbed into Accounts**: Phase 4 renamed from "Savings, Investments, Business & Tax" to "Savings, Investments & Tax". Domain models updated — `PersonalTransaction` → `UnifiedTransaction`, `PersonalCategory` → `Category`, `PersonalBudget` → `BudgetPlan`; `BusinessEntity`, `BusinessTransaction`, `BusinessBudget`, `BusinessMonthlySummary` removed; `OwnerDistribution` added. Business card KPI updated to "YTD net income for business entities/themes". Entities/themes taxonomy task added to Phase 3 product tasks.
+
+### 2026-06-08
+- Roadmap v1.0 created alongside initial prototype.
