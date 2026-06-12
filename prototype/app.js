@@ -181,6 +181,11 @@ function navigate(viewId) {
   closeInspector();
   state.view = viewId;
   state.selection = null;
+
+  const url = new URL(window.location);
+  url.searchParams.set('view', viewId);
+  window.history.pushState({}, '', url);
+
   renderSidebar();
   renderCenter();
 }
@@ -2759,7 +2764,22 @@ function insSourceBlock({ file, row, importedFrom }) {
 document.addEventListener('DOMContentLoaded', () => {
   const backdrop = document.getElementById('inspector-backdrop');
   if (backdrop) backdrop.addEventListener('click', closeInspector);
+
+  window.addEventListener('popstate', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewId = urlParams.get('view') || 'accounts-overview';
+    state.view = viewId;
+    closeInspector();
+    renderSidebar();
+    renderCenter();
+  });
 });
+
+const urlParams = new URLSearchParams(window.location.search);
+const initialView = urlParams.get('view');
+if (initialView) {
+  state.view = initialView;
+}
 
 renderSidebar();
 renderCenter();
