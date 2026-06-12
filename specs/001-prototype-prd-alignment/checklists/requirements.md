@@ -32,7 +32,7 @@
 ## Notes
 
 - Scope expanded from Round 1 alignment only to full Phase 1 + Phase 2 design task coverage.
-- SC-001 directly ties the spec to `docs/roadmap-v1.md` — the prototype must cover every open
+- SC-001 directly ties the spec to `docs/product-roadmap.md` — the prototype must cover every open
   design task in those two phases before this spec is considered complete.
 - SC-007 is the key success criterion for the "design source of truth" mandate: any engineer
   starting Phase 1 or 2 should be able to answer their open design questions from the prototype.

@@ -3,11 +3,11 @@
 **Feature Branch**: `001-prototype-prd-alignment`
 **Created**: 2026-06-08
 **Status**: Draft
-**Prototype location**: `design/prototype/` (static HTML/CSS/JS)
+**Prototype location**: `prototype/` (static HTML/CSS/JS)
 
 ## Purpose
 
-The prototype at `design/prototype/` is the primary design reference for the v1 macOS
+The prototype at `prototype/` is the primary design reference for the v1 macOS
 app. Every design decision that affects layout, interaction patterns, information hierarchy, or
 visual treatment should be visible and testable here before it is built in Swift.
 
@@ -17,7 +17,7 @@ This spec defines the full scope of what the prototype must cover. It has two pa
    made during the Round 1 design review (navigation restructure, merged modules, updated views).
 
 2. **Phase 1 and Phase 2 design tasks** — add new prototype surfaces for the design work
-   identified in `docs/roadmap-v1.md` Phases 1 and 2 that have not yet been designed anywhere.
+   identified in `docs/product-roadmap.md` Phases 1 and 2 that have not yet been designed anywhere.
 
 The prototype should be updated each time new design decisions are made. This spec will be
 revised accordingly. When the macOS app is built, the prototype is the reference — not the
@@ -336,7 +336,7 @@ grid showing at least 2 mock account cards.
 
 ### Measurable Outcomes
 
-- **SC-001**: Every open design task listed under Phase 1 and Phase 2 in `docs/roadmap-v1.md` is represented by at least one designed prototype screen — none remain undesigned.
+- **SC-001**: Every open design task listed under Phase 1 and Phase 2 in `docs/product-roadmap.md` is represented by at least one designed prototype screen — none remain undesigned.
 - **SC-002**: A reviewer walking through every sidebar section finds zero v2-deferred views (Notes, Issues standalone, Files, Budget Rules, Monthly Snapshots, Annual Snapshots) and no top-level Business section reachable from navigation.
 - **SC-003**: Every v1 section (Overview, Accounts, Budget, Savings & Investments, Taxes, Settings) renders without a JavaScript error in the browser console.
 - **SC-004**: A reviewer can identify the correct designed treatment for all 7 iCloud workspace states by navigating the onboarding flow — no state is missing or shown as a placeholder text block.
@@ -346,7 +346,7 @@ grid showing at least 2 mock account cards.
 
 ## Assumptions
 
-- All changes are confined to `design/prototype/` (`app.js`, `index.html`, `styles.css`, `data.js`). No other files are created.
+- All changes are confined to `prototype/` (`app.js`, `index.html`, `styles.css`, `data.js`). No other files are created.
 - Mock and placeholder data is acceptable throughout. Data accuracy is not a goal — visual design fidelity and interaction pattern clarity are.
 - The existing chart helpers (`donutChart`, `lineChart`, `barChart`) and the `el()` utility are available for all new view functions without modification.
 - The onboarding flow can be implemented as a modal overlay on the existing shell, a dedicated view navigable from Settings, or a standalone mode triggered by a "Show onboarding" button — the implementation pattern is a design decision for the prototype author.

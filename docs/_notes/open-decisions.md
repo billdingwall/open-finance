@@ -1,8 +1,8 @@
 # Open Finance — Open Decisions
 
 **Generated**: 2026-06-10  
-**Source**: `docs/roadmap-v1.md` + `docs/technical design.md`  
-**Scope**: All unresolved questions requiring a decision before or during each build phase, organized by phase then role. Locked decisions are recorded in `docs/technical design.md §21` and are not repeated here.
+**Source**: `docs/product-roadmap.md` + `docs/technical-design.md`  
+**Scope**: All unresolved questions requiring a decision before or during each build phase, organized by phase then role. Locked decisions are recorded in `docs/technical-design.md §21` and are not repeated here.
 
 ---
 

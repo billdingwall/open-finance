@@ -5,7 +5,7 @@
 
 ## Summary
 
-Update the static HTML/CSS/JS prototype at `design/prototype/` to match the interface
+Update the static HTML/CSS/JS prototype at `prototype/` to match the interface
 decisions made during Round 1 design review and to cover all open design tasks from roadmap
 Phases 1 and 2. The prototype is pure front-end (no build step, no dependencies) — all changes
 are edits to `app.js`, `styles.css`, `index.html`, and `data.js`.
@@ -19,7 +19,7 @@ are edits to `app.js`, `styles.css`, `index.html`, and `data.js`.
 **Target Platform**: Modern desktop browser (Safari, Chrome). Designed for macOS viewport widths.
 **Project Type**: Static design prototype
 **Performance Goals**: Instantaneous navigation (no network, no async). All views render in < 100ms.
-**Constraints**: All changes must stay within `design/prototype/`. No new files outside that folder. No new dependencies.
+**Constraints**: All changes must stay within `prototype/`. No new files outside that folder. No new dependencies.
 **Scale/Scope**: ~9 user stories, ~25 functional requirements, 4 source files.
 
 ## Constitution Check
@@ -58,7 +58,7 @@ specs/001-prototype-prd-alignment/
 ### Source Code (prototype)
 
 ```text
-design/prototype/
+prototype/
 ├── app.js       # NAV array, state, all view render functions (~2125 lines)
 ├── styles.css   # All styles; new component classes added here
 ├── index.html   # Shell structure: sidebar, toolbar, main, inspector aside
