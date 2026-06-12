@@ -467,7 +467,7 @@ Source: User direction — future-proofing for multi-cloud and additional file f
 - §11 Export: noted xlsx export deferred to V2
 
 ### Round 1 — 2026-06-08
-Sources: `docs/_refinement/review-r1.md`, `docs/_notes/account-types.md`, `docs/_notes/deduction-types.md`
+Sources: `docs/_refinement/r1-review.md`, `docs/_notes/account-types.md`, `docs/_notes/deduction-types.md`
 
 - Added Accounts module with 7-group account type taxonomy
 - Merged Savings Goals + Investments → Savings & Investments module

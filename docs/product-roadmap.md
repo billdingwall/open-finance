@@ -719,3 +719,22 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 | Right pane default-closed scope | Global — closed by default, opens on main-panel interaction, no section exceptions. |
 | iCloud container identifier | `OpenFinance` |
 | Workspace bootstrap seed accounts | Personal bank, personal credit card, business bank, business credit card, savings, investment |
+
+---
+
+## Changelog
+
+> The roadmap participates in the same round-numbered refinement loop as the PRD and technical
+> design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
+> review and per-doc update plans.
+
+### Baseline — 2026-06-11
+- Roadmap authored reflecting all decisions through Round 3 (prototype review Round 1, the
+  multi-cloud direction of Round 2, and the sidebar-and-locks direction of Round 3). These rounds
+  are baked into the initial phase plan rather than applied as per-round deltas, so there are no
+  `r1`–`r3` roadmap update plans.
+
+### Round 4 — pending
+- Source: `docs/_refinement/r4-review.md` (second prototype review). Update plan:
+  `docs/_refinement/r4-update-product-roadmap.md`. Not yet applied — screen-consolidation changes
+  to Phase 4 design tasks, Phase 5 module views, and the Out of Scope list.

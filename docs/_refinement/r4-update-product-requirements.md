@@ -1,6 +1,6 @@
-# PRD Update Plan — Round 2
+# PRD Update Plan — Round 4
 
-Source review: `docs/_refinement/review-r2.md`
+Source review: `docs/_refinement/r4-review.md`
 Target: `docs/product-requirements.md`
 Status: Proposed 2026-06-12
 
@@ -8,13 +8,13 @@ Status: Proposed 2026-06-12
 
 ## Summary
 
-Round 2 is the second prototype review. It is a **scope-trimming pass**: seven screens are
+Round 4 is the second prototype review. It is a **scope-trimming pass**: seven screens are
 removed from MVP (most fold their content into a sibling screen, none lose underlying
 functionality), and four screens are re-focused so a single primary surface dominates.
 
 Note on drift: the doc changelogs and the prototype are out of sync. The Round 3 sidebar
 refinement (2026-06-10) already removed several of these items from the *sidebar navigation*
-in `technical-design.md`. Round 2 here finishes the cut in the PRD's *content* sections and
+in `technical-design.md`. Round 4 here finishes the cut in the PRD's *content* sections and
 realigns the prototype. Where a change is already reflected, it is marked **(already aligned)**.
 
 Two clarifications from the review author, encoded below:
@@ -113,15 +113,15 @@ functionality inside Current Tax Year, and re-focuses the prep checklist.
 
 | Doc | Plan file | Why |
 |---|---|---|
-| `technical-design.md` | `update-technical-design-r2.md` | §4 sidebar, §8.5 goals status column, §16 S&I + Taxes UI requirements, §20 prototype order, §23 wireframes |
-| `product-roadmap.md` | `update-product-roadmap-r2.md` | Phase 4 sleeve/benchmark/estimated-payments design tasks; Phase 5 module views; Out of scope list |
+| `technical-design.md` | `r4-update-technical-design.md` | §4 sidebar, §8.5 goals status column, §16 S&I + Taxes UI requirements, §20 prototype order, §23 wireframes |
+| `product-roadmap.md` | `r4-update-product-roadmap.md` | Phase 4 sleeve/benchmark/estimated-payments design tasks; Phase 5 module views; Out of scope list |
 | `.specify/memory/constitution.md` | — | No principle changes; no amendment |
 
 ## Changelog stub (to append to product-requirements.md)
 
 ```
-### Round 3 — 2026-06-12
-Source: docs/_refinement/review-r2.md (second prototype review)
+### Round 4 — 2026-06-12
+Source: docs/_refinement/r4-review.md (second prototype review)
 
 - Savings & Investments: holdings table is now the primary portfolio surface; benchmark heat
   map folded into a holdings table view toggle (dedicated benchmark screen removed)

@@ -1,6 +1,6 @@
-# Technical Design Update Plan — Round 2
+# Technical Design Update Plan — Round 4
 
-Source: `docs/product-requirements.md` (post Round 2 / review-r2 updates), `docs/_refinement/review-r2.md`
+Source: `docs/product-requirements.md` (post Round 4 / r4-review.md updates), `docs/_refinement/r4-review.md`
 Target: `docs/technical-design.md`
 Status: Proposed 2026-06-12
 
@@ -8,7 +8,7 @@ Status: Proposed 2026-06-12
 
 ## Summary
 
-Round 2 trims screens. Because the Round 3 sidebar refinement (2026-06-10) already removed
+Round 4 trims screens. Because the Round 3 sidebar refinement (2026-06-10) already removed
 most of these items from §4 navigation, several changes here are confirmations rather than
 edits. The substantive technical work is in §8.5 (drop goal status), §16 (collapse the
 portfolio screens into a holdings-focal Portfolio overview, re-focus the prep checklist),
@@ -150,7 +150,7 @@ New/updated wireframes needed (not yet produced):
 
 ```
 ### Round 4 — 2026-06-12
-Source: docs/_refinement/review-r2.md (second prototype review)
+Source: docs/_refinement/r4-review.md (second prototype review)
 
 - §4: Savings & Investments sidebar reduced to Overview, Goals, Portfolio (Assets removed —
   holdings live inside Portfolio overview); confirmed Taxes sidebar already trimmed

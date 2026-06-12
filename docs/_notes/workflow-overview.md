@@ -25,8 +25,8 @@ open-finance/
 │   ├── product-roadmap.md         # When — phased plan with milestone gates
 │   ├── project-management.md      # Tasks — remaining work before the Phase 1 build
 │   ├── _refinement/               # Review rounds and doc update plans
-│   │   ├── review-r{n}.md         # Raw team feedback per prototype review round
-│   │   └── update-{doc}-r{n}.md   # Formatted update plan per target doc per round
+│   │   ├── r{n}-review.md         # Raw feedback (or user-direction note) per round
+│   │   └── r{n}-update-{doc}.md   # Formatted update plan per target doc per round
 │   ├── _design/                   # Design mocks, icons, images, design system
 │   └── _notes/                    # Loose notes and domain research (kebab-case names)
 ├── prototype/                     # Static HTML/CSS/JS prototype for design review
@@ -45,8 +45,8 @@ open-finance/
 | `docs/technical-design.md` | How & where: architecture decisions, UX decisions, interface design, all 24 CSV specs, service responsibilities, validation rules. Locked-decision record in §21. |
 | `docs/product-roadmap.md` | When: phased plan with Product/Design/Dev tasks and milestone gates. |
 | `docs/project-management.md` | Tasks: consolidated decisions and doc fixes remaining before the Phase 1 build. |
-| `docs/_refinement/review-r{n}.md` | Raw feedback from the team with links to design assets and notes. |
-| `docs/_refinement/update-{doc}-r{n}.md` | Formatted doc update plan synthesized from a review round (e.g. `update-product-requirements-r1.md`, `update-technical-design-r1.md`). |
+| `docs/_refinement/r{n}-review.md` | Raw feedback from the team (or a short user-direction note) with links to design assets and notes. |
+| `docs/_refinement/r{n}-update-{doc}.md` | Formatted doc update plan synthesized from a round (e.g. `r4-update-product-requirements.md`, `r4-update-technical-design.md`). |
 | `docs/_design/*` | Design mocks, icons, images, design system. |
 | `docs/_notes/*` | Loose notes and domain research for team reference (e.g. `account-types.md`, `deduction-types.md`). |
 | `prototype/*` | Static prototype used to review and refine the app experience before implementing changes. |
@@ -55,8 +55,12 @@ open-finance/
 ### Naming conventions
 
 - All doc and note filenames are **kebab-case** (`account-types.md`, not `Account types.md`).
-- Review rounds: `review-r{n}.md` (round number, not date).
-- Update plans: `update-{target-doc}-r{n}.md` — one per affected document per round.
+- Review rounds: `r{n}-review.md` (round-first, so all files for a round group together in the listing).
+- Update plans: `r{n}-update-{target-doc}.md` — one per affected document per round.
+- **Round numbers are global**: one round = one revision event (prototype review *or* user
+  direction), numbered sequentially by date and shared across all docs and the changelog entries.
+  A doc that was not touched in a given round simply has no `r{n}-update-` file and no changelog
+  entry for it. This keeps the changelogs and the `_refinement/` files lined up.
 - Feature directories and branches: `NNN-feature-name` with sequential numbering.
 
 ---
@@ -88,9 +92,9 @@ OpenFinance app
 ```
 Prototype review & UX design
 ↓
-docs/_refinement/review-r{n}.md
+docs/_refinement/r{n}-review.md
 ↓
-docs/_refinement/update-{doc}-r{n}.md
+docs/_refinement/r{n}-update-{doc}.md
 ↓
 docs/product-requirements.md      (+ Changelog entry)
 ↓
@@ -105,9 +109,9 @@ Start next round of prototype review
 
 Step by step:
 
-1. **Prototype review** — add `docs/_refinement/review-r{n}.md` with UX and functionality notes.
+1. **Review** — add `docs/_refinement/r{n}-review.md` with UX and functionality notes (for a prototype round) or a short direction note (for a user-direction round). `{n}` is the next global round number.
 2. **Domain research** — add named kebab-case research docs to `docs/_notes/` as questions arise.
-3. **Update plan** — synthesize review and research into `docs/_refinement/update-{doc}-r{n}.md` per affected document, with a section-by-section change list. Mark the plan `Applied` with a date once executed.
+3. **Update plan** — synthesize review and research into `docs/_refinement/r{n}-update-{doc}.md` per affected document, with a section-by-section change list. Mark the plan `Applied` with a date once executed.
 4. **Apply updates** — edit `docs/product-requirements.md` first, then cascade to `docs/technical-design.md` and `docs/product-roadmap.md`, each with its own Changelog entry.
 5. **Constitution check** — if principles changed, amend `.specify/memory/constitution.md` with a version bump and Sync Impact Report update.
 6. **Design & prototype** — update `docs/_design/` assets and `prototype/` to reflect the changes, then start the next review round.
@@ -223,6 +227,11 @@ A feature branch contains only the Spec Kit artifacts for that feature. The proj
 ## 5. Current Status
 
 - **Phase**: pre-build. No Swift source exists; the Xcode project is created in Phase 1 of the roadmap.
-- **Refinement rounds completed**: Round 1 (2026-06-08) — review, update plans, and doc edits all applied.
+- **Refinement rounds**: Round 1 (2026-06-08, prototype review) — applied. Round 2 (2026-06-09,
+  user direction: multi-cloud + file formats) — applied. Round 3 (2026-06-10, user direction:
+  sidebar refinement + Phase 1 decision lock) — applied. Rounds 2–3 were originally applied
+  directly to the docs and were documented retroactively in `_refinement/` on 2026-06-12 so the
+  changelogs and refinement files line up. Round 4 (2026-06-12, second prototype review:
+  screen consolidation) — update plans written, **not yet applied** to the docs.
 - **Architectural decisions**: all Phase 1 decisions locked 2026-06-10; record in `docs/technical-design.md §21`. Remaining pre-build items tracked in `docs/project-management.md`.
 - **Features completed**: `001-prototype-prd-alignment` (prototype brought into alignment with the post-Round-1 PRD).

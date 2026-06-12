@@ -1412,7 +1412,7 @@ Source: User direction — future-proofing for multi-cloud and additional file f
 - §21: Added `CloudStorageProvider` protocol surface as a new open decision
 
 ### Round 1 — 2026-06-08
-Source: `docs/product-requirements.md` (post Round 1 updates), `docs/_refinement/update-technical-design-r1.md`
+Source: `docs/product-requirements.md` (post Round 1 updates), `docs/_refinement/r1-update-technical-design.md`
 
 - §3: Added accounts to domain layer list
 - §4: Updated primary navigation (Accounts added, Savings Goals + Investments → Savings & Investments, Rules removed, Monthly/Annual Snapshots removed, Notes/Issues/Files marked V2); updated sidebar nested structure; added right panel collapsibility spec; added Overview no-filters policy

@@ -1,6 +1,6 @@
 # Technical Design Update Plan — Round 1
 
-Source: `docs/product-requirements.md` (post Round 1 updates), `docs/_refinement/review-r1.md`
+Source: `docs/product-requirements.md` (post Round 1 updates), `docs/_refinement/r1-review.md`
 Target: `docs/technical-design.md`
 Status: Applied 2026-06-08
 

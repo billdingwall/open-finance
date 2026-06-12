@@ -1,6 +1,6 @@
-# Product Roadmap Update Plan — Round 2
+# Product Roadmap Update Plan — Round 4
 
-Source: `docs/product-requirements.md` + `docs/technical-design.md` (post review-r2), `docs/_refinement/review-r2.md`
+Source: `docs/product-requirements.md` + `docs/technical-design.md` (post r4-review), `docs/_refinement/r4-review.md`
 Target: `docs/product-roadmap.md`
 Status: Proposed 2026-06-12
 
@@ -8,7 +8,7 @@ Status: Proposed 2026-06-12
 
 ## Summary
 
-Round 2 removes screens but keeps the underlying engines and data, so the roadmap impact is
+Round 4 removes screens but keeps the underlying engines and data, so the roadmap impact is
 small and concentrated in the **Design** and **Product** task lists — mostly the Phase 4
 Savings/Investments and Taxes sections, plus the Phase 5 module views. No phase, milestone, or
 development engine task is removed. The roadmap has no changelog section today; this round adds
@@ -103,7 +103,7 @@ Shrink the view inventories to match the new screen set:
 
 ### Open Decisions / Summary Table
 
-- Mark the screen-consolidation questions as resolved by review-r2 where they appear.
+- Mark the screen-consolidation questions as resolved by r4-review (Round 4) where they appear.
 - Update any phase summary counts that enumerate module views to the reduced set.
 
 ---
@@ -113,8 +113,8 @@ Shrink the view inventories to match the new screen set:
 ```
 ## Changelog
 
-### Round 2 — 2026-06-12
-Source: docs/_refinement/review-r2.md (second prototype review)
+### Round 4 — 2026-06-12
+Source: docs/_refinement/r4-review.md (second prototype review)
 
 - Out of Scope: added goal active/archived states, dedicated sleeves screen, dedicated
   benchmark screen (sleeve table and heat map survive on the Portfolio overview)
