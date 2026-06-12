@@ -16,11 +16,15 @@ A native macOS personal finance workspace (SwiftUI, iCloud-backed) that uses CSV
 
 | Document | Purpose |
 |---|---|
-| `docs/PRD.md` | Primary direction doc. Module requirements, data model, IA. Has a Changelog section at bottom. |
-| `docs/technical design.md` | Architecture, layered system model, workspace folder structure, all 24 CSV file specs, service responsibilities, validation rules. |
-| `docs/roadmap-v1.md` | Phased implementation roadmap with Product/Design/Dev tasks per phase and milestone gates. |
+| `docs/product-requirements.md` | What & why: primary product direction — modules, user scenarios, data model, IA. Has a Changelog section at bottom. |
+| `docs/technical-design.md` | How & where: architecture, layered system model, workspace folder structure, all 24 CSV file specs, service responsibilities, validation rules. |
+| `docs/product-roadmap.md` | When: phased implementation roadmap with Product/Design/Dev tasks per phase and milestone gates. |
+| `docs/project-management.md` | Tasks: remaining work needed before the Phase 1 build begins. |
 | `.specify/memory/constitution.md` | 7 non-negotiable principles governing all implementation decisions. Read this before proposing any architectural change. |
-| `docs/_reviews/` | Prototype feedback and domain research. `round-N.md` = UX review. `prd-update-plan.md` and `technical-design-update-plan.md` = applied change lists. |
+| `docs/_refinement/` | Review rounds and update plans. `review-r{n}.md` = raw team feedback. `update-{doc}-r{n}.md` = formatted doc update plan based on a review. |
+| `docs/_notes/` | Loose notes and domain research for team reference (e.g. `account-types.md`, `deduction-types.md`, `workflow-overview.md`). |
+| `docs/_design/` | Design mocks, icons, images, design system. |
+| `prototype/` | Static prototype used to review and refine the app experience before implementing changes. |
 
 ## Architecture — the layer model
 
@@ -63,8 +67,8 @@ Finance/
   Accounts/         accounts.csv, account-rules.csv
   Personal/         transactions/YYYY-MM.csv, categories.csv, budgets.csv
   Savings/          goals.csv, progress.csv
-  Investments/      accounts.csv (investment-specific), holdings.csv, transactions.csv,
-                    prices.csv, sleeves.csv, sleeve-targets.csv, benchmarks/sp500.csv
+  Investments/      holdings.csv, transactions.csv, prices.csv, sleeves.csv,
+                    sleeve-targets.csv, benchmarks/sp500.csv
   Business/         entities.csv, transactions/{entity-slug}-YYYY-MM.csv,
                     categories.csv, budgets.csv
   Taxes/            deductions.csv, estimated-payments.csv, settings.csv, archive/
@@ -72,7 +76,7 @@ Finance/
   .finance-meta/    manifest.json, schemas/, backups/, logs/
 ```
 
-Full column-level specs for all 24 CSV file types are in `docs/technical design.md §8`.
+Full column-level specs for all 24 CSV file types are in `docs/technical-design.md §8`.
 
 ## Constitution principles (non-negotiable)
 
@@ -104,23 +108,28 @@ Features are developed using the Spec Kit workflow. Commands in order:
 
 Feature branches follow the `NNN-feature-name` naming convention (created by `/speckit-git-feature`).
 
-## Doc update workflow
+## Doc update workflow (product refinement loop)
 
-The PRD and technical design are living documents updated after each prototype review round:
+The project-level docs are living documents updated after each prototype review round
+(full workflow detail in `docs/_notes/workflow-overview.md`):
 
-1. Add `docs/_reviews/round-N.md` with prototype/UX feedback
-2. Synthesize into `docs/_reviews/prd-update-plan.md` (section-by-section change list)
-3. Apply changes to `docs/PRD.md` with a Changelog entry at the bottom
-4. Apply cascading changes to `docs/technical design.md` with its own Changelog entry
+1. Add `docs/_refinement/review-r{n}.md` with prototype/UX feedback
+2. Synthesize into `docs/_refinement/update-{doc}-r{n}.md` per affected document (section-by-section change list, e.g. `update-product-requirements-r1.md`)
+3. Apply changes to `docs/product-requirements.md` with a Changelog entry at the bottom
+4. Apply cascading changes to `docs/technical-design.md` with its own Changelog entry, then to `docs/product-roadmap.md`
 5. If principles changed, amend `.specify/memory/constitution.md` with a version bump
-6. Commit all affected docs together
+6. Update `docs/_design/` assets and `prototype/` to reflect the changes, then start the next review round
+7. Commit all affected docs together
 
-## Open architectural decisions
+## Architectural decisions
 
-These are unresolved as of 2026-06-08 and must be decided before Phase 1 build starts
-(documented in `docs/technical design.md §21`):
+All Phase 1 architectural decisions were locked as of 2026-06-10. The full locked-decision
+record is in `docs/technical-design.md §21`; remaining pre-build work is tracked in
+`docs/project-management.md`. Key locked decisions:
 
-- Master accounts registry model: two-file (`Accounts/accounts.csv` + `Investments/accounts.csv` linked by `account_id`) vs unified file with optional fields
-- Deductions file structure: one `deductions.csv` (all types via `deduction_type` column) vs per-type files
-- Tax year-close trigger: explicit in-app action, automatic rollover, or both
-- Right detail pane: globally closed by default, or section-specific exceptions allowed
+- Master accounts registry: unified file — `Accounts/accounts.csv` covers all account types (investment metadata as optional columns); `Investments/accounts.csv` removed
+- Deductions file structure: one `Taxes/deductions.csv` with all types via `deduction_type` column
+- Tax year-close: explicit in-app "Close Tax Year" action, no automatic rollover
+- Right detail pane: globally closed by default, no section-specific exceptions
+
+Do not reopen locked decisions without updating `docs/technical-design.md §21` and the affected docs together.

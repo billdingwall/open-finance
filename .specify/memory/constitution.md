@@ -7,7 +7,7 @@ Bump type: MAJOR — initial adoption; all template placeholders populated
 Modified principles: N/A (initial version)
 
 Added sections:
-  - Core Principles (7 principles derived from docs/PRD.md product principles)
+  - Core Principles (7 principles derived from docs/product-requirements.md product principles)
   - File & Schema Conventions
   - V1 Scope Boundaries
   - Governance
@@ -115,7 +115,7 @@ These rules govern how workspace files are named, structured, and versioned.
 - The `.finance-meta/` directory is app-managed support data only. It is not a source of truth
   for finance content and MUST NOT be hand-edited by users.
 - Schema changes MUST increment `schema_version` and MUST be accompanied by a migration note
-  in `docs/technical design.md`.
+  in `docs/technical-design.md`.
 
 ## V1 Scope Boundaries
 
@@ -146,7 +146,7 @@ It is the authoritative reference for project principles and prohibited patterns
 **Amendment procedure:**
 1. Identify the principle or section requiring change.
 2. Update this file with a version bump per the versioning policy below.
-3. Propagate changes to `docs/PRD.md`, `docs/technical design.md`, and affected Spec Kit templates.
+3. Propagate changes to `docs/product-requirements.md`, `docs/technical-design.md`, and affected Spec Kit templates.
 4. Update the Sync Impact Report (HTML comment at top of this file).
 5. Commit all affected files together in a single commit.
 
@@ -160,12 +160,12 @@ It is the authoritative reference for project principles and prohibited patterns
   after Phase 1 design.
 - Violations (extra abstraction layers, deferred-scope features, unsafe write patterns) MUST be
   documented in the plan's Complexity Tracking table with explicit justification.
-- This constitution MUST be reviewed and potentially amended whenever `docs/PRD.md` or
-  `docs/technical design.md` receives a round of prototype-driven updates.
+- This constitution MUST be reviewed and potentially amended whenever `docs/product-requirements.md` or
+  `docs/technical-design.md` receives a round of prototype-driven updates.
 
 **Reference documents:**
-- Product requirements: `docs/PRD.md`
-- Technical architecture: `docs/technical design.md`
-- Review and update history: `docs/_reviews/`
+- Product requirements: `docs/product-requirements.md`
+- Technical architecture: `docs/technical-design.md`
+- Review and update history: `docs/_refinement/`
 
 **Version**: 1.0.0 | **Ratified**: 2026-06-08 | **Last Amended**: 2026-06-08

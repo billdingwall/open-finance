@@ -1,7 +1,7 @@
 # PRD Update Plan — Round 1
 
-Source reviews: `_reviews/round-1.md`, `_reviews/Account types.md`, `_reviews/Deduction types.md`
-Target: `docs/PRD.md`
+Source reviews: `docs/_refinement/review-r1.md`, `docs/_notes/account-types.md`, `docs/_notes/deduction-types.md`
+Target: `docs/product-requirements.md`
 Status: Applied 2026-06-08
 
 ---
@@ -63,7 +63,7 @@ The prototype review marks Monthly Snapshots and Annual Snapshots views for dele
 
 ### Accounts (new module)
 
-The review introduces "Accounts" as a first-class module not present in the current PRD. This is the income and expense management layer per taxable account. The Account types research doc defines the full taxonomy.
+The review introduces "Accounts" as a first-class module not present in the current PRD. This is the income and expense management layer per taxable account. The `account-types.md` research doc defines the full taxonomy.
 
 **Changes to PRD:**
 - Add Accounts module to functional requirements
@@ -123,7 +123,7 @@ No structural changes from the review beyond aligning with the new Accounts modu
 
 ### Taxes module
 
-The Deduction types research doc significantly expands the tax module scope. The review adds a prep checklist and per-account tax summary.
+The `deduction-types.md` research doc significantly expands the tax module scope. The review adds a prep checklist and per-account tax summary.
 
 **Changes to PRD:**
 - Add deduction tracking to tax module requirements:
@@ -179,25 +179,26 @@ This PRD will evolve through prototype rounds. The goal is to keep it a lightwei
 
 ```
 docs/
-  PRD.md                    ← primary direction doc
-  _reviews/
-    round-N.md              ← raw prototype/UX feedback per round
-    Account types.md        ← domain research (account types)
-    Deduction types.md      ← domain research (tax deductions)
-    prd-update-plan.md      ← this file: synthesis → change list
+  product-requirements.md              ← primary direction doc
+  _refinement/
+    review-r{n}.md                     ← raw prototype/UX feedback per round
+    update-product-requirements-r{n}.md ← this file: synthesis → change list
+  _notes/
+    account-types.md                   ← domain research (account types)
+    deduction-types.md                 ← domain research (tax deductions)
 ```
 
 ### Review cycle
 
-1. **Prototype round** — produce `_reviews/round-N.md` with raw notes and screenshots
-2. **Research docs** — add named research docs to `_reviews/` as domain questions arise (already happening with Account types and Deduction types)
-3. **Update plan** — synthesize all new `_reviews/` docs into a `prd-update-plan.md` (or update this file) with a concrete change list per PRD section
-4. **PRD edit** — apply the change list to `PRD.md`, marking changes with a changelog entry at the bottom
-5. **Carry forward** — update `prd-update-plan.md` status to `Applied` and note the date
+1. **Prototype round** — produce `_refinement/review-r{n}.md` with raw notes and screenshots
+2. **Research docs** — add named research docs to `_notes/` as domain questions arise (already happening with account types and deduction types)
+3. **Update plan** — synthesize all new review and research docs into an `update-product-requirements-r{n}.md` with a concrete change list per PRD section
+4. **PRD edit** — apply the change list to `product-requirements.md`, marking changes with a changelog entry at the bottom
+5. **Carry forward** — update the `update-product-requirements-r{n}.md` status to `Applied` and note the date
 
 ### PRD changelog section
 
-Add a `## Changelog` section to the bottom of `PRD.md`. Format:
+Add a `## Changelog` section to the bottom of `product-requirements.md`. Format:
 
 ```
 ## Changelog
@@ -221,7 +222,7 @@ The PRD is the long-horizon direction doc. Feature specs are the per-module impl
 
 ### Research doc naming
 
-Use descriptive file names in `_reviews/` for domain research (already established with `Account types.md`, `Deduction types.md`). These accumulate over time and become reference material for both the PRD and implementation specs.
+Use descriptive kebab-case file names in `_notes/` for domain research (already established with `account-types.md`, `deduction-types.md`). These accumulate over time and become reference material for both the PRD and implementation specs.
 
 ---
 

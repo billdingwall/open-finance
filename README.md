@@ -37,14 +37,19 @@ Notes, Issues, and Files views are planned for V2.
 ```
 open-finance/
 ├── docs/
-│   ├── PRD.md                  # Product requirements — primary direction doc
-│   ├── technical design.md     # Architecture, data model, file specs, service design
-│   └── _reviews/               # Prototype reviews and domain research
-│       ├── round-1.md          # Round 1 prototype UX review
-│       ├── Account types.md    # Account taxonomy research
-│       ├── Deduction types.md  # Tax deduction taxonomy research
-│       └── prd-update-plan.md  # Synthesized PRD change list per review round
-├── CLAUDE.md                   # AI assistant context and instructions
+│   ├── product-requirements.md    # What & why — modules, user scenarios, data model, IA
+│   ├── technical-design.md        # How & where — architecture, CSV specs, service design
+│   ├── product-roadmap.md         # When — phased plan with milestone gates
+│   ├── project-management.md      # Tasks — remaining work before the Phase 1 build
+│   ├── _refinement/               # Review rounds and doc update plans
+│   │   ├── review-r{n}.md         # Raw feedback per prototype review round
+│   │   └── update-{doc}-r{n}.md   # Formatted doc update plan based on a review
+│   ├── _design/                   # Design mocks, icons, images, design system
+│   └── _notes/                    # Loose notes and domain research for team reference
+├── prototype/                     # Static prototype for reviewing the app experience
+├── specs/                         # Feature-level Spec Kit artifacts (NNN-feature-name)
+├── .specify/                      # Spec Kit workflow engine, templates, constitution
+├── CLAUDE.md                      # AI assistant context and instructions
 └── README.md
 ```
 
@@ -54,18 +59,23 @@ open-finance/
 
 ## Key documents
 
-### `docs/PRD.md`
+### `docs/product-requirements.md`
 Product requirements document. Defines goals, user stories, functional requirements per module, data model, and information architecture. This is the long-horizon direction doc — it is updated after each prototype review round. See the Changelog section at the bottom of the file for a history of changes.
 
-### `docs/technical design.md`
+### `docs/technical-design.md`
 Technical architecture document. Covers the layered system model (storage → indexing → parsing → domain → projection → presentation), iCloud workspace strategy, workspace folder structure, full CSV and Markdown file specifications, internal data model, module layout, service responsibilities, validation rules, and read/write/repair flows.
 
-### `docs/_reviews/`
-Prototype feedback and domain research collected during the design phase.
+### `docs/product-roadmap.md`
+Phased implementation roadmap with Product/Design/Dev tasks per phase and milestone gates.
 
-- `round-N.md` — UX and functionality notes from each prototype review round
-- Named research docs (e.g. `Account types.md`) — domain reference material that feeds PRD and design decisions
-- `prd-update-plan.md` — synthesized change list applied to the PRD after each review round
+### `docs/_refinement/`
+Prototype review feedback and the doc update plans synthesized from it.
+
+- `review-r{n}.md` — UX and functionality notes from each prototype review round
+- `update-{doc}-r{n}.md` — formatted update plan per target document per round (e.g. `update-product-requirements-r1.md`, `update-technical-design-r1.md`)
+
+### `docs/_notes/`
+Loose notes and domain research referenced by the team (e.g. `account-types.md`, `deduction-types.md`, `workflow-overview.md`).
 
 ---
 
@@ -85,13 +95,15 @@ Finance/
 └── Notes/                  # Monthly reviews and strategy notes
 ```
 
-Full file specifications (required columns, path conventions, validation rules) are in `docs/technical design.md`.
+Full file specifications (required columns, path conventions, validation rules) are in `docs/technical-design.md`.
 
 ---
 
 ## Design and review workflow
 
-1. **Prototype review** → add `docs/_reviews/round-N.md` with UX and functionality notes
-2. **Domain research** → add named research docs to `docs/_reviews/` as questions arise
-3. **PRD update** → synthesize review docs into `prd-update-plan.md`, apply changes to `PRD.md`, add a Changelog entry
-4. **Feature spec** → use Spec Kit (`/speckit-specify`) to create per-module specs when ready to build
+1. **Prototype review** → add `docs/_refinement/review-r{n}.md` with UX and functionality notes
+2. **Domain research** → add named research docs to `docs/_notes/` as questions arise
+3. **Update plan** → synthesize review docs into `docs/_refinement/update-{doc}-r{n}.md` per affected document
+4. **Apply updates** → apply changes to `docs/product-requirements.md`, then cascade to `docs/technical-design.md` and `docs/product-roadmap.md`, each with a Changelog entry
+5. **Design & prototype** → update `docs/_design/` assets and `prototype/` to reflect the changes, then start the next review round
+6. **Feature spec** → use Spec Kit (`/speckit-specify`) to create per-module specs when ready to build

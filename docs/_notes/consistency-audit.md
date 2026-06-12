@@ -2,9 +2,9 @@
 
 **Date**: 2026-06-10  
 **Documents reviewed**:
-- `docs/PRD.md`
-- `docs/technical design.md`
-- `docs/roadmap-v1.md`
+- `docs/product-requirements.md`
+- `docs/technical-design.md`
+- `docs/product-roadmap.md`
 
 **Method**: Full read of all three documents, cross-referenced for conflicts, gaps, and naming drift. Findings are organized by severity. Each finding cites the specific location in each document.
 

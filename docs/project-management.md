@@ -1,7 +1,7 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
-**Sources**: `docs/consistency-audit.md` · `docs/open-decisions.md`  
+**Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
 ---

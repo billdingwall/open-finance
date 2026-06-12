@@ -1,7 +1,7 @@
 # Open Finance — v1 Product Roadmap
 
 **Project**: Personal Finance Workspace for macOS
-**Scope**: v1 as defined in `docs/PRD.md` and `docs/technical design.md`
+**Scope**: v1 as defined in `docs/product-requirements.md` and `docs/technical-design.md`
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
 **Last updated**: 2026-06-10
 
@@ -62,7 +62,7 @@ and local-fallback modes.
 
 ### Product Tasks
 
-- [x] Lock the Phase 1 architectural decisions documented in `docs/technical design.md §21` ✓ 2026-06-10
+- [x] Lock the Phase 1 architectural decisions documented in `docs/technical-design.md §21` ✓ 2026-06-10
   - Unified `Accounts/accounts.csv` — no separate `Investments/accounts.csv`
   - Savings/ and Investments/ stay as separate folders at the file level
   - One `Taxes/deductions.csv` with `deduction_type` column
@@ -75,7 +75,7 @@ and local-fallback modes.
   Available, Not signed in, Container unavailable, Syncing, Local copy stale, File missing locally,
   Conflict detected
 - [ ] Define the complete workspace folder structure and file naming conventions (confirm against
-  `docs/technical design.md §6`)
+  `docs/technical-design.md §6`)
 - [ ] Document workspace bootstrap behavior: full sequence — folders created, seed files written,
   six starter accounts written to `Accounts/accounts.csv`, manifest created
 - [ ] Define the `.finance-meta/manifest.json` shape and update contract
@@ -160,7 +160,7 @@ typed domain records. This is the prerequisite for every domain engine in Phase 
 ### Product Tasks
 
 - [ ] Finalize and document all 24 CSV file specifications (schemas, required vs optional columns,
-  enum value sets) — reference `docs/technical design.md §8`
+  enum value sets) — reference `docs/technical-design.md §8`
 - [ ] Define the complete validation rule catalog across three tiers:
   - File-level: missing required file, invalid CSV header, bad date, bad decimal, invalid enum
   - Cross-file: unknown account/category/entity/sleeve/goal reference, duplicate transaction ID
@@ -242,7 +242,7 @@ dashboard projection.
 ### Product Tasks
 
 - [ ] Finalize the 7-group account type taxonomy and define all sub-types for each group
-  (reference `docs/PRD.md §5`)
+  (reference `docs/product-requirements.md §5`)
 - [ ] Define default personal budget category set: group names, category names, default budget
   behavior (fixed/discretionary/savings/investment/transfer), and `tax_relevant` flag for each
 - [ ] Finalize the customizable account entities/themes taxonomy (personal, employment, business, custom)
@@ -429,7 +429,7 @@ is connected. Module views are blocked on their respective domain engines from P
 - [ ] Define the collapsible right pane interaction spec: trigger (click, keyboard shortcut,
   selection-driven auto-open), animation, width, and content rules per context
 - [ ] Document all macOS menu bar commands and their keyboard shortcuts
-  (reference `docs/technical design.md §17`)
+  (reference `docs/technical-design.md §17`)
 
 ### Design Tasks
 
@@ -448,7 +448,7 @@ is connected. Module views are blocked on their respective domain engines from P
   empty state template, loading skeleton
 
 #### Module Views
-- [ ] Finalize Overview dashboard wireframe (updated post Round 1 — see `docs/_reviews/`)
+- [ ] Finalize Overview dashboard wireframe (updated post Round 1 — see `docs/_refinement/`)
 - [ ] Finalize Accounts views wireframe (new — not in original wireframe set)
 - [ ] Finalize Budget updated wireframe (pie chart + trailing averages)
 - [ ] Finalize Savings & Investments unified wireframe
@@ -707,7 +707,7 @@ No new features — this phase hardens everything built in phases 1–6.
 
 ## Open Decisions (Pre-Build)
 
-All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs/technical design.md §21` for the full locked-decision record.
+All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs/technical-design.md §21` for the full locked-decision record.
 
 | Decision | Resolution |
 |---|---|
