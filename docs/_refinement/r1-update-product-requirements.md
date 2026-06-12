@@ -1,6 +1,6 @@
 # PRD Update Plan — Round 1
 
-Source reviews: `docs/_refinement/review-r1.md`, `docs/_notes/account-types.md`, `docs/_notes/deduction-types.md`
+Source reviews: `docs/_refinement/r1-review.md`, `docs/_notes/account-types.md`, `docs/_notes/deduction-types.md`
 Target: `docs/product-requirements.md`
 Status: Applied 2026-06-08
 
@@ -181,8 +181,8 @@ This PRD will evolve through prototype rounds. The goal is to keep it a lightwei
 docs/
   product-requirements.md              ← primary direction doc
   _refinement/
-    review-r{n}.md                     ← raw prototype/UX feedback per round
-    update-product-requirements-r{n}.md ← this file: synthesis → change list
+    r{n}-review.md                       ← raw prototype/UX feedback per round
+    r{n}-update-product-requirements.md  ← this file: synthesis → change list
   _notes/
     account-types.md                   ← domain research (account types)
     deduction-types.md                 ← domain research (tax deductions)
@@ -190,11 +190,11 @@ docs/
 
 ### Review cycle
 
-1. **Prototype round** — produce `_refinement/review-r{n}.md` with raw notes and screenshots
+1. **Prototype round** — produce `_refinement/r{n}-review.md` with raw notes and screenshots
 2. **Research docs** — add named research docs to `_notes/` as domain questions arise (already happening with account types and deduction types)
-3. **Update plan** — synthesize all new review and research docs into an `update-product-requirements-r{n}.md` with a concrete change list per PRD section
+3. **Update plan** — synthesize all new review and research docs into an `r{n}-update-product-requirements.md` with a concrete change list per PRD section
 4. **PRD edit** — apply the change list to `product-requirements.md`, marking changes with a changelog entry at the bottom
-5. **Carry forward** — update the `update-product-requirements-r{n}.md` status to `Applied` and note the date
+5. **Carry forward** — update the `r{n}-update-product-requirements.md` status to `Applied` and note the date
 
 ### PRD changelog section
 

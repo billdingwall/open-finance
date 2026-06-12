@@ -87,10 +87,11 @@ const state = {
     'taxes-current':         { year: 2026 },
     'accounts-overview':     { },
     'savings-investments':   { },
-    'taxes-deductions':      { },
+    'taxes-checklist':       { year: 2026 },
     'overview-dashboard':    { period: '2026-05' },
   },
   overviewKpi: 'budget',
+  holdingsMode: 'standard', // 'standard' | 'heatmap' — holdings table view toggle
   navCollapsed: new Set(),
   syncState: 'synced',
   inspectorOpen: false,
@@ -111,21 +112,14 @@ const NAV = [
     { id: 'budget-categories',  label: 'Categories' },
   ]},
   { id: 'savings-investments', label: 'Savings & Investments', items: [
-    { id: 'savings-goals',            label: 'Goals' },
-    { id: 'savings-goals-active',     label: 'Active Goals',  badge: String(DATA.goals.filter(g => g.status === 'active').length) },
-    { id: 'savings-goals-archived',   label: 'Archived Goals', badge: String(DATA.goals.filter(g => g.status === 'archived').length) },
+    { id: 'savings-goals',            label: 'Goals', badge: String(DATA.goals.length) },
     { id: 'investments-portfolio',    label: 'Portfolio Overview' },
-    { id: 'investments-accounts',     label: 'Accounts' },
-    { id: 'investments-sleeves',      label: 'Sleeves' },
     { id: 'investments-holdings',     label: 'Holdings' },
-    { id: 'investments-benchmarks',   label: 'Benchmarks' },
   ]},
   { id: 'taxes', label: 'Taxes', items: [
     { id: 'taxes-current',    label: 'Current Tax Year' },
-    { id: 'taxes-deductions', label: 'Deductions' },
-    { id: 'taxes-estimated',  label: 'Estimated Payments' },
-    { id: 'taxes-gains',      label: 'Gains & Income' },
     { id: 'taxes-checklist',  label: 'Prep Checklist' },
+    { id: 'taxes-archive',    label: 'Tax Archive' },
   ]},
   { id: 'settings', label: 'Settings', items: [
     { id: 'settings-workspace', label: 'Workspace' },
@@ -401,17 +395,16 @@ function renderCenter() {
   if (v === 'budget-overview')                                                           return viewBudgetOverview();
   if (v === 'budget-history')                                                            return viewBudgetHistory();
   if (v === 'budget-categories')                                                         return viewBudgetCategories();
+  // Legacy deep links from removed screens (Round 4) redirect to their parent view
   if (v === 'savings-goals' || v === 'savings-goals-active' || v === 'savings-goals-archived') return viewSavingsGoals();
-  if (v === 'investments-portfolio' || v === 'investments-accounts')                    return viewInvestments();
-  if (v === 'investments-sleeves')                                                       return viewInvestmentsSleeves();
-  if (v === 'investments-holdings')                                                      return viewInvestmentsHoldings();
-  if (v === 'investments-benchmarks')                                                    return viewInvestmentsBenchmarks();
+  if (v === 'investments-portfolio' || v === 'investments-accounts' || v === 'investments-sleeves' || v === 'savings-accounts') return viewInvestments();
+  if (v === 'investments-holdings' || v === 'investments-benchmarks' || v === 'investments-benchmark') return viewInvestmentsHoldings();
   if (v === 'business-entity' || v === 'business-all-entities' || v === 'business-monthly') return viewBusiness();
   if (v === 'business-categories')                                                       return viewBusinessCategories();
   if (v === 'business-budgets')                                                          return viewBusinessBudgets();
-  if (v === 'taxes-current')                                                             return viewTaxesCurrent();
-  if (v === 'taxes-deductions')                                                          return viewTaxesDeductions();
-  if (v === 'taxes-estimated' || v === 'taxes-gains' || v === 'taxes-checklist')        return viewTaxes();
+  if (v === 'taxes-current' || v === 'taxes-deductions' || v === 'taxes-estimated' || v === 'taxes-gains' || v === 'taxes-estimated-payments' || v === 'taxes-gains-income') return viewTaxesCurrent();
+  if (v === 'taxes-checklist')                                                           return viewTaxesChecklist();
+  if (v === 'taxes-archive')                                                             return viewTaxesArchive();
   if (v === 'onboarding')                                                                return viewOnboarding();
   if (v === 'indexing-progress')                                                         return viewIndexingProgress();
   if (v === 'settings-workspace')                                                        return viewSettingsWorkspace();
@@ -862,18 +855,15 @@ function viewBudgetRules() {
 // ---------- Savings & Investments (Goals) ------------------------------------
 
 function viewSavingsGoals() {
-  let label = 'Goals';
-  let goals = DATA.goals;
-  if (state.view === 'savings-goals-active')   { label = 'Active Goals';   goals = goals.filter(g => g.status === 'active'); }
-  if (state.view === 'savings-goals-archived') { label = 'Archived Goals'; goals = goals.filter(g => g.status !== 'active'); }
+  // One flat goal list — no active/archived states in v1; every listed goal is active
+  const goals = DATA.goals;
 
   setHeader({
     title: 'Savings Goals',
-    breadcrumb: ['Finance', 'Savings & Investments', label],
+    breadcrumb: ['Finance', 'Savings & Investments', 'Goals'],
     actions: [{ label: 'New goal', variant: '' }, { label: 'Export', variant: 'btn-ghost' }],
   });
   renderFilterBar([
-    { label: 'Status', value: state.view === 'savings-goals-archived' ? 'Archived' : 'Active', active: true },
     { label: 'Target year', value: 'All' },
     { kind: 'spacer' },
     { kind: 'search', placeholder: 'Search goals', onChange: () => {} },
@@ -910,10 +900,7 @@ function viewSavingsGoals() {
       class: 'goal-card' + (state.selection?.kind === 'goal' && state.selection?.id === g.id ? ' selected' : ''),
       onclick: () => openInspector('goal', g.id),
     }, [
-      el('div', { class: 'goal-name' }, [
-        g.name,
-        g.status === 'archived' ? el('span', { class: 'tag tag-muted', text: 'archived' }) : null,
-      ]),
+      el('div', { class: 'goal-name' }, [g.name]),
       el('div', { class: 'goal-meta', text: 'Target by ' + fmtDateLong(g.targetDate) + ' · ' + g.account }),
       el('div', { class: 'goal-target' }, [
         el('span', { class: 'balance', text: fmtUSD(g.balance) }),
@@ -940,7 +927,7 @@ function viewSavingsGoals() {
       const table = el('table', { class: 'tbl' });
       table.innerHTML = `<thead><tr><th>Goal</th>${periods.map(p => `<th class="num">${p.slice(2)}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody></tbody>`;
       const tbody = table.querySelector('tbody');
-      for (const g of goals.filter(g => g.status === 'active')) {
+      for (const g of goals) {
         const tr = el('tr', { onclick: () => openInspector('goal', g.id) });
         tr.appendChild(el('td', { text: g.name }));
         let total = 0;
@@ -963,7 +950,7 @@ function viewSavingsGoals() {
 function viewInvestments() {
   setHeader({
     title: 'Portfolio Overview',
-    breadcrumb: ['Finance', 'Investments', state.view === 'investments-accounts' ? 'Accounts' : state.view === 'investments-brokerage' ? 'Brokerage' : state.view === 'investments-ira' ? 'IRA' : 'Portfolio Overview'],
+    breadcrumb: ['Finance', 'Savings & Investments', 'Portfolio Overview'],
     actions: [
       { label: 'Import prices', variant: '' },
       { label: 'Rebalance plan', variant: 'btn-ghost' },
@@ -1095,25 +1082,13 @@ function viewInvestments() {
     })()]),
   ]);
   c.appendChild(holdingsPanel);
+
+  // Sleeve table at the bottom of the Portfolio overview (no dedicated sleeves screen in v1)
+  c.appendChild(sleeveTargetsPanel());
 }
 
-function viewInvestmentsSleeves() {
-  setHeader({
-    title: 'Sleeves',
-    breadcrumb: ['Finance', 'Investments', 'Sleeves'],
-    actions: [{ label: 'New sleeve', variant: '' }, { label: 'Export', variant: 'btn-ghost' }],
-  });
-  renderFilterBar([{ label: 'Status', value: 'Active' }]);
-  const c = $('#content');
-
-  // Target vs actual table
-  const total = DATA.holdings.reduce((s, h) => s + h.qty * h.price, 0);
-  const tickerValues = {};
-  for (const h of DATA.holdings) {
-    tickerValues[h.ticker] = (tickerValues[h.ticker] || 0) + h.qty * h.price;
-  }
-
-  const panel = el('div', { class: 'panel' }, [
+function sleeveTargetsPanel() {
+  return el('div', { class: 'panel', style: { marginTop: '16px' } }, [
     el('div', { class: 'panel-head' }, [
       el('h3', { text: 'Sleeve Targets · Investments/sleeve-targets.csv' }),
       el('div', { class: 'panel-actions' }, [el('span', { class: 'imported-tag', text: 'Imported' })]),
@@ -1138,10 +1113,97 @@ function viewInvestmentsSleeves() {
       return list;
     })()]),
   ]);
-  c.appendChild(panel);
 }
 
-function viewInvestmentsHoldings() { viewInvestments(); }
+function viewInvestmentsHoldings() {
+  // Holdings table is the focal point; toggle switches between the standard
+  // table and the benchmark-style heat map (no dedicated benchmark screen in v1)
+  const mode = state.holdingsMode || 'standard';
+
+  setHeader({
+    title: 'Holdings',
+    breadcrumb: ['Finance', 'Savings & Investments', 'Holdings'],
+    actions: [
+      { label: 'Import prices', variant: '' },
+      { label: 'Export', variant: 'btn-ghost' },
+    ],
+  });
+  renderFilterBar([
+    { label: 'Account', value: 'All' },
+    { label: 'Sleeve', value: 'All' },
+    { label: 'As of', value: 'May 11, 2026', active: true },
+    { kind: 'spacer' },
+    { kind: 'search', placeholder: 'Search holdings', onChange: () => {} },
+  ]);
+
+  const c = $('#content');
+
+  const toggle = el('div', { class: 'view-toggle', role: 'tablist' }, [
+    el('button', {
+      class: 'view-toggle-btn' + (mode === 'standard' ? ' active' : ''),
+      text: 'Holdings table',
+      onclick: () => { state.holdingsMode = 'standard'; renderCenter(); },
+    }),
+    el('button', {
+      class: 'view-toggle-btn' + (mode === 'heatmap' ? ' active' : ''),
+      text: 'Performance heat map',
+      onclick: () => { state.holdingsMode = 'heatmap'; renderCenter(); },
+    }),
+  ]);
+
+  if (mode === 'heatmap') {
+    c.appendChild(el('div', { class: 'panel' }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Period Returns · Investments/benchmarks/' }),
+        el('div', { class: 'panel-actions' }, [
+          toggle,
+          el('span', { class: 'imported-tag', text: 'Imported' }),
+          el('span', { class: 'tag tag-warn', text: 'Missing May data' }),
+        ]),
+      ]),
+      el('div', { class: 'panel-body flush' }, [
+        heatMapTable(DATA.benchmarkReturns, DATA.benchmarkPeriods),
+      ]),
+    ]));
+    return;
+  }
+
+  c.appendChild(el('div', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Holdings' }),
+      el('span', { class: 'panel-sub', text: DATA.holdings.length + ' positions' }),
+      el('div', { class: 'panel-actions' }, [
+        toggle,
+        el('span', { class: 'imported-tag', text: 'Imported' }),
+      ]),
+    ]),
+    el('div', { class: 'panel-body flush' }, [(() => {
+      const table = el('table', { class: 'tbl' });
+      table.innerHTML = `<thead><tr><th>Ticker</th><th>Name</th><th>Account</th><th>Sleeve</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Market value</th><th class="num">Unrealized</th></tr></thead><tbody></tbody>`;
+      const tbody = table.querySelector('tbody');
+      const AB = acctById();
+      const SB = sleeveById();
+      for (const h of DATA.holdings) {
+        const mv = h.qty * h.price;
+        const ug = mv - h.basis;
+        const tr = el('tr', {
+          class: state.selection?.kind === 'holding' && state.selection?.id === h.id ? 'selected' : '',
+          onclick: () => openInspector('holding', h.id),
+        });
+        tr.appendChild(el('td', {}, [el('span', { class: 'tag tag-accent', text: h.ticker })]));
+        tr.appendChild(el('td', { class: 'truncate', text: h.name }));
+        tr.appendChild(el('td', { class: 'muted', text: AB[h.account]?.name || h.account }));
+        tr.appendChild(el('td', { class: 'muted', text: SB[h.sleeve]?.name || h.sleeve }));
+        tr.appendChild(el('td', { class: 'num', text: fmtNum(h.qty) }));
+        tr.appendChild(el('td', { class: 'num', text: fmtUSD2(h.price) }));
+        tr.appendChild(el('td', { class: 'num', text: fmtUSD(mv) }));
+        tr.appendChild(el('td', { class: 'num ' + (ug >= 0 ? 'pos' : 'neg'), text: fmtUSD(ug, { sign: true }) }));
+        tbody.appendChild(tr);
+      }
+      return table;
+    })()]),
+  ]));
+}
 
 function heatMapTable(rows, periods) {
   const table = document.createElement('table');
@@ -1175,28 +1237,6 @@ function heatMapTable(rows, periods) {
     }
   }
   return table;
-}
-
-function viewInvestmentsBenchmarks() {
-  setHeader({
-    title: 'Benchmarks',
-    breadcrumb: ['Finance', 'Savings & Investments', 'Benchmarks'],
-    actions: [{ label: 'Import benchmark', variant: '' }],
-  });
-  renderFilterBar([]);
-  const c = $('#content');
-  c.appendChild(el('div', { class: 'panel' }, [
-    el('div', { class: 'panel-head' }, [
-      el('h3', { text: 'Period Returns · Investments/benchmarks/' }),
-      el('div', { class: 'panel-actions' }, [
-        el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('span', { class: 'tag tag-warn', text: 'Missing May data' }),
-      ]),
-    ]),
-    el('div', { class: 'panel-body flush' }, [
-      heatMapTable(DATA.benchmarkReturns, DATA.benchmarkPeriods),
-    ]),
-  ]));
 }
 
 // ---------- Business --------------------------------------------------------
@@ -1369,7 +1409,7 @@ function viewBusinessBudgets() {
 function viewTaxes() {
   setHeader({
     title: 'Taxes · 2026',
-    breadcrumb: ['Finance', 'Taxes', state.view === 'taxes-estimated' ? 'Estimated Payments' : state.view === 'taxes-gains' ? 'Gains & Income' : state.view === 'taxes-checklist' ? 'Prep Checklist' : 'Current Tax Year'],
+    breadcrumb: ['Finance', 'Taxes', 'Current Tax Year'],
     actions: [
       { label: 'Export prep packet', variant: '' },
       { label: 'New payment', variant: 'btn-ghost' },
@@ -1404,7 +1444,7 @@ function viewTaxes() {
   }
   c.appendChild(kpiGrid);
 
-  // Estimated payments + checklist row
+  // Estimated payments (inline — no dedicated screen; the prep checklist lives on its own screen)
   const paymentsPanel = el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
       el('h3', { text: 'Estimated Payment Schedule · 2026' }),
@@ -1433,28 +1473,7 @@ function viewTaxes() {
     })()]),
   ]);
 
-  const checklistPanel = el('div', { class: 'panel' }, [
-    el('div', { class: 'panel-head' }, [
-      el('h3', { text: 'Prep Checklist' }),
-      el('span', { class: 'panel-sub', text: 'Taxes/yearly/2026-prep-checklist.md' }),
-    ]),
-    el('div', { class: 'panel-body' }, [(() => {
-      const ul = el('ul', { class: 'checklist' });
-      for (const ci of DATA.taxChecklist) {
-        ul.appendChild(el('li', { onclick: () => select({ kind: 'tax-check', id: ci.id }) }, [
-          el('span', { class: 'checkbox' + (ci.done ? ' done' : '') }),
-          el('div', {}, [
-            el('div', { text: ci.label }),
-            ci.note ? el('div', { style: { fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }, text: ci.note }) : null,
-          ]),
-          el('span', { class: 'ci-meta', text: ci.due }),
-        ]));
-      }
-      return ul;
-    })()]),
-  ]);
-
-  c.appendChild(el('div', { class: 'row-2-1' }, [paymentsPanel, checklistPanel]));
+  c.appendChild(paymentsPanel);
 
   // Realized gains + Income summary
   const gainsPanel = el('div', { class: 'panel' }, [
@@ -2260,15 +2279,8 @@ function viewAccounts() {
 
 // ---------- Taxes: Deductions (T039) -----------------------------------------
 
-function viewTaxesDeductions() {
-  setHeader({
-    title: 'Deductions · 2026',
-    breadcrumb: ['Finance', 'Taxes', 'Deductions'],
-    actions: [{ label: 'Export prep packet', variant: '' }],
-  });
-  renderFilterBar([]);
-  const c = $('#content');
-
+// Deductions render inline within Current Tax Year — no dedicated screen in v1
+function appendDeductionGroups(c) {
   const groups = [
     { key: 'standard',   label: 'Standard Deduction' },
     { key: 'above-line', label: 'Above-the-Line Deductions' },
@@ -2317,7 +2329,8 @@ function viewTaxesDeductions() {
 function viewTaxesCurrent() {
   viewTaxes();
 
-  // Append per-account effective rate table
+  // Append per-account effective rate table and deduction groups (Round 4:
+  // deductions, payments, and gains/income all live on this consolidated screen)
   const c = $('#content');
   c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
     el('div', { class: 'panel-head' }, [
@@ -2340,6 +2353,84 @@ function viewTaxesCurrent() {
         return table;
       })(),
     ]),
+  ]));
+
+  appendDeductionGroups(c);
+}
+
+// ---------- Taxes: Prep Checklist (full-width focal screen) ------------------
+
+function viewTaxesChecklist() {
+  setHeader({
+    title: 'Prep Checklist · 2026',
+    breadcrumb: ['Finance', 'Taxes', 'Prep Checklist'],
+    actions: [{ label: 'Export prep packet', variant: '' }],
+  });
+  renderFilterBar([
+    { label: 'Tax year', value: '2026', active: true },
+  ]);
+
+  const c = $('#content');
+  const open = DATA.taxChecklist.filter(ci => !ci.done).length;
+
+  c.appendChild(el('div', { class: 'panel checklist-page' }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Prep Checklist' }),
+      el('span', { class: 'panel-sub', text: 'Taxes/yearly/2026-prep-checklist.md' }),
+      el('div', { class: 'panel-actions' }, [
+        el('span', { class: 'tag ' + (open ? 'tag-warn' : 'tag-ok'), text: open + ' open' }),
+      ]),
+    ]),
+    el('div', { class: 'panel-body' }, [
+      el('p', { class: 'checklist-intro', text: 'Everything needed to file the 2026 return, in one place. Each item explains what the document is, why it matters, and where it comes from — work through them in order and the filing packet builds itself.' }),
+      (() => {
+        const ul = el('ul', { class: 'checklist checklist-edu' });
+        for (const ci of DATA.taxChecklist) {
+          ul.appendChild(el('li', { onclick: () => select({ kind: 'tax-check', id: ci.id }) }, [
+            el('span', { class: 'checkbox' + (ci.done ? ' done' : '') }),
+            el('div', { class: 'ci-body' }, [
+              el('div', { class: 'ci-label', text: ci.label }),
+              ci.note ? el('div', { class: 'ci-note', text: ci.note }) : null,
+              ci.edu ? el('div', { class: 'ci-edu', text: ci.edu }) : null,
+            ]),
+            el('span', { class: 'ci-meta', text: ci.due }),
+          ]));
+        }
+        return ul;
+      })(),
+    ]),
+  ]));
+}
+
+// ---------- Taxes: Archive (prior closed years) -------------------------------
+
+function viewTaxesArchive() {
+  setHeader({
+    title: 'Tax Archive',
+    breadcrumb: ['Finance', 'Taxes', 'Tax Archive'],
+    actions: [],
+  });
+  renderFilterBar([]);
+
+  const c = $('#content');
+  c.appendChild(el('div', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Closed Tax Years · Taxes/archive/' }),
+      el('div', { class: 'panel-actions' }, [el('span', { class: 'imported-tag', text: 'Read-only' })]),
+    ]),
+    el('div', { class: 'panel-body flush' }, [(() => {
+      const table = el('table', { class: 'tbl' });
+      table.innerHTML = `<thead><tr><th>Tax year</th><th>Closed</th><th class="num">Deductions</th><th class="num">Estimated payments</th><th>Files</th></tr></thead><tbody></tbody>`;
+      const tbody = table.querySelector('tbody');
+      const tr = el('tr');
+      tr.appendChild(el('td', { text: '2025' }));
+      tr.appendChild(el('td', { class: 'muted', text: 'Apr 14, 2026' }));
+      tr.appendChild(el('td', { class: 'num', text: fmtUSD(31350) }));
+      tr.appendChild(el('td', { class: 'num', text: fmtUSD(16800) }));
+      tr.appendChild(el('td', {}, [el('span', { class: 'path-chip', text: 'archive/2025-deductions.csv' })]));
+      tbody.appendChild(tr);
+      return table;
+    })()]),
   ]));
 }
 
@@ -2437,7 +2528,7 @@ function renderInspector() {
     const g = DATA.goals.find(x => x.id === sel.id);
     if (!g) return setEmpty();
     head.textContent = g.name;
-    sub.textContent = 'Savings goal · ' + g.status;
+    sub.textContent = 'Savings goal';
     const pct = g.balance / g.target;
     body.appendChild(insBlockKVs([
       ['Balance', el('span', { class: 'insp-value big', text: fmtUSD(g.balance) })],
@@ -2608,7 +2699,7 @@ function renderInspector() {
     const formulas = {
       cashFlow:        'sum(personal income) − sum(personal outflow) for period',
       budgetVariance:  'sum(actual) − sum(planned) across all categories',
-      savingsProgress: 'sum(goal.balance) / sum(goal.target) where status = active',
+      savingsProgress: 'sum(goal.balance) / sum(goal.target)',
       portfolioValue:  'Σ holding.qty × price.close (latest)',
       businessNetIncome: 'Σ revenue − Σ expenses across active entities',
       taxStatus:       'derived from estimated-payments + checklist',

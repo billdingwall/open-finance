@@ -105,7 +105,6 @@ const DATA = (() => {
       monthlyTarget: 1200,
       monthlyActual: 400,
       targetDate: '2028-06-01',
-      status: 'active',
       account: 'Marcus · House Fund',
       note: 'note-strategy-house',
       contributions: [
@@ -124,7 +123,6 @@ const DATA = (() => {
       monthlyTarget: 500,
       monthlyActual: 500,
       targetDate: '2026-12-31',
-      status: 'active',
       account: 'Marcus · Emergency',
       note: 'note-strategy-ips',
       contributions: [
@@ -143,7 +141,6 @@ const DATA = (() => {
       monthlyTarget: 300,
       monthlyActual: 200,
       targetDate: '2026-12-01',
-      status: 'active',
       account: 'Marcus · Travel',
       note: null,
       contributions: [
@@ -162,7 +159,6 @@ const DATA = (() => {
       monthlyTarget: 200,
       monthlyActual: 150,
       targetDate: '2026-09-01',
-      status: 'active',
       account: 'Marcus · Gear Fund',
       note: null,
       contributions: [
@@ -172,21 +168,6 @@ const DATA = (() => {
       ],
       source: 'Savings/goals.csv',
       row: 5,
-    },
-    {
-      id: 'wedding-fund',
-      name: 'Wedding Anniversary',
-      target: 4000,
-      balance: 4000,
-      monthlyTarget: 0,
-      monthlyActual: 0,
-      targetDate: '2025-08-15',
-      status: 'archived',
-      account: 'Marcus · Travel',
-      note: null,
-      contributions: [],
-      source: 'Savings/goals.csv',
-      row: 6,
     },
   ];
 
@@ -300,13 +281,20 @@ const DATA = (() => {
   ];
 
   const taxChecklist = [
-    { id: 'tc-1', label: '1099-DIV from Fidelity',           done: true,  due: 'Jan',  note: 'Verified · matches dividends.csv' },
-    { id: 'tc-2', label: '1099-B from Fidelity',             done: true,  due: 'Feb',  note: 'Matches realized-gains projection' },
-    { id: 'tc-3', label: 'Consulting LLC P&L summary',       done: false, due: 'Mar',  note: 'Pending May close' },
-    { id: 'tc-4', label: 'Q2 federal estimated payment',     done: false, due: 'Jun 15' },
-    { id: 'tc-5', label: 'Mileage log · Consulting LLC',     done: false, due: 'Mar' },
-    { id: 'tc-6', label: 'Charitable contribution receipts', done: true,  due: 'Mar' },
-    { id: 'tc-7', label: 'HSA contribution confirmation',    done: true,  due: 'Apr' },
+    { id: 'tc-1', label: '1099-DIV from Fidelity',           done: true,  due: 'Jan',  note: 'Verified · matches dividends.csv',
+      edu: 'Brokerages issue a 1099-DIV for dividend income. The totals must match what your dividend records show — mismatches are the most common IRS notice trigger.' },
+    { id: 'tc-2', label: '1099-B from Fidelity',             done: true,  due: 'Feb',  note: 'Matches realized-gains projection',
+      edu: 'The 1099-B reports proceeds from securities you sold. Cost basis and holding period determine whether each sale is taxed at short-term or long-term rates.' },
+    { id: 'tc-3', label: 'Consulting LLC P&L summary',       done: false, due: 'Mar',  note: 'Pending May close',
+      edu: 'A profit & loss summary is the basis for Schedule C. Business net income flows into your personal return and drives self-employment tax.' },
+    { id: 'tc-4', label: 'Q2 federal estimated payment',     done: false, due: 'Jun 15',
+      edu: 'Self-employment and investment income have no withholding, so the IRS expects quarterly estimated payments. Missing a quarter can add an underpayment penalty even if you pay in full at filing.' },
+    { id: 'tc-5', label: 'Mileage log · Consulting LLC',     done: false, due: 'Mar',
+      edu: 'Business mileage is deductible at the IRS standard rate, but only with a contemporaneous log — date, destination, business purpose, and miles.' },
+    { id: 'tc-6', label: 'Charitable contribution receipts', done: true,  due: 'Mar',
+      edu: 'Cash and goods donated to qualified charities are deductible if you itemize. Donations of $250 or more need a written acknowledgment from the charity.' },
+    { id: 'tc-7', label: 'HSA contribution confirmation',    done: true,  due: 'Apr',
+      edu: 'HSA contributions are deductible above the line — they reduce taxable income even without itemizing. Confirm the total stays within the annual IRS limit.' },
   ];
 
   // ----- Notes -------------------------------------------------------------

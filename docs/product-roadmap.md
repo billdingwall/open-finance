@@ -27,6 +27,13 @@ a PRD amendment before proceeding.
 | AI-driven analysis or recommendations | V2 |
 | Alternative cloud storage providers (Google Drive, Dropbox, local folder) | V2 |
 | xlsx and other spreadsheet format ingestion and export | V2 |
+| Savings goal lifecycle states (active/archived) — flat goal list in v1 | V2 |
+| Dedicated sleeves screen — sleeve table lives on the Portfolio overview in v1 | V2 |
+| Dedicated benchmark screen — heat map is a holdings table view toggle in v1 | V2 |
+| Dedicated deductions screen — deductions content lives within Current Tax Year in v1 | V2 |
+
+Estimated payments and gains & income are **not** out of scope — their functionality stays in v1,
+surfaced within the Current Tax Year view rather than on dedicated screens.
 
 ---
 
@@ -332,6 +339,10 @@ parallel once Phase 3 is complete, as they share only the master account registr
   to handle gaps in price history
 
 #### Taxes
+
+The tax module presents three screens in v1: Current Tax Year (with estimated payments, gains &
+income, and deductions inline), Prep Checklist, and Tax Archive.
+
 - [ ] Document standard deduction seeding: amount by filing status for current and prior tax
   years, source of amounts (hardcode per year vs derive from settings)
 - [ ] Define Schedule C cross-reference rules: map business categories to deduction
@@ -346,22 +357,22 @@ parallel once Phase 3 is complete, as they share only the master account registr
 
 #### Savings & Investments
 - [ ] **Goals overview**: goal card anatomy (name, target amount, current balance, progress bar,
-  monthly contribution, time-to-goal estimate)
-- [ ] **Assets view**: holdings table columns, allocation donut chart, sleeve switcher
-- [ ] **Benchmark heat map**: table design for 8 time periods × N accounts, color scale for
-  positive/negative % growth, S&P 500 comparison row, sector performance section
-- [ ] **Sleeve detail**: target weights table with actual vs target, drift indicator, contribution
-  target, linked strategy note
+  monthly contribution, time-to-goal estimate); single flat list — no active/archived grouping
+- [ ] **Portfolio overview**: holdings table as the primary surface (columns, account selector,
+  allocation donut as supporting element) with a standard ⇄ heat-map view toggle; heat-map mode
+  covers 8 time periods × N accounts, color scale for positive/negative % growth, S&P 500
+  comparison row, sector performance section; sleeve table appended at the bottom (target vs
+  actual weights, drift indicator, contribution target, linked strategy note)
 - [ ] Empty states: no goals created, no holdings imported, no price data available
 
 #### Taxes
-- [ ] **Tax overview**: YTD taxable income panel, taxes paid vs owed comparison, effective rate
-  per account table
-- [ ] **Deductions view**: standard vs itemized comparison, above-the-line section, Schedule A
-  section, Schedule C section (linked to business themes/entities), taxable income minus deductibles
-  projection
-- [ ] **Estimated payments**: quarterly schedule, paid vs due status
-- [ ] **Tax prep checklist**: checklist item anatomy, missing/unresolved indicators, source links
+- [ ] **Current tax year**: YTD taxable income panel, taxes paid vs owed comparison, effective rate
+  per account table; estimated payments section (quarterly schedule, paid vs due status); gains &
+  income section (realized gain/loss, dividends, interest); deductions section (standard vs
+  itemized comparison, above-the-line, Schedule A, Schedule C linked to business themes/entities,
+  taxable income minus deductibles projection); no prep checklist on this screen
+- [ ] **Tax prep checklist**: full-width focal screen — checklist item anatomy, missing/unresolved
+  indicators, source links, and educational content explaining each tax-prep step
 - [ ] **Tax archive**: prior-year read-only archive selector
 
 ### Development Tasks
@@ -370,7 +381,7 @@ parallel once Phase 3 is complete, as they share only the master account registr
 - [ ] `SavingsGoalEngine` — compute goal progress from `SavingsProgress` snapshots or derive
   from transaction history; compute gap to target and months-to-goal at current contribution rate;
   resolve `GoalFundingLink` to monthly budget contribution rows; produce `GoalProgressProjection`
-  per goal
+  per goal; no goal lifecycle states — every goal in `goals.csv` is active, no status branching
 
 #### PortfolioEngine + BenchmarkEngine (`Domain/Investments/`)
 - [ ] `PortfolioEngine` — compute position values from `Holding` × `PricePoint` (latest
@@ -504,22 +515,25 @@ is connected. Module views are blocked on their respective domain engines from P
 - [ ] `BudgetCategoriesView` — category and subcategory management, manual create/edit forms
 
 #### Savings & Investments Module (`UI/SavingsInvestments/`)
-- [ ] `SavingsInvestmentsView` — top-level view with Overview, Goals, Assets, and Categories sub-navigation
-- [ ] `GoalsListView` — goal cards with progress bar, tap → goal detail
+- [ ] `SavingsInvestmentsView` — top-level view with Overview, Goals, and Portfolio sub-navigation
+- [ ] `GoalsListView` — flat list of goal cards with progress bar (no active/archived grouping),
+  tap → goal detail
 - [ ] `GoalDetailView` — progress history chart, funding source links, monthly contribution
   tracker, source traceability
-- [ ] `AssetsView` — aggregate holdings table, allocation donut, account selector
-- [ ] `SleeveDetailView` — target vs actual weights, contribution target, drift indicator
-- [ ] `BenchmarkView` — heat map table (8 periods × accounts), S&P 500 comparison row,
-  sector performance section
+- [ ] `PortfolioView` — holdings table as the primary surface with a standard ⇄ heat-map view
+  toggle (heat map: 8 periods × accounts, S&P 500 comparison row, sector performance section);
+  allocation donut and account selector as supporting elements; sleeve table at the bottom
+  (target vs actual weights, contribution target, drift indicator)
 - [ ] `HoldingDetailView` — security detail, tax lot drill-down, trade history, dividend summary
 
 #### Taxes Module (`UI/Taxes/`)
-- [ ] `TaxOverviewView` — YTD taxable income, taxes paid vs owed, effective rate per account table
-- [ ] `TaxDeductionsView` — standard vs itemized comparison, above-the-line section, Schedule A
-  section, Schedule C section linked to business themes/entities, taxable income projection
-- [ ] `EstimatedPaymentsView` — quarterly schedule table, paid/due status per quarter
-- [ ] `TaxPrepChecklistView` — checklist with complete/incomplete/missing item states, source links
+- [ ] `CurrentTaxYearView` — YTD taxable income, taxes paid vs owed, effective rate per account
+  table; estimated payments section (quarterly schedule, paid/due status); gains & income section
+  (realized gain/loss, dividends, interest); deductions section (standard vs itemized,
+  above-the-line, Schedule A, Schedule C linked to business themes/entities, taxable income
+  projection); no prep checklist
+- [ ] `TaxPrepChecklistView` — full-width checklist with complete/incomplete/missing item states,
+  source links, and educational content per step
 - [ ] `TaxArchiveView` — prior-year read-only archive selector, archived deductions and payments
 
 ### Milestone 5
@@ -719,3 +733,35 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 | Right pane default-closed scope | Global — closed by default, opens on main-panel interaction, no section exceptions. |
 | iCloud container identifier | `OpenFinance` |
 | Workspace bootstrap seed accounts | Personal bank, personal credit card, business bank, business credit card, savings, investment |
+
+---
+
+## Changelog
+
+> The roadmap participates in the same round-numbered refinement loop as the PRD and technical
+> design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
+> review and per-doc update plans.
+
+### Baseline — 2026-06-11
+- Roadmap authored reflecting all decisions through Round 3 (prototype review Round 1, the
+  multi-cloud direction of Round 2, and the sidebar-and-locks direction of Round 3). These rounds
+  are baked into the initial phase plan rather than applied as per-round deltas, so there are no
+  `r1`–`r3` roadmap update plans.
+
+### Round 4 — 2026-06-12
+Source: `docs/_refinement/r4-review.md` (second prototype review); update plan `docs/_refinement/r4-update-product-roadmap.md`
+
+- Out of Scope: added goal lifecycle states (active/archived), dedicated sleeves screen, dedicated
+  benchmark screen, and dedicated deductions screen as V2 items; noted that estimated payments and
+  gains & income stay in v1, surfaced within Current Tax Year
+- Phase 4 Product (Taxes): added the three-screen consolidation note (Current Tax Year, Prep
+  Checklist, Tax Archive)
+- Phase 4 Design: replaced the separate Assets / Benchmark heat map / Sleeve detail tasks with a
+  single holdings-focal Portfolio overview task (standard ⇄ heat-map toggle, sleeve table at
+  bottom); merged Tax overview, Deductions, and Estimated payments design tasks into one Current
+  tax year task; expanded the prep checklist task to a full-width educational screen
+- Phase 4 Dev: `SavingsGoalEngine` noted as having no goal lifecycle states (no status branching)
+- Phase 5: `AssetsView`, `SleeveDetailView`, and `BenchmarkView` replaced by a single
+  `PortfolioView`; `TaxOverviewView`, `TaxDeductionsView`, and `EstimatedPaymentsView` replaced by
+  a single `CurrentTaxYearView`; `GoalsListView` is a flat list; fixed stale `SavingsInvestmentsView`
+  sub-navigation (now Overview, Goals, Portfolio)

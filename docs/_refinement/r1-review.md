@@ -1,5 +1,9 @@
 ---
-
+round: 1
+date: 2026-06-08
+type: prototype-review
+summary: First prototype review — IA restructure, Accounts module, merged Savings & Investments, tax deductions
+status: applied
 ---
 
 ## General functionality 

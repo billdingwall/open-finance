@@ -21,7 +21,7 @@ A native macOS personal finance workspace (SwiftUI, iCloud-backed) that uses CSV
 | `docs/product-roadmap.md` | When: phased implementation roadmap with Product/Design/Dev tasks per phase and milestone gates. |
 | `docs/project-management.md` | Tasks: remaining work needed before the Phase 1 build begins. |
 | `.specify/memory/constitution.md` | 7 non-negotiable principles governing all implementation decisions. Read this before proposing any architectural change. |
-| `docs/_refinement/` | Review rounds and update plans. `review-r{n}.md` = raw team feedback. `update-{doc}-r{n}.md` = formatted doc update plan based on a review. |
+| `docs/_refinement/` | Review rounds and update plans, named **round-first** so they group by round. `r{n}-review.md` = raw team feedback (or user-direction note). `r{n}-update-{doc}.md` = formatted doc update plan based on that round. Round numbers are global across all docs (one round = one revision event). |
 | `docs/_notes/` | Loose notes and domain research for team reference (e.g. `account-types.md`, `deduction-types.md`, `workflow-overview.md`). |
 | `docs/_design/` | Design mocks, icons, images, design system. |
 | `prototype/` | Static prototype used to review and refine the app experience before implementing changes. |
@@ -113,8 +113,8 @@ Feature branches follow the `NNN-feature-name` naming convention (created by `/s
 The project-level docs are living documents updated after each prototype review round
 (full workflow detail in `docs/_notes/workflow-overview.md`):
 
-1. Add `docs/_refinement/review-r{n}.md` with prototype/UX feedback
-2. Synthesize into `docs/_refinement/update-{doc}-r{n}.md` per affected document (section-by-section change list, e.g. `update-product-requirements-r1.md`)
+1. Add `docs/_refinement/r{n}-review.md` with prototype/UX feedback (or, for a user-direction revision, a short direction note). `{n}` is the next global round number, continuing the sequence already in the doc changelogs.
+2. Synthesize into `docs/_refinement/r{n}-update-{doc}.md` per affected document (section-by-section change list, e.g. `r4-update-product-requirements.md`)
 3. Apply changes to `docs/product-requirements.md` with a Changelog entry at the bottom
 4. Apply cascading changes to `docs/technical-design.md` with its own Changelog entry, then to `docs/product-roadmap.md`
 5. If principles changed, amend `.specify/memory/constitution.md` with a version bump
