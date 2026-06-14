@@ -156,12 +156,13 @@ function renderSidebar() {
         ...DATA.entities.filter(e => e.active).map(e => ({ id: `accounts-entity-${e.id}`, label: e.display }))
       ] : group.items).map(item => {
         const active = state.view === item.id;
+        const badge = item.id === 'savings-goals' ? String(DATA.goals.length) : item.badge;
         return el('div', {
           class: 'nav-item' + (active ? ' active' : ''),
           onclick: () => navigate(item.id),
         }, [
           el('span', { text: item.label }),
-          item.badge ? el('span', { class: 'badge', text: item.badge }) : null,
+          badge ? el('span', { class: 'badge', text: badge }) : null,
         ]);
       })),
     ]);
@@ -225,7 +226,14 @@ function renderFilterBar(filters) {
     } else {
       const node = el('button', {
         class: 'filter' + (f.active ? ' is-active' : ''),
-        onclick: f.onClick || (() => {}),
+        onclick: f.onClick || ((e) => {
+          const opts = (f.options && f.options.length ? f.options : [{ value: f.value, label: f.value }])
+            .map(o => ({ ...o, active: String(o.value) === String(f.value) }));
+          openMenu(e.currentTarget, opts, (val) => {
+            if (f.onPick) f.onPick(val);
+            else toast(f.label + ': ' + (opts.find(o => String(o.value) === String(val)) || {}).label, 'info');
+          });
+        }),
       }, [
         el('span', { class: 'filter-label', text: f.label + ':' }),
         el('span', { class: 'filter-value', text: f.value }),
@@ -378,6 +386,594 @@ function donutChart(slices, opts = {}) {
 }
 
 // =====================================================================
+// INTERACTION INFRASTRUCTURE — modals, toasts, persistence, export
+// =====================================================================
+
+// Persist mutations, refresh derived projections, and re-render everything
+// that could depend on the changed data. This is the prototype stand-in for
+// the technical-design "structured write flow" (build plan → write → re-index
+// → refresh projections).
+function commit() {
+  Store.save();
+  renderSidebar();
+  renderCenter();
+  if (state.inspectorOpen) renderInspector();
+}
+
+// ---- Toasts ----------------------------------------------------------------
+function toast(message, kind = 'info') {
+  let host = document.getElementById('toast-host');
+  if (!host) {
+    host = el('div', { id: 'toast-host', class: 'toast-host' });
+    document.body.appendChild(host);
+  }
+  const node = el('div', { class: 'toast toast-' + kind }, [
+    el('span', { class: 'toast-dot' }),
+    el('span', { text: message }),
+  ]);
+  host.appendChild(node);
+  requestAnimationFrame(() => node.classList.add('show'));
+  setTimeout(() => {
+    node.classList.remove('show');
+    setTimeout(() => node.remove(), 250);
+  }, 2800);
+}
+
+// ---- Modal / form builder --------------------------------------------------
+// fields: [{ key, label, type, options, value, required, placeholder, step, hint, rows }]
+function openModal({ title, subtitle, fields = [], body, submitLabel = 'Save', onSubmit, danger }) {
+  closeModal();
+  const overlay = el('div', {
+    class: 'modal-overlay',
+    id: 'modal-overlay',
+    onclick: (e) => { if (e.target.id === 'modal-overlay') closeModal(); },
+  });
+  const form = el('form', {
+    class: 'modal',
+    onsubmit: (e) => {
+      e.preventDefault();
+      const values = {};
+      let ok = true;
+      for (const f of fields) {
+        const input = form.querySelector(`[name="${f.key}"]`);
+        if (!input) continue;
+        let v = input.value;
+        if (f.type === 'number') v = v === '' ? null : Number(v);
+        if (typeof v === 'string') v = v.trim();
+        if (f.required && (v == null || v === '')) {
+          ok = false;
+          input.classList.add('field-error');
+        } else {
+          input.classList.remove('field-error');
+        }
+        values[f.key] = v;
+      }
+      if (!ok) { toast('Fill in the required fields', 'warn'); return; }
+      const result = onSubmit ? onSubmit(values, form) : true;
+      if (result !== false) closeModal();
+    },
+  });
+
+  form.appendChild(el('div', { class: 'modal-head' }, [
+    el('h2', { text: title }),
+    subtitle ? el('p', { class: 'modal-sub', text: subtitle }) : null,
+  ]));
+
+  const bodyEl = el('div', { class: 'modal-body' });
+  if (body) bodyEl.appendChild(body);
+  for (const f of fields) {
+    const id = 'mf-' + f.key;
+    let input;
+    if (f.type === 'select') {
+      input = el('select', { name: f.key, id });
+      for (const o of f.options) {
+        const opt = el('option', { value: o.value }, [o.label]);
+        if (String(o.value) === String(f.value)) opt.selected = true;
+        input.appendChild(opt);
+      }
+    } else if (f.type === 'textarea') {
+      input = el('textarea', { name: f.key, id, rows: f.rows || 3, placeholder: f.placeholder || '' }, [f.value || '']);
+    } else {
+      input = el('input', {
+        name: f.key, id, type: f.type || 'text',
+        value: f.value != null ? f.value : '',
+        placeholder: f.placeholder || '',
+      });
+      if (f.step) input.setAttribute('step', f.step);
+    }
+    bodyEl.appendChild(el('div', { class: 'modal-field' }, [
+      el('label', { for: id, text: f.label + (f.required ? ' *' : '') }),
+      input,
+      f.hint ? el('div', { class: 'modal-hint', text: f.hint }) : null,
+    ]));
+  }
+  form.appendChild(bodyEl);
+
+  form.appendChild(el('div', { class: 'modal-foot' }, [
+    el('button', { type: 'button', class: 'btn btn-ghost', onclick: closeModal }, ['Cancel']),
+    el('button', { type: 'submit', class: 'btn ' + (danger ? 'btn-danger' : 'btn-primary') }, [submitLabel]),
+  ]));
+
+  overlay.appendChild(form);
+  document.body.appendChild(overlay);
+  const first = form.querySelector('input, select, textarea');
+  if (first) setTimeout(() => first.focus(), 30);
+}
+
+function closeModal() {
+  const o = document.getElementById('modal-overlay');
+  if (o) o.remove();
+}
+
+// ---- Lightweight dropdown menu (for filter bar choices) --------------------
+function openMenu(anchorEl, options, onPick) {
+  document.querySelectorAll('.proto-menu').forEach(m => m.remove());
+  const rect = anchorEl.getBoundingClientRect();
+  const menu = el('div', { class: 'proto-menu' });
+  for (const o of options) {
+    menu.appendChild(el('div', {
+      class: 'proto-menu-item' + (o.active ? ' active' : ''),
+      onclick: () => { menu.remove(); onPick(o.value); },
+    }, [o.label]));
+  }
+  menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  menu.style.left = (rect.left + window.scrollX) + 'px';
+  document.body.appendChild(menu);
+  setTimeout(() => {
+    const close = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', close); } };
+    document.addEventListener('click', close);
+  }, 0);
+}
+
+// ---- Export helpers (real downloads from live mock data) -------------------
+function downloadFile(filename, content, mime = 'text/plain') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = el('a', { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function toCSV(headers, rows) {
+  const esc = (v) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const head = headers.map(h => esc(h.label)).join(',');
+  const lines = rows.map(r => headers.map(h => esc(typeof h.value === 'function' ? h.value(r) : r[h.value])).join(','));
+  return [head, ...lines].join('\n');
+}
+
+function exportCSV(filename, headers, rows) {
+  if (!rows.length) { toast('Nothing to export', 'warn'); return; }
+  downloadFile(filename, toCSV(headers, rows), 'text/csv');
+  toast(filename + ' exported (' + rows.length + ' rows)', 'ok');
+}
+
+function exportMarkdown(filename, md) {
+  downloadFile(filename, md, 'text/markdown');
+  toast(filename + ' exported', 'ok');
+}
+
+// Simulated reindex: pulse the sync pill through syncing → synced.
+function runReindex() {
+  state.syncState = 'syncing';
+  renderSidebar();
+  toast('Reindexing workspace…', 'info');
+  setTimeout(() => {
+    state.syncState = 'synced';
+    renderSidebar();
+    toast('Workspace reindexed · ' + DATA.transactions.length + ' transactions', 'ok');
+  }, 1100);
+}
+
+// OS-level affordances we can only simulate in a browser prototype.
+function osAction(label, target) {
+  toast(label + (target ? ' · ' + target : '') + ' (native action in the macOS app)', 'info');
+}
+
+// =====================================================================
+// CREATE / IMPORT / EDIT FLOWS
+// =====================================================================
+
+function addTransaction(v) {
+  const business = !!v.business;
+  const amount = Number(v.amount);
+  const tx = {
+    id: (business ? 'BX-' : 'TX-') + Date.now(),
+    date: v.date,
+    merchant: v.merchant,
+    description: v.description || '',
+    account: business ? 'Brex Checking' : (v.account || 'Chase Checking'),
+    category: v.category,
+    amount,
+    direction: amount < 0 ? 'debit' : 'credit',
+    recurring: false,
+    source: 'Accounts/transactions/2026-05.csv',
+    row: DATA.transactions.length + 2,
+    importedFrom: v.importedFrom || 'manual-entry',
+    entityId: v.entityId || 'personal',
+    deductible: business ? amount < 0 : false,
+  };
+  if (business) tx.entity = v.entityId;
+  DATA.transactions.push(tx);
+  return tx;
+}
+
+// Parse a simple CSV: date,merchant,description,category,amount (header optional).
+function ingestTransactionCSV(text, { entityId, business }) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return 0;
+  const looksLikeHeader = /date/i.test(lines[0]) && /amount/i.test(lines[0]);
+  const rows = looksLikeHeader ? lines.slice(1) : lines;
+  let n = 0;
+  for (const line of rows) {
+    const cells = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    if (cells.length < 2) continue;
+    const [date, merchant, description, category, amount] = cells;
+    const amt = Number((amount != null ? amount : description) || NaN);
+    if (Number.isNaN(amt)) continue;
+    addTransaction({
+      date: date || '2026-05-25',
+      merchant: merchant || 'Imported',
+      description: cells.length >= 5 ? description : '',
+      category: cells.length >= 5 ? (category || 'groceries') : 'groceries',
+      amount: amt,
+      entityId, business, importedFrom: 'import.csv',
+    });
+    n++;
+  }
+  return n;
+}
+
+function importTransactionsFlow({ entityId = 'personal', business = false } = {}) {
+  const catSource = business ? DATA.businessCategories : DATA.categories.filter(c => c.id !== 'income');
+  const catOptions = [{ value: 'income', label: 'Income' }, ...catSource.map(c => ({ value: c.id, label: c.name }))];
+  const fileInput = el('input', { type: 'file', accept: '.csv,text/csv', class: 'modal-file' });
+  const filePicker = el('div', { class: 'modal-import-file' }, [
+    el('label', { class: 'modal-field-label', text: 'Import a CSV file' }),
+    fileInput,
+    el('div', { class: 'modal-hint', text: 'Columns: date, merchant, description, category, amount (negative = expense).' }),
+    el('div', { class: 'modal-or', text: 'or add one manually' }),
+  ]);
+
+  openModal({
+    title: business ? 'Import business transactions' : 'Import transactions',
+    subtitle: 'Drop in a bank/brokerage CSV export, or enter a single transaction.',
+    body: filePicker,
+    fields: [
+      { key: 'date', label: 'Date', type: 'date', value: '2026-05-25' },
+      { key: 'merchant', label: 'Merchant', placeholder: 'e.g. Whole Foods' },
+      { key: 'description', label: 'Description', placeholder: 'optional' },
+      { key: 'category', label: 'Category', type: 'select', options: catOptions, value: catOptions[1] ? catOptions[1].value : 'income' },
+      { key: 'amount', label: 'Amount', type: 'number', step: '0.01', placeholder: '-120.00', hint: 'Negative for an expense, positive for income.' },
+    ],
+    submitLabel: 'Import',
+    onSubmit: (v) => {
+      const file = fileInput.files && fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const n = ingestTransactionCSV(String(reader.result), { entityId, business });
+          if (n) { commit(); toast(n + ' transaction' + (n === 1 ? '' : 's') + ' imported from ' + file.name, 'ok'); }
+          else toast('No valid rows found in ' + file.name, 'warn');
+        };
+        reader.readAsText(file);
+        return true;
+      }
+      if (v.merchant && v.amount != null && v.amount !== '') {
+        addTransaction({ ...v, entityId, business });
+        commit();
+        toast('Transaction added to the ledger', 'ok');
+        return true;
+      }
+      toast('Choose a file or enter a merchant and amount', 'warn');
+      return false;
+    },
+  });
+}
+
+function addGoalFlow() {
+  openModal({
+    title: 'New savings goal',
+    subtitle: 'Goals link to a source account and a monthly budgeted contribution.',
+    fields: [
+      { key: 'name', label: 'Goal name', required: true, placeholder: 'e.g. New car' },
+      { key: 'target', label: 'Target amount', type: 'number', step: '100', required: true, placeholder: '20000' },
+      { key: 'balance', label: 'Starting balance', type: 'number', step: '100', value: 0 },
+      { key: 'monthlyTarget', label: 'Monthly contribution', type: 'number', step: '50', value: 0 },
+      { key: 'targetDate', label: 'Target date', type: 'date', value: '2027-12-01' },
+      { key: 'account', label: 'Source account', value: 'Marcus · New Fund' },
+    ],
+    submitLabel: 'Create goal',
+    onSubmit: (v) => {
+      DATA.goals.push({
+        id: 'goal-' + Date.now(),
+        name: v.name,
+        target: Number(v.target),
+        balance: Number(v.balance) || 0,
+        monthlyTarget: Number(v.monthlyTarget) || 0,
+        monthlyActual: 0,
+        targetDate: v.targetDate,
+        account: v.account || 'Marcus · New Fund',
+        note: null,
+        contributions: [],
+        source: 'Savings/goals.csv',
+        row: DATA.goals.length + 2,
+      });
+      commit();
+      toast('Goal “' + v.name + '” created', 'ok');
+    },
+  });
+}
+
+function addCategoryFlow() {
+  openModal({
+    title: 'New budget category',
+    fields: [
+      { key: 'name', label: 'Category name', required: true, placeholder: 'e.g. Subscriptions' },
+      { key: 'group', label: 'Group', type: 'select', value: 'Discretionary', options: [
+        { value: 'Fixed', label: 'Fixed' },
+        { value: 'Variable', label: 'Variable' },
+        { value: 'Discretionary', label: 'Discretionary' },
+        { value: 'Savings', label: 'Savings' },
+      ] },
+      { key: 'planned', label: 'Monthly budget target', type: 'number', step: '10', value: 0 },
+    ],
+    submitLabel: 'Create category',
+    onSubmit: (v) => {
+      const palette = ['#6366f1', '#0ea5e9', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#06b6d4', '#22c55e'];
+      DATA.categories.push({
+        id: v.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'cat-' + Date.now(),
+        name: v.name,
+        group: v.group,
+        planned: Number(v.planned) || 0,
+        color: palette[DATA.categories.length % palette.length],
+      });
+      commit();
+      toast('Category “' + v.name + '” added', 'ok');
+    },
+  });
+}
+
+function addEntityFlow() {
+  openModal({
+    title: 'New theme / entity',
+    subtitle: 'Themes group accounts (Personal, Place of Employment, a specific LLC).',
+    fields: [
+      { key: 'display', label: 'Display name', required: true, placeholder: 'e.g. Rental LLC' },
+      { key: 'type', label: 'Type', type: 'select', value: 'business', options: [
+        { value: 'personal', label: 'Personal' },
+        { value: 'employment', label: 'Place of Employment' },
+        { value: 'business', label: 'Business' },
+      ] },
+      { key: 'taxId', label: 'Tax ID (optional)', placeholder: 'xx-xxxxxxx' },
+    ],
+    submitLabel: 'Create entity',
+    onSubmit: (v) => {
+      DATA.entities.push({
+        id: v.display.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'entity-' + Date.now(),
+        display: v.display,
+        type: v.type,
+        taxId: v.taxId || '—',
+        active: true,
+      });
+      commit();
+      toast('Entity “' + v.display + '” created', 'ok');
+    },
+  });
+}
+
+function addAccountFlow(entityId) {
+  const entityOptions = DATA.entities.map(e => ({ value: e.id, label: e.display }));
+  openModal({
+    title: 'Add account',
+    subtitle: 'Accounts register in the master Accounts/accounts.csv registry.',
+    fields: [
+      { key: 'name', label: 'Account name', required: true, placeholder: 'e.g. Ally Savings' },
+      { key: 'institution', label: 'Institution', placeholder: 'e.g. Ally' },
+      { key: 'group', label: 'Group', type: 'select', value: 'Everyday Banking', options: [
+        { value: 'Everyday Banking', label: 'Everyday Banking' },
+        { value: 'Credit Cards', label: 'Credit Cards' },
+        { value: 'Investments', label: 'Investments' },
+        { value: 'Savings', label: 'Savings' },
+        { value: 'Business', label: 'Business' },
+        { value: 'Benefits', label: 'Benefits' },
+        { value: 'Loans & Debt', label: 'Loans & Debt' },
+      ] },
+      { key: 'type', label: 'Type', value: 'checking' },
+      { key: 'entityId', label: 'Theme / entity', type: 'select', value: entityId || 'personal', options: entityOptions },
+      { key: 'monthlyInflow', label: 'Monthly inflow', type: 'number', step: '50', value: 0 },
+      { key: 'ytdNetIncome', label: 'YTD net income', type: 'number', step: '100', value: 0 },
+    ],
+    submitLabel: 'Add account',
+    onSubmit: (v) => {
+      DATA.accounts.push({
+        id: 'acct-' + Date.now(),
+        name: v.name,
+        institution: v.institution || '—',
+        group: v.group,
+        type: v.type || 'checking',
+        monthlyInflow: Number(v.monthlyInflow) || 0,
+        ytdNetIncome: Number(v.ytdNetIncome) || 0,
+        entityId: v.entityId,
+      });
+      commit();
+      toast('Account “' + v.name + '” added', 'ok');
+    },
+  });
+}
+
+function addPaymentFlow() {
+  openModal({
+    title: 'New estimated payment',
+    fields: [
+      { key: 'quarter', label: 'Quarter', type: 'select', value: '2', options: [
+        { value: '1', label: 'Q1' }, { value: '2', label: 'Q2' }, { value: '3', label: 'Q3' }, { value: '4', label: 'Q4' },
+      ] },
+      { key: 'jurisdiction', label: 'Jurisdiction', type: 'select', value: 'Federal', options: [
+        { value: 'Federal', label: 'Federal' }, { value: 'Colorado', label: 'Colorado' },
+      ] },
+      { key: 'due', label: 'Due date', type: 'date', value: '2026-06-15' },
+      { key: 'amount', label: 'Amount', type: 'number', step: '50', required: true, value: 4200 },
+      { key: 'paid', label: 'Amount paid', type: 'number', step: '50', value: 0 },
+    ],
+    submitLabel: 'Add payment',
+    onSubmit: (v) => {
+      const paid = Number(v.paid) || 0;
+      DATA.estimatedPayments.push({
+        id: 'ep-' + Date.now(),
+        year: 2026,
+        quarter: Number(v.quarter),
+        due: v.due,
+        amount: Number(v.amount),
+        paid,
+        paidDate: paid > 0 ? '2026-06-14' : null,
+        jurisdiction: v.jurisdiction,
+        status: paid >= Number(v.amount) ? 'paid' : 'upcoming',
+      });
+      commit();
+      toast('Estimated payment added', 'ok');
+    },
+  });
+}
+
+function addPaystubFlow(entityId) {
+  openModal({
+    title: 'Import paystub',
+    subtitle: 'Records a paycheck deposit against this employer.',
+    fields: [
+      { key: 'date', label: 'Pay date', type: 'date', value: '2026-05-29' },
+      { key: 'merchant', label: 'Employer', value: 'Acme Employer' },
+      { key: 'description', label: 'Description', value: 'Payroll deposit' },
+      { key: 'amount', label: 'Net deposit', type: 'number', step: '0.01', required: true, value: 4825.40 },
+    ],
+    submitLabel: 'Import',
+    onSubmit: (v) => {
+      addTransaction({ ...v, amount: Math.abs(Number(v.amount)), category: 'income', entityId, account: 'Chase Checking', importedFrom: 'paystub' });
+      commit();
+      toast('Paycheck imported', 'ok');
+    },
+  });
+}
+
+function updatePriceFlow() {
+  const holdingOptions = DATA.holdings.map(h => ({ value: h.id, label: h.ticker + ' · ' + fmtUSD2(h.price) }));
+  openModal({
+    title: 'Update prices',
+    subtitle: 'Set the latest close for a holding (stands in for a price-file import).',
+    fields: [
+      { key: 'holding', label: 'Holding', type: 'select', options: holdingOptions, value: holdingOptions[0] && holdingOptions[0].value },
+      { key: 'price', label: 'New price', type: 'number', step: '0.01', required: true },
+    ],
+    submitLabel: 'Update',
+    onSubmit: (v) => {
+      const h = DATA.holdings.find(x => x.id === v.holding);
+      if (h) { h.price = Number(v.price); commit(); toast(h.ticker + ' repriced to ' + fmtUSD2(h.price), 'ok'); }
+    },
+  });
+}
+
+function rebalancePlanFlow() {
+  const total = DATA.holdings.reduce((s, h) => s + h.qty * h.price, 0);
+  const rows = DATA.sleeveTargets.map(t => {
+    const drift = t.actual - t.target;
+    const dollar = -drift * total;
+    return { ticker: t.ticker, sleeve: sleeveById()[t.sleeve] ? sleeveById()[t.sleeve].name : t.sleeve, drift, dollar };
+  }).filter(r => Math.abs(r.drift) > 0.005);
+
+  const table = el('table', { class: 'tbl' });
+  table.innerHTML = `<thead><tr><th>Holding</th><th>Sleeve</th><th class="num">Drift</th><th class="num">Suggested trade</th></tr></thead><tbody></tbody>`;
+  const tbody = table.querySelector('tbody');
+  for (const r of rows) {
+    const tr = tbody.insertRow();
+    tr.insertCell().textContent = r.ticker;
+    const sl = tr.insertCell(); sl.className = 'muted'; sl.textContent = r.sleeve;
+    const d = tr.insertCell(); d.className = 'num ' + (r.drift > 0 ? 'neg' : 'pos'); d.textContent = fmtPctSigned(r.drift, 1);
+    const a = tr.insertCell(); a.className = 'num'; a.textContent = (r.dollar >= 0 ? 'Buy ' : 'Sell ') + fmtUSD(Math.abs(r.dollar));
+  }
+  openModal({
+    title: 'Rebalance plan',
+    subtitle: 'Trades to bring each sleeve back to target weight (drift > 0.5%).',
+    body: el('div', { class: 'panel-body flush', style: { margin: '0 -4px' } }, [
+      rows.length ? table : el('p', { style: { color: 'var(--muted)', fontSize: '12px' }, text: 'All sleeves are within tolerance — no rebalance needed.' }),
+    ]),
+    submitLabel: 'Export plan',
+    onSubmit: () => {
+      exportCSV('rebalance-plan.csv',
+        [{ label: 'ticker', value: 'ticker' }, { label: 'sleeve', value: 'sleeve' },
+         { label: 'drift', value: r => fmtPctSigned(r.drift, 1) }, { label: 'trade_usd', value: r => Math.round(r.dollar) }],
+        rows);
+    },
+  });
+}
+
+function applyRepair(issueId) {
+  const idx = DATA.issues.findIndex(i => i.id === issueId);
+  if (idx === -1) return;
+  const issue = DATA.issues[idx];
+  DATA.issues.splice(idx, 1);
+  DATA.workspace.issueCount = DATA.issues.length;
+  if (state.selection && state.selection.kind === 'issue' && state.selection.id === issueId) {
+    closeInspector();
+  }
+  commit();
+  toast('Repaired: ' + issue.title + ' · backup saved', 'ok');
+}
+
+function toggleChecklistItem(id) {
+  const item = DATA.taxChecklist.find(c => c.id === id);
+  if (!item) return;
+  item.done = !item.done;
+  commit();
+}
+
+function exportBusinessPL(entityId) {
+  const entity = entityById()[entityId];
+  const txs = DATA.transactions.filter(t => t.entityId === entityId);
+  const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const md = [
+    '# ' + (entity ? entity.display : entityId) + ' — P&L (May 2026)',
+    '',
+    '| Line | Amount |',
+    '| --- | --- |',
+    '| Revenue | ' + fmtUSD(revenue) + ' |',
+    '| Expenses | ' + fmtUSD(expenses) + ' |',
+    '| **Net income** | **' + fmtUSD(revenue - expenses) + '** |',
+    '',
+    '## Transactions',
+    '',
+    '| Date | Merchant | Category | Amount | Deductible |',
+    '| --- | --- | --- | --- | --- |',
+    ...txs.map(t => `| ${t.date} | ${t.merchant} | ${t.category} | ${t.amount} | ${t.deductible ? 'yes' : 'no'} |`),
+  ].join('\n');
+  exportMarkdown((entityId || 'business') + '-pl.md', md);
+}
+
+function exportTaxPacket() {
+  const md = [
+    '# 2026 Tax Prep Packet',
+    '',
+    '## Prep checklist',
+    ...DATA.taxChecklist.map(c => `- [${c.done ? 'x' : ' '}] ${c.label}${c.due ? ' (due ' + c.due + ')' : ''}`),
+    '',
+    '## Estimated payments',
+    '| Quarter | Jurisdiction | Due | Amount | Paid | Status |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...DATA.estimatedPayments.map(p => `| Q${p.quarter} ${p.year} | ${p.jurisdiction} | ${p.due} | ${p.amount} | ${p.paid} | ${p.status} |`),
+    '',
+    '## Deductions',
+    '| Deduction | Type | Estimated | Status |',
+    '| --- | --- | --- | --- |',
+    ...DATA.deductions.map(d => `| ${d.name} | ${d.type} | ${d.estimatedAmount} | ${d.status} |`),
+  ].join('\n');
+  exportMarkdown('2026-tax-prep-packet.md', md);
+}
+
+// =====================================================================
 // VIEW RENDERERS
 // =====================================================================
 
@@ -421,8 +1017,18 @@ function viewOverviewDashboard() {
     title: 'Overview',
     breadcrumb: ['Finance', 'Overview', 'Dashboard'],
     actions: [
-      { label: 'Export', variant: 'btn-ghost' },
-      { label: 'Reindex', variant: 'btn-ghost' },
+      { label: 'Apply repairable fixes', variant: '', onClick: () => {
+        const repairable = DATA.issues.filter(i => i.repairable);
+        if (!repairable.length) { toast('No repairable issues remaining', 'info'); return; }
+        repairable.forEach(i => { const idx = DATA.issues.findIndex(x => x.id === i.id); if (idx > -1) DATA.issues.splice(idx, 1); });
+        DATA.workspace.issueCount = DATA.issues.length;
+        commit();
+        toast(repairable.length + ' issues repaired · backups saved', 'ok');
+      } },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('overview-issues.csv',
+        [{ label: 'severity', value: 'severity' }, { label: 'group', value: 'group' }, { label: 'title', value: 'title' }, { label: 'file', value: i => i.filePath || i.file }, { label: 'repairable', value: 'repairable' }],
+        DATA.issues) },
+      { label: 'Reindex', variant: 'btn-ghost', onClick: runReindex },
     ],
   });
   renderFilterBar([]);
@@ -550,8 +1156,10 @@ function viewBudgetOverview() {
     title: 'Budget · May 2026',
     breadcrumb: ['Finance', 'Budget', 'Overview'],
     actions: [
-      { label: 'Import CSV', variant: '' },
-      { label: 'Export', variant: 'btn-ghost' },
+      { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId: 'personal' }) },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('transactions-2026-05.csv',
+        [{ label: 'date', value: 'date' }, { label: 'merchant', value: 'merchant' }, { label: 'description', value: 'description' }, { label: 'account', value: 'account' }, { label: 'category', value: 'category' }, { label: 'amount', value: 'amount' }],
+        DATA.transactions.filter(t => t.category !== 'income' && !/^BX-/.test(t.id))) },
     ],
   });
   renderFilterBar([]);
@@ -666,7 +1274,7 @@ function viewBudgetOverview() {
       el('span', { class: 'panel-sub', text: `${txs.length} transactions` }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('button', { class: 'btn btn-ghost', text: 'Open file' }),
+        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Accounts/transactions/2026-05.csv') }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [
@@ -720,7 +1328,13 @@ function viewBudgetHistory() {
   setHeader({
     title: 'Budget History',
     breadcrumb: ['Finance', 'Budget', 'Budget History'],
-    actions: [{ label: 'Export', variant: 'btn-ghost' }],
+    actions: [{ label: 'Export', variant: 'btn-ghost', onClick: () => {
+      const labels = ['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'];
+      const actualSeries = [8420, 8910, 9120, 8590, 9650, 8820, 9350, 9120, 8480, 8240, 9080, 9090];
+      exportCSV('budget-history.csv',
+        [{ label: 'month', value: 'm' }, { label: 'planned', value: 'planned' }, { label: 'actual', value: 'actual' }, { label: 'variance', value: r => r.actual - r.planned }],
+        labels.map((m, i) => ({ m, planned: 8770, actual: actualSeries[i] })));
+    } }],
   });
   renderFilterBar([
     { label: 'Period', value: 'Trailing 12 months', active: true },
@@ -776,7 +1390,12 @@ function viewBudgetCategories() {
   setHeader({
     title: 'Categories',
     breadcrumb: ['Finance', 'Budget', 'Categories'],
-    actions: [{ label: 'New category', variant: '' }, { label: 'Export', variant: 'btn-ghost' }],
+    actions: [
+      { label: 'New category', variant: '', onClick: addCategoryFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('categories.csv',
+        [{ label: 'id', value: 'id' }, { label: 'name', value: 'name' }, { label: 'group', value: 'group' }, { label: 'planned', value: 'planned' }],
+        DATA.categories) },
+    ],
   });
   renderFilterBar([{ label: 'Group', value: 'All' }, { label: 'Status', value: 'Active' }]);
   const c = $('#content');
@@ -861,12 +1480,22 @@ function viewSavingsGoals() {
   setHeader({
     title: 'Savings Goals',
     breadcrumb: ['Finance', 'Savings & Investments', 'Goals'],
-    actions: [{ label: 'New goal', variant: '' }, { label: 'Export', variant: 'btn-ghost' }],
+    actions: [
+      { label: 'New goal', variant: '', onClick: addGoalFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('savings-goals.csv',
+        [{ label: 'name', value: 'name' }, { label: 'target', value: 'target' }, { label: 'balance', value: 'balance' }, { label: 'monthly_target', value: 'monthlyTarget' }, { label: 'target_date', value: 'targetDate' }],
+        DATA.goals) },
+    ],
   });
   renderFilterBar([
     { label: 'Target year', value: 'All' },
     { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search goals', onChange: () => {} },
+    { kind: 'search', placeholder: 'Search goals', onChange: (q) => {
+      const ql = q.trim().toLowerCase();
+      document.querySelectorAll('#content .goal-card').forEach(card => {
+        card.style.display = !ql || card.textContent.toLowerCase().includes(ql) ? '' : 'none';
+      });
+    } },
   ]);
 
   const c = $('#content');
@@ -952,9 +1581,11 @@ function viewInvestments() {
     title: 'Portfolio Overview',
     breadcrumb: ['Finance', 'Savings & Investments', 'Portfolio Overview'],
     actions: [
-      { label: 'Import prices', variant: '' },
-      { label: 'Rebalance plan', variant: 'btn-ghost' },
-      { label: 'Export', variant: 'btn-ghost' },
+      { label: 'Import prices', variant: '', onClick: updatePriceFlow },
+      { label: 'Rebalance plan', variant: 'btn-ghost', onClick: rebalancePlanFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('holdings.csv',
+        [{ label: 'ticker', value: 'ticker' }, { label: 'name', value: 'name' }, { label: 'account', value: 'account' }, { label: 'sleeve', value: 'sleeve' }, { label: 'qty', value: 'qty' }, { label: 'price', value: 'price' }, { label: 'basis', value: 'basis' }, { label: 'market_value', value: h => Math.round(h.qty * h.price) }],
+        DATA.holdings) },
     ],
   });
   renderFilterBar([
@@ -1124,8 +1755,10 @@ function viewInvestmentsHoldings() {
     title: 'Holdings',
     breadcrumb: ['Finance', 'Savings & Investments', 'Holdings'],
     actions: [
-      { label: 'Import prices', variant: '' },
-      { label: 'Export', variant: 'btn-ghost' },
+      { label: 'Import prices', variant: '', onClick: updatePriceFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('holdings.csv',
+        [{ label: 'ticker', value: 'ticker' }, { label: 'name', value: 'name' }, { label: 'account', value: 'account' }, { label: 'sleeve', value: 'sleeve' }, { label: 'qty', value: 'qty' }, { label: 'price', value: 'price' }, { label: 'basis', value: 'basis' }],
+        DATA.holdings) },
     ],
   });
   renderFilterBar([
@@ -1133,7 +1766,12 @@ function viewInvestmentsHoldings() {
     { label: 'Sleeve', value: 'All' },
     { label: 'As of', value: 'May 11, 2026', active: true },
     { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search holdings', onChange: () => {} },
+    { kind: 'search', placeholder: 'Search holdings', onChange: (q) => {
+      const ql = q.trim().toLowerCase();
+      document.querySelectorAll('#content table tbody tr').forEach(tr => {
+        tr.style.display = !ql || tr.textContent.toLowerCase().includes(ql) ? '' : 'none';
+      });
+    } },
   ]);
 
   const c = $('#content');
@@ -1248,9 +1886,9 @@ function viewBusiness() {
     title: 'Business · ' + entity.display,
     breadcrumb: ['Finance', 'Business', entity.display],
     actions: [
-      { label: 'Import CSV', variant: '' },
-      { label: 'New entity', variant: 'btn-ghost' },
-      { label: 'Export P&L', variant: 'btn-ghost' },
+      { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId, business: true }) },
+      { label: 'New entity', variant: 'btn-ghost', onClick: addEntityFlow },
+      { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(entityId) },
     ],
   });
   renderFilterBar([
@@ -1258,7 +1896,12 @@ function viewBusiness() {
     { label: 'Period', value: 'May 2026', active: true },
     { label: 'Account', value: 'All' },
     { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search transactions', onChange: () => {} },
+    { kind: 'search', placeholder: 'Search transactions', onChange: (q) => {
+      const ql = q.trim().toLowerCase();
+      document.querySelectorAll('#content table tbody tr').forEach(tr => {
+        tr.style.display = !ql || tr.textContent.toLowerCase().includes(ql) ? '' : 'none';
+      });
+    } },
   ]);
 
   const c = $('#content');
@@ -1348,7 +1991,7 @@ function viewBusiness() {
       el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('button', { class: 'btn btn-ghost', text: 'Open file' }),
+        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Accounts/transactions/2026-05.csv') }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [(() => {
@@ -1377,7 +2020,19 @@ function viewBusiness() {
 }
 
 function viewBusinessCategories() {
-  setHeader({ title: 'Business Categories', breadcrumb: ['Finance', 'Business', 'Categories'], actions: [{ label: 'New', variant: '' }] });
+  setHeader({ title: 'Business Categories', breadcrumb: ['Finance', 'Business', 'Categories'], actions: [{ label: 'New', variant: '', onClick: () => openModal({
+    title: 'New business category',
+    fields: [
+      { key: 'name', label: 'Category name', required: true },
+      { key: 'taxGroup', label: 'Tax group', value: 'Other' },
+    ],
+    submitLabel: 'Create',
+    onSubmit: (v) => {
+      DATA.businessCategories.push({ id: 'b-' + Date.now(), name: v.name, taxGroup: v.taxGroup || 'Other' });
+      commit();
+      toast('Business category added', 'ok');
+    },
+  }) }] });
   renderFilterBar([{ label: 'Tax group', value: 'All' }]);
   const c = $('#content');
   c.appendChild(el('div', { class: 'panel' }, [
@@ -1411,8 +2066,8 @@ function viewTaxes() {
     title: 'Taxes · 2026',
     breadcrumb: ['Finance', 'Taxes', 'Current Tax Year'],
     actions: [
-      { label: 'Export prep packet', variant: '' },
-      { label: 'New payment', variant: 'btn-ghost' },
+      { label: 'Export prep packet', variant: '', onClick: exportTaxPacket },
+      { label: 'New payment', variant: 'btn-ghost', onClick: addPaymentFlow },
     ],
   });
   renderFilterBar([
@@ -1792,7 +2447,18 @@ function viewSettingsWorkspace() {
         } }, ['Cycle sync state']),
         // T025: Show indexing state button (appended, does not replace T019 or T023)
         el('button', { class: 'btn btn-ghost', onclick: () => navigate('indexing-progress') }, ['Show indexing state']),
+        // r5: reset persisted prototype edits back to the seed dataset
+        el('button', { class: 'btn btn-danger', onclick: () => openModal({
+          title: 'Reset prototype data?',
+          subtitle: 'Discards every add, import, repair, and checklist change you made and reloads the seed dataset.',
+          submitLabel: 'Reset workspace',
+          danger: true,
+          onSubmit: () => Store.reset(),
+        }) }, ['Reset prototype data']),
       ]),
+      el('p', { style: { fontSize: '11.5px', color: 'var(--muted)', marginTop: '12px' }, text: Store.isDirty()
+        ? 'Local edits are saved to this browser (localStorage). They persist across refreshes until reset.'
+        : 'No local edits yet — showing the seed dataset. Adds, imports, and repairs will be saved to this browser.' }),
     ]),
   ]));
 }
@@ -1835,7 +2501,10 @@ function viewOnboarding() {
           el('div', { class: 'state-label', text: ws.label }),
           el('div', { class: 'state-desc', text: ws.description }),
           ws.recoveryAction
-            ? el('button', { class: 'btn state-action', text: ws.recoveryAction })
+            ? el('button', { class: 'btn state-action', text: ws.recoveryAction, onclick: () => {
+                if (ws.id === 'workspace-created') { navigate('accounts-overview'); return; }
+                toast(ws.recoveryAction + ' — ' + ws.label, 'info');
+              } })
             : null,
           ws.id === 'workspace-created'
             ? el('div', { style: { marginTop: '8px', fontSize: '11.5px', color: 'var(--muted)' } }, [
@@ -1880,7 +2549,8 @@ function viewIndexingProgress() {
         const tr = tbody.insertRow();
         const td1 = tr.insertCell(); td1.innerHTML = '<span class="path-chip">Investments/benchmarks/sp500.csv<span class="sync-badge sync-badge--missing"></span></span>';
         const td2 = tr.insertCell(); td2.textContent = 'File exists in iCloud but not downloaded locally';
-        const td3 = tr.insertCell(); td3.innerHTML = '<button class="btn btn-ghost" style="font-size:11.5px">Download</button>';
+        const td3 = tr.insertCell();
+        td3.appendChild(el('button', { class: 'btn btn-ghost', style: { fontSize: '11.5px' }, text: 'Download', onclick: () => osAction('Download from iCloud', 'Investments/benchmarks/sp500.csv') }));
         return table;
       })(),
     ]),
@@ -1901,8 +2571,9 @@ function viewAccountEntity(entityId) {
       title: 'Business · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Import CSV', variant: '' },
-        { label: 'Export P&L', variant: 'btn-ghost' },
+        { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId, business: true }) },
+        { label: 'New entity', variant: 'btn-ghost', onClick: addEntityFlow },
+        { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(entityId) },
       ],
     });
     renderFilterBar([
@@ -1910,7 +2581,12 @@ function viewAccountEntity(entityId) {
       { label: 'Period', value: 'May 2026', active: true },
       { label: 'Account', value: 'All' },
       { kind: 'spacer' },
-      { kind: 'search', placeholder: 'Search transactions', onChange: () => {} },
+      { kind: 'search', placeholder: 'Search transactions', onChange: (q) => {
+      const ql = q.trim().toLowerCase();
+      document.querySelectorAll('#content table tbody tr').forEach(tr => {
+        tr.style.display = !ql || tr.textContent.toLowerCase().includes(ql) ? '' : 'none';
+      });
+    } },
     ]);
 
     const c = $('#content');
@@ -2061,7 +2737,7 @@ function viewAccountEntity(entityId) {
       title: 'Employment · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Import Paystub', variant: '' },
+        { label: 'Import Paystub', variant: '', onClick: () => addPaystubFlow(entityId) },
       ],
     });
     renderFilterBar([
@@ -2128,7 +2804,7 @@ function viewAccountEntity(entityId) {
       title: 'Personal · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Add Asset', variant: '' },
+        { label: 'Add Asset', variant: '', onClick: () => addAccountFlow(entityId) },
       ],
     });
     renderFilterBar([
@@ -2206,7 +2882,13 @@ function viewAccounts() {
   setHeader({
     title: 'Accounts',
     breadcrumb: ['Finance', 'Accounts', 'All Accounts'],
-    actions: [{ label: 'Export', variant: 'btn-ghost' }],
+    actions: [
+      { label: 'New account', variant: '', onClick: () => addAccountFlow() },
+      { label: 'New entity', variant: 'btn-ghost', onClick: addEntityFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('accounts.csv',
+        [{ label: 'name', value: 'name' }, { label: 'institution', value: 'institution' }, { label: 'group', value: 'group' }, { label: 'type', value: 'type' }, { label: 'entity', value: 'entityId' }, { label: 'monthly_inflow', value: 'monthlyInflow' }, { label: 'ytd_net_income', value: 'ytdNetIncome' }],
+        DATA.accounts) },
+    ],
   });
   renderFilterBar([]);
   const c = $('#content');
@@ -2217,7 +2899,7 @@ function viewAccounts() {
       el('div', { style: { fontSize: '32px', marginBottom: '12px' }, text: '🏦' }),
       el('h3', { style: { color: 'var(--ink-2)', marginBottom: '8px' }, text: 'No accounts added' }),
       el('p', { style: { fontSize: '12px', marginBottom: '16px' }, text: 'Accounts will appear here once you add them to your workspace.' }),
-      el('button', { class: 'btn', text: 'Add account (coming soon)' }),
+      el('button', { class: 'btn', text: 'Add account', onclick: () => addAccountFlow() }),
     ]));
     return;
   }
@@ -2364,7 +3046,7 @@ function viewTaxesChecklist() {
   setHeader({
     title: 'Prep Checklist · 2026',
     breadcrumb: ['Finance', 'Taxes', 'Prep Checklist'],
-    actions: [{ label: 'Export prep packet', variant: '' }],
+    actions: [{ label: 'Export prep packet', variant: '', onClick: exportTaxPacket }],
   });
   renderFilterBar([
     { label: 'Tax year', value: '2026', active: true },
@@ -2386,8 +3068,8 @@ function viewTaxesChecklist() {
       (() => {
         const ul = el('ul', { class: 'checklist checklist-edu' });
         for (const ci of DATA.taxChecklist) {
-          ul.appendChild(el('li', { onclick: () => select({ kind: 'tax-check', id: ci.id }) }, [
-            el('span', { class: 'checkbox' + (ci.done ? ' done' : '') }),
+          ul.appendChild(el('li', {}, [
+            el('span', { class: 'checkbox' + (ci.done ? ' done' : ''), title: 'Toggle done', onclick: (e) => { e.stopPropagation(); toggleChecklistItem(ci.id); } }),
             el('div', { class: 'ci-body' }, [
               el('div', { class: 'ci-label', text: ci.label }),
               ci.note ? el('div', { class: 'ci-note', text: ci.note }) : null,
@@ -2656,8 +3338,8 @@ function renderInspector() {
         ]),
         el('div', { style: { marginBottom: '8px', fontSize: '11px', color: 'var(--muted)', background: 'var(--surface-sunken)', padding: '6px 10px', borderRadius: '6px' }, text: '🔒 A timestamped backup will be created before applying this change.' }),
         el('div', { style: { display: 'flex', gap: '6px' } }, [
-          el('button', { class: 'btn btn-primary', text: 'Apply repair' }),
-          el('button', { class: 'btn btn-ghost', text: 'Cancel' }),
+          el('button', { class: 'btn btn-primary', text: 'Apply repair', onclick: () => applyRepair(i.id) }),
+          el('button', { class: 'btn btn-ghost', text: 'Cancel', onclick: closeInspector }),
         ]),
       ]));
     } else {
@@ -2665,8 +3347,8 @@ function renderInspector() {
         el('div', { class: 'insp-label', text: 'Manual review required' }),
         el('p', { style: { fontSize: '12px', color: 'var(--ink-3)', lineHeight: '1.5' }, text: 'This issue cannot be repaired automatically. Open the source file and apply the change manually in your editor.' }),
         el('div', { style: { display: 'flex', gap: '6px', marginTop: '10px' } }, [
-          el('button', { class: 'btn btn-ghost', text: 'Reveal in Finder' }),
-          el('button', { class: 'btn btn-ghost', text: 'Open in editor' }),
+          el('button', { class: 'btn btn-ghost', text: 'Reveal in Finder', onclick: () => osAction('Reveal in Finder', i.filePath || i.file) }),
+          el('button', { class: 'btn btn-ghost', text: 'Open in editor', onclick: () => osAction('Open in editor', i.filePath || i.file) }),
         ]),
       ]));
     }
@@ -2842,8 +3524,8 @@ function insSourceBlock({ file, row, importedFrom }) {
       ]),
     ]),
     el('div', { style: { marginTop: '8px', display: 'flex', gap: '6px' } }, [
-      el('button', { class: 'btn btn-ghost', text: 'Reveal in Finder' }),
-      el('button', { class: 'btn btn-ghost', text: 'Open in editor' }),
+      el('button', { class: 'btn btn-ghost', text: 'Reveal in Finder', onclick: () => osAction('Reveal in Finder', file) }),
+      el('button', { class: 'btn btn-ghost', text: 'Open in editor', onclick: () => osAction('Open in editor', file) }),
     ]),
   ]);
 }

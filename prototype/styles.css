@@ -1510,3 +1510,143 @@ a { color: var(--accent); text-decoration: none; }
   border-radius: 0 6px 6px 0;
   max-width: 760px;
 }
+
+/* =========================================================
+   r5 · Interactive layer — modals, toasts, menus, forms
+   ========================================================= */
+
+.btn.btn-danger {
+  background: var(--err);
+  color: #fff;
+  border-color: var(--err);
+}
+.btn.btn-danger:hover { background: #991b1b; border-color: #991b1b; }
+
+/* ----- Modal ----- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.34);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 64px 16px 16px;
+  z-index: 200;
+  overflow-y: auto;
+  animation: overlay-in 0.12s ease;
+}
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.22);
+  display: flex;
+  flex-direction: column;
+  animation: modal-in 0.14s ease;
+}
+@keyframes modal-in { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-head {
+  padding: 16px 18px 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.modal-head h2 { font-size: 15px; }
+.modal-sub { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+.modal-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; max-height: 62vh; overflow-y: auto; }
+
+.modal-field { display: flex; flex-direction: column; gap: 5px; }
+.modal-field label, .modal-field-label { font-size: 11.5px; font-weight: 600; color: var(--ink-3); }
+.modal-field input,
+.modal-field select,
+.modal-field textarea {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-1);
+  width: 100%;
+}
+.modal-field input:focus,
+.modal-field select:focus,
+.modal-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.modal-field input.field-error,
+.modal-field select.field-error { border-color: var(--err); box-shadow: 0 0 0 3px var(--err-soft); }
+.modal-hint { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+.modal-import-file { display: flex; flex-direction: column; gap: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--border-soft); }
+.modal-file { font-size: 12px; }
+.modal-or { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; margin-top: 6px; }
+
+.modal-foot {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ----- Dropdown menu (filter bar) ----- */
+.proto-menu {
+  position: absolute;
+  z-index: 210;
+  min-width: 160px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+  padding: 4px;
+  animation: modal-in 0.1s ease;
+}
+.proto-menu-item {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--ink-2);
+}
+.proto-menu-item:hover { background: var(--surface-sunken); }
+.proto-menu-item.active { color: var(--accent-ink); font-weight: 600; background: var(--accent-soft); }
+
+/* ----- Toasts ----- */
+.toast-host {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  font-size: 12.5px;
+  color: var(--ink-1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.16);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  max-width: 340px;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--accent); }
+.toast-ok .toast-dot { background: var(--ok); }
+.toast-warn .toast-dot { background: var(--warn); }
+.toast-info .toast-dot { background: var(--accent); }
