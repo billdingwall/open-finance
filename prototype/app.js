@@ -411,7 +411,11 @@ function renderCenter() {
   if (v === 'settings-schema')                                                           return viewSettingsSchema();
   // stub for any unimplemented view
   const c = $('#content');
-  c.appendChild(el('p', { style: { color: 'var(--muted)', padding: '24px' }, text: 'Coming in this sprint' }));
+  c.appendChild(el('div', { style: { textAlign: 'center', padding: '48px 24px', color: 'var(--muted)' } }, [
+    el('div', { style: { fontSize: '32px', marginBottom: '12px' }, text: '🚧' }),
+    el('h3', { style: { color: 'var(--ink-2)', marginBottom: '8px' }, text: 'Coming in this sprint' }),
+    el('p', { style: { fontSize: '12px', marginBottom: '16px' }, text: 'This view is not yet implemented.' })
+  ]));
 }
 
 // ---------- Overview ---------------------------------------------------------
@@ -2128,7 +2132,15 @@ function viewAccountEntity(entityId) {
       title: 'Personal · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Add Asset', variant: '' },
+        {
+          label: 'Add Asset',
+          variant: '',
+          onClick: () => {
+            DATA.investments.push({ id: 'new-asset', symbol: 'AAPL', name: 'Apple Inc.', assetClass: 'Equity', subclass: 'Large Cap', quantity: 10, price: 150, value: 1500, costBasis: 1000, unrealizedGain: 500 });
+            saveData();
+            navigate('accounts', entity.id);
+          }
+        },
       ],
     });
     renderFilterBar([
@@ -2217,7 +2229,17 @@ function viewAccounts() {
       el('div', { style: { fontSize: '32px', marginBottom: '12px' }, text: '🏦' }),
       el('h3', { style: { color: 'var(--ink-2)', marginBottom: '8px' }, text: 'No accounts added' }),
       el('p', { style: { fontSize: '12px', marginBottom: '16px' }, text: 'Accounts will appear here once you add them to your workspace.' }),
-      el('button', { class: 'btn', text: 'Add account (coming soon)' }),
+      el('button', {
+        class: 'btn',
+        text: 'Add account',
+        onclick: () => {
+          DATA.accounts = [
+            { id: 'checking', name: 'Main Checking', bank: 'Chase', group: 'Everyday Banking', type: 'checking', mask: '1234', lastSync: '2026-05-11', balance: 4500, ytdNetIncome: 1200, monthlyInflow: 5000, theme: 'personal', taxStatus: 'taxable', closed: false }
+          ];
+          saveData();
+          navigate('accounts');
+        }
+      }),
     ]));
     return;
   }

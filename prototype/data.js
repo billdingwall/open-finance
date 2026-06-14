@@ -3,7 +3,7 @@
    Represents a believable May 2026 snapshot of a single workspace.
    ========================================================= */
 
-const DATA = (() => {
+const INITIAL_DATA = (() => {
   const workspace = {
     id: 'finance-main',
     name: 'Finance',
@@ -734,3 +734,25 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
     accountTaxRates,
   };
 })();
+
+let DATA = INITIAL_DATA;
+try {
+  const storedData = localStorage.getItem('finance_workspace_data');
+  if (storedData) {
+    DATA = JSON.parse(storedData);
+  } else {
+    localStorage.setItem('finance_workspace_data', JSON.stringify(DATA));
+  }
+} catch (e) {
+  console.error("Failed to load from local storage", e);
+}
+
+window.saveData = function() {
+  localStorage.setItem('finance_workspace_data', JSON.stringify(DATA));
+};
+
+window.resetData = function() {
+  DATA = JSON.parse(JSON.stringify(INITIAL_DATA));
+  localStorage.setItem('finance_workspace_data', JSON.stringify(DATA));
+  window.location.reload();
+};

@@ -1,0 +1,9 @@
+Please review all functionality detailed in the product-requirements.md, technical-design.md, and the prototype.
+
+I need a full gap analysis of what functionality still needs to be added to either the prototype, the requirements, or both. Any glaring gaps in the prototype should be fixed as part of this audit process.
+
+I want all user flows and app states to be accounted for within the prototype. For example, if a button says "add X", I want to be able to click the next steps of adding that item. All actions in the prototype should work with mock data and local storage.
+
+The gap analysis report should cover the current state as well as what was updated in the prototype fixes and what remains a gap in either the requirements and/or the prototype.
+
+Please save the gap analysis report in "docs/_notes/".
