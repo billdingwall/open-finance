@@ -25,6 +25,7 @@ const Store = (() => {
   }
 
   function hydrate() {
+    if (typeof DATA === 'undefined') return false;
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(KEY)); } catch (_) { saved = null; }
     if (saved && typeof saved === 'object') {

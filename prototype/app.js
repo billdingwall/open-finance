@@ -95,6 +95,7 @@ const state = {
   navCollapsed: new Set(),
   syncState: 'synced',
   inspectorOpen: false,
+  searchQuery: {}, // persists active search query per view across commit() re-renders
 };
 
 // ---------- Sidebar ----------------------------------------------------------
@@ -156,7 +157,7 @@ function renderSidebar() {
         ...DATA.entities.filter(e => e.active).map(e => ({ id: `accounts-entity-${e.id}`, label: e.display }))
       ] : group.items).map(item => {
         const active = state.view === item.id;
-        const badge = item.id === 'savings-goals' ? String(DATA.goals.length) : item.badge;
+        const badge = item.id === 'savings-goals' ? (DATA.goals.length ? String(DATA.goals.length) : null) : item.badge;
         return el('div', {
           class: 'nav-item' + (active ? ' active' : ''),
           onclick: () => navigate(item.id),
@@ -217,10 +218,15 @@ function renderFilterBar(filters) {
   bar.style.display = 'flex';
   for (const f of filters) {
     if (f.kind === 'search') {
+      const savedQ = state.searchQuery[state.view] || '';
       const wrap = el('div', { class: 'search-filter' }, [
-        el('input', { type: 'text', placeholder: f.placeholder || 'Search', value: f.value || '', oninput: e => f.onChange(e.target.value) }),
+        el('input', { type: 'text', placeholder: f.placeholder || 'Search', value: savedQ, oninput: e => {
+          state.searchQuery[state.view] = e.target.value;
+          f.onChange(e.target.value);
+        } }),
       ]);
       bar.appendChild(wrap);
+      if (savedQ) setTimeout(() => f.onChange(savedQ), 0);
     } else if (f.kind === 'spacer') {
       bar.appendChild(el('div', { class: 'filter-spacer' }));
     } else {
@@ -394,7 +400,7 @@ function donutChart(slices, opts = {}) {
 // the technical-design "structured write flow" (build plan → write → re-index
 // → refresh projections).
 function commit() {
-  Store.save();
+  if (!Store.save()) toast('Could not save to localStorage — changes will not persist after reload', 'warn');
   renderSidebar();
   renderCenter();
   if (state.inspectorOpen) renderInspector();
@@ -426,7 +432,7 @@ function openModal({ title, subtitle, fields = [], body, submitLabel = 'Save', o
   const overlay = el('div', {
     class: 'modal-overlay',
     id: 'modal-overlay',
-    onclick: (e) => { if (e.target.id === 'modal-overlay') closeModal(); },
+    onclick: (e) => { if (e.target === e.currentTarget) closeModal(); },
   });
   const form = el('form', {
     class: 'modal',
@@ -591,7 +597,7 @@ function addTransaction(v) {
     amount,
     direction: amount < 0 ? 'debit' : 'credit',
     recurring: false,
-    source: 'Accounts/transactions/2026-05.csv',
+    source: (business ? 'Business/transactions/' + (v.entityId || 'entity') + '-' : 'Personal/transactions/') + (v.date ? v.date.slice(0, 7) : '2026-05') + '.csv',
     row: DATA.transactions.length + 2,
     importedFrom: v.importedFrom || 'manual-entry',
     entityId: v.entityId || 'personal',
@@ -612,14 +618,15 @@ function ingestTransactionCSV(text, { entityId, business }) {
   for (const line of rows) {
     const cells = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
     if (cells.length < 2) continue;
-    const [date, merchant, description, category, amount] = cells;
-    const amt = Number((amount != null ? amount : description) || NaN);
+    // Always treat the last cell as the amount so 3-, 4-, and 5-column bank
+    // exports all parse correctly (date, merchant[, description[, category]], amount).
+    const amt = Number(cells[cells.length - 1]);
     if (Number.isNaN(amt)) continue;
     addTransaction({
-      date: date || '2026-05-25',
-      merchant: merchant || 'Imported',
-      description: cells.length >= 5 ? description : '',
-      category: cells.length >= 5 ? (category || 'groceries') : 'groceries',
+      date: cells[0] || '2026-05-25',
+      merchant: cells[1] || 'Imported',
+      description: cells.length >= 5 ? cells[2] : '',
+      category: cells.length >= 5 ? (cells[3] || 'groceries') : 'groceries',
       amount: amt,
       entityId, business, importedFrom: 'import.csv',
     });
@@ -660,6 +667,7 @@ function importTransactionsFlow({ entityId = 'personal', business = false } = {}
           if (n) { commit(); toast(n + ' transaction' + (n === 1 ? '' : 's') + ' imported from ' + file.name, 'ok'); }
           else toast('No valid rows found in ' + file.name, 'warn');
         };
+        reader.onerror = () => toast('Could not read ' + file.name + ' — try again', 'warn');
         reader.readAsText(file);
         return true;
       }
@@ -1267,14 +1275,14 @@ function viewBudgetOverview() {
 
   // Transaction ledger
   const f = state.filters['budget-overview'];
-  let txs = DATA.transactions.filter(t => t.category !== 'income');
+  let txs = DATA.transactions.filter(t => t.category !== 'income' && !/^BX-/.test(t.id));
   const txPanel = el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
       el('h3', { text: 'Transaction Ledger' }),
       el('span', { class: 'panel-sub', text: `${txs.length} transactions` }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Accounts/transactions/2026-05.csv') }),
+        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Personal/transactions/2026-05.csv') }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [
@@ -1991,7 +1999,7 @@ function viewBusiness() {
       el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Accounts/transactions/2026-05.csv') }),
+        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Business/transactions/' + entityId + '-2026-05.csv') }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [(() => {
