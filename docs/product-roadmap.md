@@ -31,6 +31,9 @@ a PRD amendment before proceeding.
 | Dedicated sleeves screen — sleeve table lives on the Portfolio overview in v1 | V2 |
 | Dedicated benchmark screen — heat map is a holdings table view toggle in v1 | V2 |
 | Dedicated deductions screen — deductions content lives within Current Tax Year in v1 | V2 |
+| Contextual filter bar / filter chips on module screens | V2 |
+
+Inline period/account selection that a screen intrinsically needs stays in v1; only the dedicated filter-bar surface is deferred.
 
 Estimated payments and gains & income are **not** out of scope — their functionality stays in v1,
 surfaced within the Current Tax Year view rather than on dedicated screens.
@@ -460,8 +463,14 @@ is connected. Module views are blocked on their respective domain engines from P
 
 #### Module Views
 - [ ] Finalize Overview dashboard wireframe (updated post Round 1 — see `docs/_refinement/`)
-- [ ] Finalize Accounts views wireframe (new — not in original wireframe set)
-- [ ] Finalize Budget updated wireframe (pie chart + trailing averages)
+- [ ] Finalize app-shell wireframe (Round 5: Overview is the default landing via the sidebar
+  header; issues chip in the global header; local-actions on the page-title line; no filter bar)
+- [ ] Finalize Accounts views wireframe (new — account-group screen with individual-account
+  cards + inline ledger, no sub-tabs; dedicated per-account screen with transactions table)
+- [ ] Finalize Budget updated wireframe (pie chart + trailing averages + 50/50 Spend Mix /
+  Spending Variance panels)
+- [ ] All chart visuals designed for a real charting implementation (Swift Charts), not
+  placeholder SVGs
 - [ ] Finalize Savings & Investments unified wireframe
 - [ ] Finalize Taxes updated wireframe (deductions view, per-account rates)
 
@@ -471,25 +480,32 @@ is connected. Module views are blocked on their respective domain engines from P
 - [ ] `FinanceWorkspaceApp` — define `WindowGroup` scene, main menu commands (`NSApplication`
   delegate or `.commands` modifier), app-level keyboard shortcuts
 - [ ] `AppState` — `@Observable` root state object holding workspace state, indexing state,
-  active module selection, navigation path, detail pane open/closed state
+  active module selection, navigation path, detail pane open/closed state; **Overview is the
+  default selection on launch**
 - [ ] `AppRouter` — manage navigation selection for `NavigationSplitView`, encode/decode deep
-  link state (domain + entity + filter state), handle programmatic navigation from KPI links
-- [ ] `NavigationSidebarView` — left sidebar with expandable section groups, nested account/
-  entity/goal/sleeve links, active selection highlight, keyboard navigation
+  link state (domain + group/account selection), handle programmatic navigation from KPI links;
+  the sidebar header ("Finance Dashboard") navigates to the Overview dashboard
+- [ ] `NavigationSidebarView` — left sidebar with expandable section groups, nested account-
+  group/account/goal/sleeve links, active selection highlight, keyboard navigation; **no
+  Overview nav row** (Overview is reached via the header); Accounts nested group is labelled
+  "Account groups" with a "New group" action
+- [ ] Global top header — issues-count chip immediately left of the sync-status chip; per-view
+  local-actions row rendered on the page-title line (right-aligned)
 - [ ] `DetailPaneView` — collapsible slide-over container with all supported surface types,
-  open/close animation, closed by default
+  open/close animation, closed by default; edit and delete actions at the bottom for
+  right-panel objects
 
 #### Shared UI Components (`UI/Shared/`)
 - [ ] `KPICardView` — reusable card with title, primary value, secondary value, trend indicator,
   tap target → navigation action
 - [ ] `DataTableView` — sortable/filterable table with column definitions, row selection,
   traceability tap target per row
-- [ ] `PieChartView` — configurable donut/pie with legend, labels, percentage display
-- [ ] `SparklineView` — small in-line trend line for month-over-month panels
+- [ ] `PieChartView` — configurable donut/pie with legend, labels, percentage display (Swift Charts)
+- [ ] `SparklineView` — small in-line trend line for month-over-month panels (Swift Charts)
 - [ ] `HeatMapTableView` — benchmark comparison table with period columns, color-scaled cells,
-  benchmark comparison row
+  benchmark comparison row (Swift Charts)
 - [ ] `PeriodSelectorView` — month/quarter/year selector with previous/next navigation
-- [ ] `FilterBarView` — composable filter chips (account, category, period, entity, sleeve)
+- [ ] ~~`FilterBarView` — composable filter chips~~ **(deferred to V2 — filter bar removed from v1)**
 - [ ] `EmptyStateView` — configurable empty state with icon, title, message, and optional CTA
 - [ ] `SourceInspectorView` — shows file path, row number, last modified date, raw field values
   for a selected record; "Open in Finder" and "Open in Editor" actions
@@ -503,14 +519,19 @@ is connected. Module views are blocked on their respective domain engines from P
   "Preview Repair" action per repairable issue
 
 #### Accounts Module (`UI/Accounts/`)
-- [ ] `AccountsView` — card grid of all accounts with aggregate header; group filter by account
-  group; tap → per-account detail
-- [ ] `AccountDetailView` — monthly gross vs expenses/tax chart, YTD net income, transaction
-  list; Import, Add, Edit actions; account rules and estimates panel
+- [ ] `AccountsView` — card grid of all accounts with aggregate header; grouped by account
+  group; account cards tap → per-account screen
+- [ ] `AccountGroupDetailView` — account-group screen with an individual-account card section
+  above the transaction ledger (no sub-tabs); for business groups, P&L summary + monthly
+  net-income chart with the ledger inline below it, category budgets, linked notes
+- [ ] `AccountDetailView` — per-account screen: transactions table, monthly gross vs expenses/tax
+  chart, YTD net income; Import, Add, Edit, Delete actions; account rules and estimates panel;
+  edit in local actions, delete inside the edit flow
 
 #### Budget Module (`UI/Budget/`)
-- [ ] `BudgetOverviewView` — pie chart, category table with plan/actual/variance/trailing-average,
-  period selector; tap category → filtered transaction view
+- [ ] `BudgetOverviewView` — pie chart, Spend Mix / Spending Variance panels at 50/50, category
+  table with plan/actual/variance/trailing-average, period selector; tap category → filtered
+  transaction view
 - [ ] `BudgetHistoryView` — month-over-month variance view, period range selector
 - [ ] `BudgetCategoriesView` — category and subcategory management, manual create/edit forms
 
@@ -591,13 +612,19 @@ backed up, and previewable.
 - [ ] Update `BackupService` to produce named backups tied to write plan IDs for audit trail
 
 #### Structured Write Flows (per entity)
-- [ ] Add/edit `Account` → writes to `Accounts/accounts.csv`
+Every user-addable object supports **add / edit / delete** (review functionality #6).
+- [ ] Add/edit/delete `Account` and `AccountGroup` → writes to `Accounts/accounts.csv` / `Accounts/entities.csv`
 - [ ] Import CSV transactions → column mapper → appends to `Accounts/transactions/YYYY-MM.csv`
-- [ ] Add/edit `Transaction` inline → writes to correct monthly file
-- [ ] Add/edit `Category` / `BudgetPlan` rows
-- [ ] Add/edit `SavingsGoal`
-- [ ] Add/edit `DeductionRecord` → writes to `Taxes/deductions.csv`
-- [ ] Add/edit `AccountRule` → writes to `Accounts/account-rules.csv`
+- [ ] Add/edit/delete `Transaction` inline → writes to correct monthly file
+- [ ] Add/edit/delete `Category` / `BudgetPlan` rows
+- [ ] Add/edit/delete `SavingsGoal`
+- [ ] Add/edit/delete holdings/assets → writes to `Investments/holdings.csv`
+- [ ] Add/edit/delete `DeductionRecord` → writes to `Taxes/deductions.csv`
+- [ ] Add/edit/delete `AccountRule` → writes to `Accounts/account-rules.csv`
+- [ ] Delete-with-reference-check: write preview lists referencing rows and blocks/warns per the
+  chosen default before applying (TDD §15)
+- [ ] Edit/delete UI placement convention: right-panel objects show edit/delete at the panel
+  bottom; dedicated-screen objects edit via local actions with delete inside edit
 - [ ] Tax year-close action → writes archive files, marks year as closed in settings
 
 #### Repair Flows
@@ -733,6 +760,7 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 | Right pane default-closed scope | Global — closed by default, opens on main-panel interaction, no section exceptions. |
 | iCloud container identifier | `OpenFinance` |
 | Workspace bootstrap seed accounts | Personal bank, personal credit card, business bank, business credit card, savings, investment |
+| Default delete behavior when an object is referenced | **Open** — block / cascade-warn / reassign; pick before Phase 6 delete flows (see `docs/_notes/object-model-audit.md` G7) |
 
 ---
 
@@ -741,6 +769,22 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Round 5 — 2026-06-15
+Source: `docs/_refinement/r5-review.md` (third prototype review — functional details); update plan `docs/_refinement/r5-update-product-roadmap.md`
+
+- Out of Scope: added contextual filter bar (→ V2)
+- Phase 5 App Shell: Overview is the default landing screen via the sidebar header ("Finance
+  Dashboard"), not a nav item; issues chip moved to the global header; local-actions row moved to
+  the page-title line; FilterBarView deferred to V2
+- Phase 5 Accounts: `AccountGroupDetailView` shows individual-account cards + inline ledger (no
+  sub-tabs); `AccountDetailView` is the per-account screen reached by tapping account cards
+- Phase 5 Budget: Spend Mix / Spending Variance panels set to 50/50
+- Phase 5: chart components implemented on Swift Charts (real charts, not placeholder SVGs)
+- Phase 6: every user-addable entity now supports delete (with a delete-with-reference-check
+  rule) in addition to add/edit; added the edit/delete UI placement convention
+- Open Decisions: added default delete-on-reference behavior
+- Deeper Budget⇄Strategy object model deferred to a future round (`docs/_notes/object-model-audit.md`)
 
 ### Baseline — 2026-06-11
 - Roadmap authored reflecting all decisions through Round 3 (prototype review Round 1, the

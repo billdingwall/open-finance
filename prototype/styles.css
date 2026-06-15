@@ -102,7 +102,11 @@ a { color: var(--accent); text-decoration: none; }
 .sidebar-head {
   padding: 14px 14px 12px;
   border-bottom: 1px solid var(--border-soft);
+  cursor: pointer;
+  transition: background 0.12s ease;
 }
+.sidebar-head:hover { background: var(--surface-2, rgba(148,163,184,0.08)); }
+.sidebar-head.active { background: var(--surface-2, rgba(54,81,211,0.08)); }
 
 .workspace-id {
   display: flex;
@@ -246,6 +250,8 @@ a { color: var(--accent); text-decoration: none; }
   letter-spacing: -0.01em;
   flex: 0 1 auto;
 }
+/* Local actions sit on the title row, right-aligned (Round 5) */
+.title-row .local-actions { margin-left: auto; }
 
 .status-cluster {
   margin-left: auto;
@@ -647,6 +653,14 @@ a { color: var(--accent); text-decoration: none; }
 .chart-wrap.tall { height: 230px; }
 .chart-wrap.short { height: 140px; }
 .chart-wrap svg { width: 100%; height: 100%; display: block; }
+
+/* Chart.js canvas host — fills its parent; canvas is sized by Chart.js */
+.chart-canvas {
+  position: relative;
+  width: 100%;
+}
+.chart-canvas canvas { display: block; }
+.chart-wrap .chart-canvas { height: 100%; }
 
 .chart-axis-label {
   font-size: 10px;
@@ -1137,6 +1151,7 @@ a { color: var(--accent); text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   padding: 4px 0 6px;
   border-bottom: 1px solid var(--border-soft);
   margin-bottom: 6px;
@@ -1521,6 +1536,16 @@ a { color: var(--accent); text-decoration: none; }
   border-color: var(--err);
 }
 .btn.btn-danger:hover { background: #991b1b; border-color: #991b1b; }
+
+/* Inspector edit/delete actions, pinned at the bottom of the panel */
+.insp-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+.insp-actions .btn { flex: 1; justify-content: center; }
 
 /* ----- Modal ----- */
 .modal-overlay {

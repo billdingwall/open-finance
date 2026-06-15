@@ -223,7 +223,7 @@ const DATA = (() => {
   ];
 
   const entities = [
-    { id: 'personal',       display: 'Personal Assets',     type: 'personal',   active: true },
+    { id: 'personal',       display: 'Personal Accounts',   type: 'personal',   active: true },
     { id: 'employment',     display: 'Place of Employment', type: 'employment', active: true },
     { id: 'consulting-llc', display: 'Consulting LLC',     type: 'business',   taxId: '8x-xxx-2241', active: true },
     { id: 'freelance',      display: 'Freelance',           type: 'business',   taxId: '—',           active: true },

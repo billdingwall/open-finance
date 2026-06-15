@@ -69,7 +69,6 @@ All create, import, repair, and checklist changes persist until you reset. Speci
 
 The following does **not** persist:
 
-- The active tab within entity dashboards (`state.entityTabs`) — resets to Dashboard on reload
 - The holdings view toggle (`state.holdingsMode`) — resets to `standard` on reload
 - The current sync state (`state.syncState`) — resets to `synced` on reload
 
@@ -97,28 +96,34 @@ explains what the native app would do. This is intentional — the prototype run
 
 ### Round 1 (visual design)
 - App shell, three-column layout, slide-over inspector
-- All six top-level navigation sections with correct sub-items
+- Five top-level navigation sections (Accounts, Budget, Savings & Investments, Taxes, Settings); the Overview dashboard is the default landing screen, reached via the sidebar header ("Finance Dashboard")
 - Overview dashboard (5 KPI cards, issues table)
 - Budget (pie chart, trailing averages, category variance table)
 - Savings & Investments (goals, portfolio, holdings, heat map toggle, sleeve table)
 - Taxes (current year with inline deductions/payments/gains, prep checklist, archive)
-- Accounts (entity theme grouping, entity detail dashboards with tabs)
+- Accounts (account-group grouping, single-screen group views with individual-account cards + inline ledger, dedicated per-account screens)
 - Onboarding screen (7 iCloud states + success state)
 - Sync status (4 toolbar pill states, 4 per-file badge states)
 - Indexing progress screen
 - Repair preview (before/after diff) in the issue inspector
 
-### Round 5 (interactive flows)
+### Round 5 (interactive flows + functional details)
 - **Persistence** — `store.js`, `localStorage`, `commit()`, dirty-state note in Settings
-- **Create flows** — New goal, import/add transaction, new category, new entity, new account, import paystub, new estimated payment, import prices, rebalance plan, new business category
+- **Create flows** — New goal, import/add transaction, new category, new group, new account, import paystub, new estimated payment, import prices, rebalance plan, new business category
+- **Edit & delete** — Every user-addable object can be edited and deleted: right-panel objects show Edit/Delete at the bottom of the inspector; the per-account screen edits via local actions with Delete inside the edit flow. Deletes run a reference check and preview before writing.
+- **Real charts** — All charts render with Chart.js (vendored at `vendor/chart.umd.js`), not hand-drawn SVGs
+- **Default dashboard** — Overview is the default screen; reached via the sidebar header, not a nav item
+- **Account screens** — Group screens show individual-account cards above an inline ledger (no sub-tabs); account cards open a dedicated per-account screen
+- **Header layout** — Issues chip sits in the top toolbar next to the sync chip; local actions sit on the page-title line
 - **Repair** — Individual Apply repair (inspector) and bulk Apply repairable fixes (Overview header)
 - **Checklist** — Tax prep checklist items toggle and persist
 - **Export** — Real CSV and Markdown downloads from live data (10 export surfaces)
-- **Filter menus** — Filter bar chips open dropdowns when options are available
 - **Live search** — Goals, Holdings, Budget ledger, Business ledger
 - **OS action toasts** — Finder reveal, editor open, indexing download
 - **Onboarding wiring** — Recovery actions produce toasts or navigation
 - **Settings reset** — Danger button with confirmation modal
+
+> Note: the contextual filter bar was removed in this round (deferred to V2).
 
 ---
 
@@ -129,18 +134,18 @@ Quick summary:
 
 | Priority | Gap |
 |---|---|
-| P1 | Edit and delete flows for all entity types |
-| P1 | Per-account ledger screen (currently inspector-only) |
 | P1 | Goal contribution recording |
 | P1 | Designed empty states (no goals, no holdings, no transactions for a month, etc.) |
-| P2 | Multi-month dataset (seed covers May 2026 only — period filters show toasts) |
+| P2 | Multi-month dataset (seed covers May 2026 only) |
 | P2 | CSV import preview/validation step before commit |
 | P3 | "Close Tax Year" action in Tax Archive (architecturally locked, not yet prototyped) |
 | P3 | Account rules view and create flow |
 | P3 | Investment transaction drill-down per holding |
-| P3 | Deduction add/edit, estimated payment mark-paid/edit |
 | P4 | `tax-kpi` inspector kind (falls to generic fallback) |
 | P4 | Modal accessibility (Esc-to-close, focus trap, ARIA roles) |
+
+> Resolved in this round: edit/delete flows for all object types, the dedicated
+> per-account screen, and deduction edit/delete.
 
 ---
 

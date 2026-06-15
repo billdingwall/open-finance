@@ -9,11 +9,11 @@
 <body>
   <div class="app">
     <aside class="sidebar" id="sidebar">
-      <header class="sidebar-head">
+      <header class="sidebar-head" id="sidebar-head" title="Go to dashboard">
         <div class="workspace-id">
           <div class="ws-icon">F</div>
           <div>
-            <div class="ws-name">Finance</div>
+            <div class="ws-name">Finance Dashboard</div>
             <div class="ws-meta">iCloud · finance-main</div>
           </div>
         </div>
@@ -25,6 +25,9 @@
     <main class="center" id="center">
       <header class="center-head">
         <div id="toolbar" class="toolbar">
+          <span class="status-chip status-warn" id="issue-status">
+            <span class="dot dot-warn"></span> <span id="issue-count">8</span> issues
+          </span>
           <div class="sync-pill" id="sync-pill" data-state="synced">
             <span class="sync-pill-icon"></span>
             <span class="sync-pill-label">Synced</span>
@@ -33,18 +36,9 @@
         <div class="breadcrumb" id="breadcrumb"></div>
         <div class="title-row">
           <h1 id="page-title">Overview</h1>
-          <div class="status-cluster">
-            <span class="status-chip status-warn" id="issue-status">
-              <span class="dot dot-warn"></span> <span id="issue-count">8</span> issues
-            </span>
-          </div>
-        </div>
-        <div class="actions-row">
           <div class="local-actions" id="local-actions"></div>
         </div>
       </header>
-
-      <div class="filter-bar" id="filter-bar"></div>
 
       <div class="content" id="content"></div>
     </main>
@@ -65,6 +59,7 @@
     </div>
   </aside>
 
+  <script src="vendor/chart.umd.js"></script>
   <script src="data.js"></script>
   <script src="store.js"></script>
   <script src="app.js"></script>

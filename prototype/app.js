@@ -75,7 +75,7 @@ const goalById = () => Object.fromEntries(DATA.goals.map(g => [g.id, g]));
 // ---------- State ------------------------------------------------------------
 
 const state = {
-  view: 'accounts-overview',
+  view: 'overview-dashboard',
   selection: null, // { kind, id }
   filters: {
     'budget-overview':       { period: '2026-05', account: 'all', category: 'all', search: '' },
@@ -101,9 +101,6 @@ const state = {
 // ---------- Sidebar ----------------------------------------------------------
 
 const NAV = [
-  { id: 'overview', label: 'Overview', items: [
-    { id: 'overview-dashboard', label: 'Dashboard' },
-  ]},
   { id: 'accounts', label: 'Accounts', items: [
     { id: 'accounts-overview', label: 'All Accounts' },
   ]},
@@ -136,6 +133,8 @@ function renderSidebar() {
     const labelEl = pill.querySelector('.sync-pill-label');
     if (labelEl) labelEl.textContent = labels[state.syncState] || state.syncState;
   }
+  const head = document.getElementById('sidebar-head');
+  if (head) head.classList.toggle('active', state.view === 'overview-dashboard');
   const root = $('#sidebar-nav');
   root.innerHTML = '';
   for (const group of NAV) {
@@ -208,46 +207,11 @@ function closeInspector() {
 
 // ---------- Filter bar -------------------------------------------------------
 
-function renderFilterBar(filters) {
+// The contextual filter bar is removed for MVP (Round 5) and deferred to V2.
+// Kept as a no-op so existing per-view calls remain harmless.
+function renderFilterBar(_filters) {
   const bar = $('#filter-bar');
-  bar.innerHTML = '';
-  if (!filters || filters.length === 0) {
-    bar.style.display = 'none';
-    return;
-  }
-  bar.style.display = 'flex';
-  for (const f of filters) {
-    if (f.kind === 'search') {
-      const savedQ = state.searchQuery[state.view] || '';
-      const wrap = el('div', { class: 'search-filter' }, [
-        el('input', { type: 'text', placeholder: f.placeholder || 'Search', value: savedQ, oninput: e => {
-          state.searchQuery[state.view] = e.target.value;
-          f.onChange(e.target.value);
-        } }),
-      ]);
-      bar.appendChild(wrap);
-      if (savedQ) setTimeout(() => f.onChange(savedQ), 0);
-    } else if (f.kind === 'spacer') {
-      bar.appendChild(el('div', { class: 'filter-spacer' }));
-    } else {
-      const node = el('button', {
-        class: 'filter' + (f.active ? ' is-active' : ''),
-        onclick: f.onClick || ((e) => {
-          const opts = (f.options && f.options.length ? f.options : [{ value: f.value, label: f.value }])
-            .map(o => ({ ...o, active: String(o.value) === String(f.value) }));
-          openMenu(e.currentTarget, opts, (val) => {
-            if (f.onPick) f.onPick(val);
-            else toast(f.label + ': ' + (opts.find(o => String(o.value) === String(val)) || {}).label, 'info');
-          });
-        }),
-      }, [
-        el('span', { class: 'filter-label', text: f.label + ':' }),
-        el('span', { class: 'filter-value', text: f.value }),
-        el('span', { class: 'filter-caret' }),
-      ]);
-      bar.appendChild(node);
-    }
-  }
+  if (bar) { bar.innerHTML = ''; bar.style.display = 'none'; }
 }
 
 // ---------- Header helpers ---------------------------------------------------
@@ -271,53 +235,41 @@ function setHeader({ title, breadcrumb, actions }) {
   $('#issue-count').textContent = DATA.issues.length;
 }
 
-// ---------- Charts (SVG) -----------------------------------------------------
+// ---------- Charts (Chart.js) ------------------------------------------------
+// Chart helpers emit a sized <canvas> placeholder and queue a Chart.js config.
+// renderCenter() destroys live instances before a re-render and flushes the
+// queue after the new DOM is in place (canvases must be attached first).
 
-function lineChart(series, opts = {}) {
-  const { width = 460, height = 200, padding = { t: 16, r: 14, b: 26, l: 36 }, colors = ['#3651d3'], labels = [], dashed = [] } = opts;
-  const allValues = series.flat();
-  const minV = Math.min(...allValues);
-  const maxV = Math.max(...allValues);
-  const range = maxV - minV || 1;
-  const xPad = padding.l;
-  const xMax = width - padding.r;
-  const yPad = padding.t;
-  const yMax = height - padding.b;
-  const innerW = xMax - xPad;
-  const innerH = yMax - yPad;
+let __chartSeq = 0;
+const __chartQueue = [];
+const __chartInstances = [];
 
-  const xs = (i, n) => xPad + (i / Math.max(n - 1, 1)) * innerW;
-  const ys = v => yMax - ((v - minV) / range) * innerH;
+const CHART_INK = '#3651d3';
+const CHART_MUTE = '#94a3b8';
+const CHART_NEG = '#b91c1c';
+const CHART_GRID = 'rgba(148,163,184,0.20)';
 
-  const svg = `
-    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
-      <g class="chart-grid">
-        ${[0, 0.25, 0.5, 0.75, 1].map(p => {
-          const y = yPad + p * innerH;
-          return `<line x1="${xPad}" x2="${xMax}" y1="${y}" y2="${y}"/>`;
-        }).join('')}
-      </g>
-      <g class="chart-axis">
-        <line x1="${xPad}" x2="${xMax}" y1="${yMax}" y2="${yMax}"/>
-      </g>
-      ${series.map((s, idx) => {
-        const path = s.map((v, i) => `${i === 0 ? 'M' : 'L'} ${xs(i, s.length).toFixed(1)} ${ys(v).toFixed(1)}`).join(' ');
-        const dash = dashed[idx] ? 'stroke-dasharray="4 4"' : '';
-        return `<path d="${path}" fill="none" stroke="${colors[idx] || '#94a3b8'}" stroke-width="1.75" ${dash}/>`;
-      }).join('')}
-      ${series.map((s, idx) => s.map((v, i) =>
-          `<circle cx="${xs(i, s.length).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="2.4" fill="${colors[idx] || '#94a3b8'}"/>`
-        ).join('')
-      ).join('')}
-      ${labels.map((label, i) => {
-        const x = xs(i, labels.length);
-        return `<text class="chart-axis-label" x="${x}" y="${height - 8}" text-anchor="middle">${label}</text>`;
-      }).join('')}
-      ${[minV, (minV + maxV)/2, maxV].map(v => {
-        return `<text class="chart-axis-label" x="${xPad - 6}" y="${ys(v) + 3}" text-anchor="end">${shortNum(v)}</text>`;
-      }).join('')}
-    </svg>`;
-  return svg;
+function destroyCharts() {
+  while (__chartInstances.length) { try { __chartInstances.pop().destroy(); } catch (_) {} }
+  __chartQueue.length = 0;
+}
+
+function flushCharts() {
+  if (typeof Chart === 'undefined') return;
+  while (__chartQueue.length) {
+    const spec = __chartQueue.shift();
+    const cv = document.getElementById(spec.id);
+    if (!cv) continue;
+    try { __chartInstances.push(new Chart(cv.getContext('2d'), spec.config)); }
+    catch (e) { console.error('chart render failed', e); }
+  }
+}
+
+function queueChart(config, { height = 200, width = null } = {}) {
+  const id = 'chart-' + (++__chartSeq);
+  __chartQueue.push({ id, config });
+  const wstyle = width ? `width:${width}px;` : '';
+  return `<div class="chart-canvas" style="height:${height}px;${wstyle}"><canvas id="${id}"></canvas></div>`;
 }
 
 function shortNum(v) {
@@ -327,68 +279,67 @@ function shortNum(v) {
   return v.toFixed(1);
 }
 
+function baseAxisOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: CHART_MUTE, font: { size: 10 } } },
+      y: { grid: { color: CHART_GRID, drawBorder: false }, ticks: { color: CHART_MUTE, font: { size: 10 }, callback: v => shortNum(v) } },
+    },
+  };
+}
+
+function lineChart(series, opts = {}) {
+  const { labels = [], colors = [CHART_INK], dashed = [], height = 200 } = opts;
+  const datasets = series.map((s, i) => ({
+    data: s,
+    borderColor: colors[i] || CHART_MUTE,
+    backgroundColor: 'transparent',
+    borderWidth: 1.75,
+    borderDash: dashed[i] ? [4, 4] : [],
+    pointRadius: 2.2,
+    pointBackgroundColor: colors[i] || CHART_MUTE,
+    tension: 0.25,
+  }));
+  const lbls = labels.length ? labels : (series[0] || []).map((_, i) => i + 1);
+  return queueChart({ type: 'line', data: { labels: lbls, datasets }, options: baseAxisOptions() }, { height });
+}
+
 function barChart(values, opts = {}) {
-  const { width = 460, height = 200, padding = { t: 16, r: 14, b: 26, l: 36 }, color = '#3651d3', labels = [], negColor = '#b91c1c' } = opts;
-  const minV = Math.min(0, ...values);
-  const maxV = Math.max(0, ...values);
-  const range = (maxV - minV) || 1;
-  const xPad = padding.l, xMax = width - padding.r, yPad = padding.t, yMax = height - padding.b;
-  const innerW = xMax - xPad, innerH = yMax - yPad;
-  const slot = innerW / values.length;
-  const bw = slot * 0.6;
-  const zeroY = yMax - ((0 - minV) / range) * innerH;
-
-  const bars = values.map((v, i) => {
-    const x = xPad + slot * i + (slot - bw) / 2;
-    const y = yMax - ((v - minV) / range) * innerH;
-    const h = Math.abs(y - zeroY);
-    const top = v >= 0 ? y : zeroY;
-    return `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${v >= 0 ? color : negColor}"/>`;
-  }).join('');
-
-  return `
-    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
-      <g class="chart-grid">
-        ${[0, 0.25, 0.5, 0.75, 1].map(p => {
-          const y = yPad + p * innerH;
-          return `<line x1="${xPad}" x2="${xMax}" y1="${y}" y2="${y}"/>`;
-        }).join('')}
-      </g>
-      <line class="chart-axis" x1="${xPad}" x2="${xMax}" y1="${zeroY}" y2="${zeroY}" stroke="#94a3b8"/>
-      ${bars}
-      ${labels.map((label, i) => {
-        const x = xPad + slot * i + slot / 2;
-        return `<text class="chart-axis-label" x="${x}" y="${height - 8}" text-anchor="middle">${label}</text>`;
-      }).join('')}
-      ${[minV, 0, maxV].filter((v, i, a) => a.indexOf(v) === i).map(v => {
-        const y = yMax - ((v - minV) / range) * innerH;
-        return `<text class="chart-axis-label" x="${xPad - 6}" y="${y + 3}" text-anchor="end">${shortNum(v)}</text>`;
-      }).join('')}
-    </svg>`;
+  const { labels = [], color = CHART_INK, negColor = CHART_NEG, height = 200 } = opts;
+  const lbls = labels.length ? labels : values.map((_, i) => i + 1);
+  return queueChart({
+    type: 'bar',
+    data: { labels: lbls, datasets: [{
+      data: values,
+      backgroundColor: values.map(v => v >= 0 ? color : negColor),
+      borderRadius: 2,
+      barPercentage: 0.6,
+      categoryPercentage: 0.85,
+    }] },
+    options: baseAxisOptions(),
+  }, { height });
 }
 
 function donutChart(slices, opts = {}) {
   const { size = 160, thickness = 26 } = opts;
-  const r = size / 2;
-  const inner = r - thickness;
-  const total = slices.reduce((s, x) => s + x.value, 0) || 1;
-  let acc = 0;
-  const arcs = slices.map(s => {
-    const start = acc / total * Math.PI * 2 - Math.PI / 2;
-    acc += s.value;
-    const end = acc / total * Math.PI * 2 - Math.PI / 2;
-    const large = (end - start) > Math.PI ? 1 : 0;
-    const x1 = r + Math.cos(start) * r;
-    const y1 = r + Math.sin(start) * r;
-    const x2 = r + Math.cos(end) * r;
-    const y2 = r + Math.sin(end) * r;
-    const x3 = r + Math.cos(end) * inner;
-    const y3 = r + Math.sin(end) * inner;
-    const x4 = r + Math.cos(start) * inner;
-    const y4 = r + Math.sin(start) * inner;
-    return `<path d="M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${x3.toFixed(2)} ${y3.toFixed(2)} A ${inner} ${inner} 0 ${large} 0 ${x4.toFixed(2)} ${y4.toFixed(2)} Z" fill="${s.color}" />`;
-  }).join('');
-  return `<svg viewBox="0 0 ${size} ${size}" style="display:block;">${arcs}</svg>`;
+  const cutout = Math.max(0, Math.round(((size / 2 - thickness) / (size / 2)) * 100));
+  return queueChart({
+    type: 'doughnut',
+    data: {
+      labels: slices.map(s => s.label || ''),
+      datasets: [{ data: slices.map(s => s.value), backgroundColor: slices.map(s => s.color), borderWidth: 0 }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: cutout + '%',
+      plugins: { legend: { display: false }, tooltip: { enabled: true } },
+    },
+  }, { height: size, width: size });
 }
 
 // =====================================================================
@@ -427,7 +378,7 @@ function toast(message, kind = 'info') {
 
 // ---- Modal / form builder --------------------------------------------------
 // fields: [{ key, label, type, options, value, required, placeholder, step, hint, rows }]
-function openModal({ title, subtitle, fields = [], body, submitLabel = 'Save', onSubmit, danger }) {
+function openModal({ title, subtitle, fields = [], body, submitLabel = 'Save', onSubmit, danger, secondary }) {
   closeModal();
   const overlay = el('div', {
     class: 'modal-overlay',
@@ -496,6 +447,13 @@ function openModal({ title, subtitle, fields = [], body, submitLabel = 'Save', o
   form.appendChild(bodyEl);
 
   form.appendChild(el('div', { class: 'modal-foot' }, [
+    // Secondary action (e.g. Delete) sits left, separated from the primary actions.
+    secondary ? el('button', {
+      type: 'button',
+      class: 'btn ' + (secondary.danger ? 'btn-danger' : 'btn-ghost'),
+      style: { marginRight: 'auto' },
+      onclick: () => { if (secondary.onClick) secondary.onClick(); },
+    }, [secondary.label]) : null,
     el('button', { type: 'button', class: 'btn btn-ghost', onclick: closeModal }, ['Cancel']),
     el('button', { type: 'submit', class: 'btn ' + (danger ? 'btn-danger' : 'btn-primary') }, [submitLabel]),
   ]));
@@ -748,8 +706,8 @@ function addCategoryFlow() {
 
 function addEntityFlow() {
   openModal({
-    title: 'New theme / entity',
-    subtitle: 'Themes group accounts (Personal, Place of Employment, a specific LLC).',
+    title: 'New group',
+    subtitle: 'Groups organize accounts (Personal, Place of Employment, a specific LLC).',
     fields: [
       { key: 'display', label: 'Display name', required: true, placeholder: 'e.g. Rental LLC' },
       { key: 'type', label: 'Type', type: 'select', value: 'business', options: [
@@ -759,17 +717,17 @@ function addEntityFlow() {
       ] },
       { key: 'taxId', label: 'Tax ID (optional)', placeholder: 'xx-xxxxxxx' },
     ],
-    submitLabel: 'Create entity',
+    submitLabel: 'Create group',
     onSubmit: (v) => {
       DATA.entities.push({
-        id: v.display.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'entity-' + Date.now(),
+        id: v.display.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'group-' + Date.now(),
         display: v.display,
         type: v.type,
         taxId: v.taxId || '—',
         active: true,
       });
       commit();
-      toast('Entity “' + v.display + '” created', 'ok');
+      toast('Group “' + v.display + '” created', 'ok');
     },
   });
 }
@@ -810,6 +768,247 @@ function addAccountFlow(entityId) {
       });
       commit();
       toast('Account “' + v.name + '” added', 'ok');
+    },
+  });
+}
+
+// =====================================================================
+// EDIT / DELETE — universal object management (Round 5 #6)
+// Right-panel objects show Edit/Delete at the bottom of the inspector;
+// dedicated-screen objects (individual account) edit via local actions
+// with Delete offered inside the edit flow.
+// =====================================================================
+
+const ACCOUNT_GROUP_OPTS = ['Everyday Banking', 'Credit Cards', 'Investments', 'Savings', 'Business', 'Benefits', 'Loans & Debt']
+  .map(g => ({ value: g, label: g }));
+
+const EDITABLE_KINDS = new Set(['account', 'transaction', 'biz-tx', 'goal', 'category', 'deduction', 'holding', 'entity']);
+const DELETABLE_KINDS = new Set(['account', 'transaction', 'biz-tx', 'goal', 'category', 'deduction', 'holding', 'entity', 'payment']);
+
+function editSelection(kind, id) {
+  switch (kind) {
+    case 'account': return editAccountFlow(id);
+    case 'transaction': case 'biz-tx': return editTransactionFlow(id);
+    case 'goal': return editGoalFlow(id);
+    case 'category': return editCategoryFlow(id);
+    case 'deduction': return editDeductionFlow(id);
+    case 'holding': return editHoldingFlow(id);
+    case 'entity': return editEntityFlow(id);
+    default: toast('Editing isn’t available for this item', 'info');
+  }
+}
+
+// Generic delete with a reference check + previewed, backed-up write.
+function deleteSelection(kind, id) {
+  const map = {
+    account:     { coll: 'accounts',  label: 'account',     name: o => o.name,             refs: o => DATA.transactions.filter(t => t.account === o.name).length, refLabel: 'transactions' },
+    entity:      { coll: 'entities',  label: 'group',       name: o => o.display,          refs: o => DATA.accounts.filter(a => a.entityId === o.id).length,      refLabel: 'accounts' },
+    transaction: { coll: 'transactions', label: 'transaction', name: o => o.merchant },
+    'biz-tx':    { coll: 'transactions', label: 'transaction', name: o => o.merchant },
+    goal:        { coll: 'goals',     label: 'goal',        name: o => o.name },
+    category:    { coll: 'categories', label: 'category',   name: o => o.name,             refs: o => DATA.transactions.filter(t => t.category === o.id).length,   refLabel: 'transactions' },
+    deduction:   { coll: 'deductions', label: 'deduction',  name: o => o.name },
+    holding:     { coll: 'holdings',  label: 'holding',     name: o => o.name || o.ticker },
+    payment:     { coll: 'estimatedPayments', label: 'payment', name: o => o.jurisdiction + ' Q' + o.quarter },
+  };
+  const cfg = map[kind];
+  if (!cfg) { toast('This object can’t be deleted', 'warn'); return; }
+  const coll = DATA[cfg.coll];
+  const obj = coll.find(o => o.id === id);
+  if (!obj) return;
+  const refCount = cfg.refs ? cfg.refs(obj) : 0;
+  const refMsg = refCount > 0
+    ? `${refCount} ${cfg.refLabel} reference this ${cfg.label} — they’ll be kept but left unlinked. `
+    : '';
+  openModal({
+    title: `Delete ${cfg.label}?`,
+    subtitle: cfg.name(obj),
+    body: el('p', { class: 'modal-sub', style: { margin: '4px 0 0' }, text: `${refMsg}This writes to the source file and saves a timestamped backup.` }),
+    submitLabel: 'Delete',
+    danger: true,
+    onSubmit: () => {
+      const idx = coll.findIndex(o => o.id === id);
+      if (idx > -1) coll.splice(idx, 1);
+      if (state.selection && state.selection.id === id) closeInspector();
+      if (kind === 'account' && state.view === 'accounts-account-' + id) state.view = 'accounts-overview';
+      if (kind === 'entity' && state.view === 'accounts-entity-' + id) state.view = 'accounts-overview';
+      commit();
+      toast(`${cfg.label[0].toUpperCase() + cfg.label.slice(1)} deleted · backup saved`, 'ok');
+    },
+  });
+}
+
+function editAccountFlow(accountId) {
+  const a = DATA.accounts.find(x => x.id === accountId);
+  if (!a) return;
+  openModal({
+    title: 'Edit account',
+    subtitle: a.name,
+    fields: [
+      { key: 'name', label: 'Account name', required: true, value: a.name },
+      { key: 'institution', label: 'Institution', value: a.institution },
+      { key: 'group', label: 'Banking group', type: 'select', value: a.group, options: ACCOUNT_GROUP_OPTS },
+      { key: 'type', label: 'Type', value: a.type },
+      { key: 'entityId', label: 'Account group', type: 'select', value: a.entityId, options: DATA.entities.map(e => ({ value: e.id, label: e.display })) },
+      { key: 'monthlyInflow', label: 'Monthly inflow', type: 'number', step: '50', value: a.monthlyInflow },
+      { key: 'ytdNetIncome', label: 'YTD net income', type: 'number', step: '100', value: a.ytdNetIncome },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete account', danger: true, onClick: () => { closeModal(); deleteSelection('account', a.id); } },
+    onSubmit: (v) => {
+      a.name = v.name; a.institution = v.institution || '—'; a.group = v.group; a.type = v.type || 'checking';
+      a.entityId = v.entityId; a.monthlyInflow = Number(v.monthlyInflow) || 0; a.ytdNetIncome = Number(v.ytdNetIncome) || 0;
+      commit(); toast('Account updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editTransactionFlow(id) {
+  const t = DATA.transactions.find(x => x.id === id);
+  if (!t) return;
+  const isBiz = /^BX-/.test(t.id);
+  const catOpts = [{ value: 'income', label: 'Income' },
+    ...(isBiz ? DATA.businessCategories : DATA.categories.filter(c => c.id !== 'income')).map(c => ({ value: c.id, label: c.name }))];
+  openModal({
+    title: 'Edit transaction',
+    subtitle: t.merchant,
+    fields: [
+      { key: 'date', label: 'Date', type: 'date', value: t.date },
+      { key: 'merchant', label: 'Merchant', required: true, value: t.merchant },
+      { key: 'description', label: 'Description', value: t.description || '' },
+      { key: 'category', label: 'Category', type: 'select', value: t.category, options: catOpts },
+      { key: 'amount', label: 'Amount', type: 'number', step: '0.01', value: t.amount },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete transaction', danger: true, onClick: () => { closeModal(); deleteSelection(isBiz ? 'biz-tx' : 'transaction', t.id); } },
+    onSubmit: (v) => {
+      t.date = v.date; t.merchant = v.merchant; t.description = v.description; t.category = v.category;
+      t.amount = Number(v.amount); t.direction = t.amount < 0 ? 'debit' : 'credit';
+      commit(); toast('Transaction updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editGoalFlow(id) {
+  const g = DATA.goals.find(x => x.id === id);
+  if (!g) return;
+  openModal({
+    title: 'Edit goal', subtitle: g.name,
+    fields: [
+      { key: 'name', label: 'Goal name', required: true, value: g.name },
+      { key: 'target', label: 'Target amount', type: 'number', step: '100', value: g.target },
+      { key: 'balance', label: 'Current balance', type: 'number', step: '100', value: g.balance },
+      { key: 'monthlyTarget', label: 'Monthly target', type: 'number', step: '50', value: g.monthlyTarget },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete goal', danger: true, onClick: () => { closeModal(); deleteSelection('goal', g.id); } },
+    onSubmit: (v) => {
+      g.name = v.name; g.target = Number(v.target); g.balance = Number(v.balance); g.monthlyTarget = Number(v.monthlyTarget);
+      commit(); toast('Goal updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editCategoryFlow(id) {
+  const cat = DATA.categories.find(x => x.id === id);
+  if (!cat) return;
+  openModal({
+    title: 'Edit category', subtitle: cat.name,
+    fields: [
+      { key: 'name', label: 'Name', required: true, value: cat.name },
+      { key: 'group', label: 'Group', type: 'select', value: cat.group, options: ['Fixed', 'Variable', 'Discretionary', 'Savings'].map(g => ({ value: g, label: g })) },
+      { key: 'planned', label: 'Planned', type: 'number', step: '10', value: cat.planned },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete category', danger: true, onClick: () => { closeModal(); deleteSelection('category', cat.id); } },
+    onSubmit: (v) => {
+      cat.name = v.name; cat.group = v.group; cat.planned = Number(v.planned);
+      commit(); toast('Category updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editDeductionFlow(id) {
+  const d = DATA.deductions.find(x => x.id === id);
+  if (!d) return;
+  openModal({
+    title: 'Edit deduction', subtitle: d.name,
+    fields: [
+      { key: 'name', label: 'Name', required: true, value: d.name },
+      { key: 'estimatedAmount', label: 'Estimated amount', type: 'number', step: '50', value: d.estimatedAmount },
+      { key: 'status', label: 'Status', type: 'select', value: d.status, options: ['confirmed', 'estimated', 'missing'].map(s => ({ value: s, label: s })) },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete deduction', danger: true, onClick: () => { closeModal(); deleteSelection('deduction', d.id); } },
+    onSubmit: (v) => {
+      d.name = v.name; d.estimatedAmount = Number(v.estimatedAmount); d.status = v.status;
+      commit(); toast('Deduction updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editHoldingFlow(id) {
+  const h = DATA.holdings.find(x => x.id === id);
+  if (!h) return;
+  openModal({
+    title: 'Edit holding', subtitle: h.name || h.ticker,
+    fields: [
+      { key: 'name', label: 'Name', value: h.name || '' },
+      { key: 'ticker', label: 'Ticker', value: h.ticker || '' },
+      { key: 'qty', label: 'Quantity', type: 'number', step: '0.01', value: h.qty },
+      { key: 'price', label: 'Price', type: 'number', step: '0.01', value: h.price },
+      { key: 'basis', label: 'Cost basis', type: 'number', step: '100', value: h.basis },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete holding', danger: true, onClick: () => { closeModal(); deleteSelection('holding', h.id); } },
+    onSubmit: (v) => {
+      h.name = v.name; h.ticker = v.ticker; h.qty = Number(v.qty); h.price = Number(v.price); h.basis = Number(v.basis);
+      commit(); toast('Holding updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editEntityFlow(id) {
+  const e = DATA.entities.find(x => x.id === id);
+  if (!e) return;
+  openModal({
+    title: 'Edit group', subtitle: e.display,
+    fields: [
+      { key: 'display', label: 'Display name', required: true, value: e.display },
+      { key: 'type', label: 'Type', type: 'select', value: e.type, options: [
+        { value: 'personal', label: 'Personal' },
+        { value: 'employment', label: 'Place of Employment' },
+        { value: 'business', label: 'Business' },
+      ] },
+      { key: 'taxId', label: 'Tax ID', value: e.taxId || '' },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete group', danger: true, onClick: () => { closeModal(); deleteSelection('entity', e.id); } },
+    onSubmit: (v) => {
+      e.display = v.display; e.type = v.type; e.taxId = v.taxId || '—';
+      commit(); toast('Group updated · backup saved', 'ok');
+    },
+  });
+}
+
+// Add a transaction scoped to a specific account (individual account screen).
+function addAccountTransactionFlow(account, entityId) {
+  const catOpts = [{ value: 'income', label: 'Income' },
+    ...DATA.categories.filter(c => c.id !== 'income').map(c => ({ value: c.id, label: c.name }))];
+  openModal({
+    title: 'Add transaction',
+    subtitle: 'Adds a row to ' + account,
+    fields: [
+      { key: 'date', label: 'Date', type: 'date', value: '2026-05-25' },
+      { key: 'merchant', label: 'Merchant', required: true, placeholder: 'e.g. Whole Foods' },
+      { key: 'description', label: 'Description', placeholder: 'optional' },
+      { key: 'category', label: 'Category', type: 'select', value: catOpts[1] ? catOpts[1].value : 'income', options: catOpts },
+      { key: 'amount', label: 'Amount', type: 'number', step: '0.01', placeholder: '-120.00' },
+    ],
+    submitLabel: 'Add',
+    onSubmit: (v) => {
+      addTransaction({ ...v, account, entityId });
+      commit(); toast('Transaction added · backup saved', 'ok');
     },
   });
 }
@@ -987,9 +1186,18 @@ function exportTaxPacket() {
 
 function renderCenter() {
   const content = $('#content');
+  destroyCharts();
   content.innerHTML = '';
+  routeView();
+  flushCharts();
+}
+
+function routeView() {
   // route
   const v = state.view;
+  if (v.startsWith('accounts-account-')) {
+    return viewAccount(v.replace('accounts-account-', ''));
+  }
   if (v.startsWith('accounts-entity-')) {
     const entityId = v.replace('accounts-entity-', '');
     return viewAccountEntity(entityId);
@@ -1271,7 +1479,7 @@ function viewBudgetOverview() {
     ]),
   ]);
 
-  c.appendChild(el('div', { class: 'row-2-1' }, [donutPanel, catPanel]));
+  c.appendChild(el('div', { class: 'row2' }, [donutPanel, catPanel]));
 
   // Transaction ledger
   const f = state.filters['budget-overview'];
@@ -1895,7 +2103,7 @@ function viewBusiness() {
     breadcrumb: ['Finance', 'Business', entity.display],
     actions: [
       { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId, business: true }) },
-      { label: 'New entity', variant: 'btn-ghost', onClick: addEntityFlow },
+      { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
       { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(entityId) },
     ],
   });
@@ -2580,166 +2788,114 @@ function viewAccountEntity(entityId) {
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
         { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId, business: true }) },
-        { label: 'New entity', variant: 'btn-ghost', onClick: addEntityFlow },
+        { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
         { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(entityId) },
       ],
     });
-    renderFilterBar([
-      { label: 'Entity', value: entity.display, active: true },
-      { label: 'Period', value: 'May 2026', active: true },
-      { label: 'Account', value: 'All' },
-      { kind: 'spacer' },
-      { kind: 'search', placeholder: 'Search transactions', onChange: (q) => {
-      const ql = q.trim().toLowerCase();
-      document.querySelectorAll('#content table tbody tr').forEach(tr => {
-        tr.style.display = !ql || tr.textContent.toLowerCase().includes(ql) ? '' : 'none';
-      });
-    } },
-    ]);
+    renderFilterBar([]);
 
     const c = $('#content');
 
-    // Tab bar navigation
-    const tabs = [
-      { id: 'dashboard', label: 'Dashboard' },
-      { id: 'transactions', label: 'Transactions' },
-      { id: 'budgets', label: 'Budgets' },
-      { id: 'categories', label: 'Categories' }
-    ];
-    const tabContainer = el('div', { class: 'entity-strip' });
-    for (const t of tabs) {
-      tabContainer.appendChild(el('div', {
-        class: 'entity-pill' + (t.id === activeTab ? ' active' : ''),
-        onclick: () => {
-          state.entityTabs[entityId] = t.id;
-          renderCenter();
-        }
-      }, [
-        el('span', { text: t.label })
-      ]));
-    }
-    c.appendChild(tabContainer);
-
     const txs = DATA.transactions.filter(t => t.entityId === entityId);
 
-    if (activeTab === 'dashboard') {
-      // KPIs
-      const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-      const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-      const ni = revenue - expenses;
-      const deductible = txs.filter(t => t.amount < 0 && t.deductible).reduce((s, t) => s + Math.abs(t.amount), 0);
+    // KPIs
+    const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+    const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+    const ni = revenue - expenses;
+    const deductible = txs.filter(t => t.amount < 0 && t.deductible).reduce((s, t) => s + Math.abs(t.amount), 0);
 
-      const kpis = [
-        { id: 'rev',  label: 'Revenue · May', value: fmtUSD(revenue), delta: '+22% MoM', deltaCls: 'pos', foot: '2 invoices billed' },
-        { id: 'exp',  label: 'Expenses',      value: fmtUSD(expenses), delta: 'Within plan', deltaCls: 'flat', foot: txs.filter(t => t.amount < 0).length + ' transactions' },
-        { id: 'ni',   label: 'Net income',    value: fmtUSD(ni, { sign: true }), delta: fmtPctSigned(ni / Math.max(revenue,1)), deltaCls: 'pos', foot: 'Margin ' + fmtPct(ni / Math.max(revenue,1), 0) },
-        { id: 'ded',  label: 'Deductible',    value: fmtUSD(deductible), delta: fmtPct(deductible / Math.max(expenses,1), 0) + ' of expenses', deltaCls: 'flat', foot: 'Feeds Taxes › Prep' },
-      ];
-      const kpiGrid = el('div', { class: 'kpi-grid' });
-      for (const k of kpis) {
-        kpiGrid.appendChild(el('div', { class: 'kpi-card', onclick: () => select({ kind: 'biz-kpi', id: k.id }) }, [
-          el('div', { class: 'kpi-label', text: k.label }),
-          el('div', { class: 'kpi-value', text: k.value }),
-          el('div', { class: 'kpi-delta ' + k.deltaCls, text: k.delta }),
-          el('div', { class: 'kpi-foot', text: k.foot }),
-        ]));
-      }
-      c.appendChild(kpiGrid);
-
-      // P&L Chart
-      const labels = DATA.bizSeries.labels;
-      const niSeries = labels.map((_, i) => DATA.bizSeries.revenue[i] - DATA.bizSeries.expenses[i]);
-
-      c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
-        el('div', { class: 'panel-head' }, [
-          el('h3', { text: 'Monthly Net Income · Trailing 12 months' }),
-          el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
-        ]),
-        el('div', { class: 'panel-body' }, [
-          el('div', { class: 'chart-wrap', html: barChart(niSeries, { labels }) }),
-        ]),
-      ]));
-    } else if (activeTab === 'transactions') {
-      // Transactions table
-      c.appendChild(el('div', { class: 'panel' }, [
-        el('div', { class: 'panel-head' }, [
-          el('h3', { text: 'Transaction Ledger · ' + entity.display }),
-          el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
-          el('div', { class: 'panel-actions' }, [
-            el('span', { class: 'imported-tag', text: 'Imported' }),
-          ]),
-        ]),
-        el('div', { class: 'panel-body flush' }, [(() => {
-          const BC = bizCatById();
-          const table = el('table', { class: 'tbl' });
-          table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Merchant</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Tax</th></tr></thead><tbody></tbody>`;
-          const tbody = table.querySelector('tbody');
-          for (const t of txs) {
-            const tr = el('tr', {
-              class: state.selection?.kind === 'biz-tx' && state.selection?.id === t.id ? 'selected' : '',
-              onclick: () => openInspector('biz-tx', t.id),
-            });
-            tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
-            tr.appendChild(el('td', { text: t.merchant }));
-            tr.appendChild(el('td', { class: 'muted', text: t.description }));
-            tr.appendChild(el('td', { text: t.category === 'income' ? 'Income' : (BC[t.category]?.name || t.category) }));
-            tr.appendChild(el('td', { class: 'num ' + (t.amount < 0 ? '' : 'pos'), text: fmtUSD2(t.amount) }));
-            tr.appendChild(el('td', {}, [
-              t.deductible ? el('span', { class: 'tag tag-info', text: 'deductible' }) : el('span', { class: 'tag tag-muted', text: '—' }),
-            ]));
-            tbody.appendChild(tr);
-          }
-          return table;
-        })()]),
-      ]));
-    } else if (activeTab === 'budgets') {
-      // Budgets table
-      c.appendChild(el('div', { class: 'panel' }, [
-        el('div', { class: 'panel-head' }, [
-          el('h3', { text: 'Category Budget · ' + entity.display }),
-          el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
-        ]),
-        el('div', { class: 'panel-body' }, [(() => {
-          const BC = bizCatById();
-          const wrap = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px' } });
-          for (const b of DATA.businessBudgets) {
-            const spend = txs.filter(t => t.category === b.category && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-            const pct = spend / Math.max(b.planned, 1);
-            wrap.appendChild(el('div', { onclick: () => select({ kind: 'biz-cat', id: b.category }), style: { cursor: 'pointer' } }, [
-              el('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' } }, [
-                el('span', { text: BC[b.category]?.name }),
-                el('span', { style: { color: 'var(--muted)' }, text: fmtUSD(spend) + ' / ' + fmtUSD(b.planned) }),
-              ]),
-              el('div', { class: 'bar-inline ' + (pct > 1.05 ? 'err' : pct > 0.95 ? 'warn' : 'ok') }, [
-                el('span', { style: { width: Math.min(pct, 1) * 100 + '%' } }),
-              ]),
-            ]));
-          }
-          return wrap;
-        })()]),
-      ]));
-    } else if (activeTab === 'categories') {
-      // Categories table
-      c.appendChild(el('div', { class: 'panel' }, [
-        el('div', { class: 'panel-head' }, [
-          el('h3', { text: 'Business Categories' }),
-          el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
-        ]),
-        el('div', { class: 'panel-body flush' }, [(() => {
-          const table = el('table', { class: 'tbl' });
-          table.innerHTML = `<thead><tr><th>Category</th><th>Tax group</th><th>Default behavior</th></tr></thead><tbody></tbody>`;
-          const tbody = table.querySelector('tbody');
-          for (const cat of DATA.businessCategories) {
-            const tr = el('tr');
-            tr.appendChild(el('td', { text: cat.name }));
-            tr.appendChild(el('td', { class: 'muted', text: cat.taxGroup }));
-            tr.appendChild(el('td', { class: 'muted', text: 'Variable' }));
-            tbody.appendChild(tr);
-          }
-          return table;
-        })()]),
+    const kpis = [
+      { id: 'rev',  label: 'Revenue · May', value: fmtUSD(revenue), delta: '+22% MoM', deltaCls: 'pos', foot: '2 invoices billed' },
+      { id: 'exp',  label: 'Expenses',      value: fmtUSD(expenses), delta: 'Within plan', deltaCls: 'flat', foot: txs.filter(t => t.amount < 0).length + ' transactions' },
+      { id: 'ni',   label: 'Net income',    value: fmtUSD(ni, { sign: true }), delta: fmtPctSigned(ni / Math.max(revenue,1)), deltaCls: 'pos', foot: 'Margin ' + fmtPct(ni / Math.max(revenue,1), 0) },
+      { id: 'ded',  label: 'Deductible',    value: fmtUSD(deductible), delta: fmtPct(deductible / Math.max(expenses,1), 0) + ' of expenses', deltaCls: 'flat', foot: 'Feeds Taxes › Prep' },
+    ];
+    const kpiGrid = el('div', { class: 'kpi-grid' });
+    for (const k of kpis) {
+      kpiGrid.appendChild(el('div', { class: 'kpi-card', onclick: () => select({ kind: 'biz-kpi', id: k.id }) }, [
+        el('div', { class: 'kpi-label', text: k.label }),
+        el('div', { class: 'kpi-value', text: k.value }),
+        el('div', { class: 'kpi-delta ' + k.deltaCls, text: k.delta }),
+        el('div', { class: 'kpi-foot', text: k.foot }),
       ]));
     }
+    c.appendChild(kpiGrid);
+
+    // Monthly net income chart
+    const labels = DATA.bizSeries.labels;
+    const niSeries = labels.map((_, i) => DATA.bizSeries.revenue[i] - DATA.bizSeries.expenses[i]);
+    c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Monthly Net Income · Trailing 12 months' }),
+        el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+      ]),
+      el('div', { class: 'panel-body' }, [
+        el('div', { class: 'chart-wrap', html: barChart(niSeries, { labels }) }),
+      ]),
+    ]));
+
+    // Individual accounts in this group (Round 5 #4)
+    const acctSection = accountsCardSection(entityId, 'Accounts');
+    if (acctSection) c.appendChild(acctSection);
+
+    // Transaction ledger — inline below the net-income chart (Round 5 #2)
+    c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Transaction Ledger · ' + entity.display }),
+        el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
+        el('div', { class: 'panel-actions' }, [
+          el('span', { class: 'imported-tag', text: 'Imported' }),
+        ]),
+      ]),
+      el('div', { class: 'panel-body flush' }, [(() => {
+        const BC = bizCatById();
+        const table = el('table', { class: 'tbl' });
+        table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Merchant</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Tax</th></tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        for (const t of txs) {
+          const tr = el('tr', {
+            class: state.selection?.kind === 'biz-tx' && state.selection?.id === t.id ? 'selected' : '',
+            onclick: () => openInspector('biz-tx', t.id),
+          });
+          tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
+          tr.appendChild(el('td', { text: t.merchant }));
+          tr.appendChild(el('td', { class: 'muted', text: t.description }));
+          tr.appendChild(el('td', { text: t.category === 'income' ? 'Income' : (BC[t.category]?.name || t.category) }));
+          tr.appendChild(el('td', { class: 'num ' + (t.amount < 0 ? '' : 'pos'), text: fmtUSD2(t.amount) }));
+          tr.appendChild(el('td', {}, [
+            t.deductible ? el('span', { class: 'tag tag-info', text: 'deductible' }) : el('span', { class: 'tag tag-muted', text: '—' }),
+          ]));
+          tbody.appendChild(tr);
+        }
+        return table;
+      })()]),
+    ]));
+
+    // Category budgets
+    c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Category Budget · ' + entity.display }),
+        el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+      ]),
+      el('div', { class: 'panel-body' }, [(() => {
+        const BC = bizCatById();
+        const wrap = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px' } });
+        for (const b of DATA.businessBudgets) {
+          const spend = txs.filter(t => t.category === b.category && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+          const pct = spend / Math.max(b.planned, 1);
+          wrap.appendChild(el('div', { onclick: () => select({ kind: 'biz-cat', id: b.category }), style: { cursor: 'pointer' } }, [
+            el('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' } }, [
+              el('span', { text: BC[b.category]?.name }),
+              el('span', { style: { color: 'var(--muted)' }, text: fmtUSD(spend) + ' / ' + fmtUSD(b.planned) }),
+            ]),
+            el('div', { class: 'bar-inline ' + (pct > 1.05 ? 'err' : pct > 0.95 ? 'warn' : 'ok') }, [
+              el('span', { style: { width: Math.min(pct, 1) * 100 + '%' } }),
+            ]),
+          ]));
+        }
+        return wrap;
+      })()]),
+    ]));
   } else if (entity.type === 'employment') {
     setHeader({
       title: 'Employment · ' + entity.display,
@@ -2781,6 +2937,10 @@ function viewAccountEntity(entityId) {
     }
     c.appendChild(kpiGrid);
 
+    // Individual accounts in this group (Round 5 #4)
+    const empAcctSection = accountsCardSection(entityId, 'Accounts');
+    if (empAcctSection) c.appendChild(empAcctSection);
+
     // Paycheck deposits ledger
     const txs = DATA.transactions.filter(t => t.entityId === entityId);
     c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
@@ -2812,7 +2972,7 @@ function viewAccountEntity(entityId) {
       title: 'Personal · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Add Asset', variant: '', onClick: () => addAccountFlow(entityId) },
+        { label: 'Add Account', variant: '', onClick: () => addAccountFlow(entityId) },
       ],
     });
     renderFilterBar([
@@ -2855,6 +3015,10 @@ function viewAccountEntity(entityId) {
       ]),
     ]));
 
+    // Individual accounts in this group (Round 5 #4)
+    const persAcctSection = accountsCardSection(entityId, 'Accounts');
+    if (persAcctSection) c.appendChild(persAcctSection);
+
     // Personal transactions ledger
     const txs = DATA.transactions.filter(t => t.entityId === entityId);
     c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
@@ -2886,13 +3050,122 @@ function viewAccountEntity(entityId) {
 
 // ---------- Accounts (T041) --------------------------------------------------
 
+// Reusable account card. Cards link to the dedicated individual-account screen
+// (Round 5 #5); used on the all-accounts overview and on group screens (#4).
+function accountCard(a) {
+  return el('div', {
+    class: 'account-card' + (state.view === 'accounts-account-' + a.id ? ' selected' : ''),
+    onclick: () => navigate('accounts-account-' + a.id),
+  }, [
+    el('div', { class: 'ac-name', text: a.name }),
+    el('div', { class: 'ac-inst', text: a.institution }),
+    el('div', { class: 'ac-group', text: a.group }),
+    el('div', { class: 'ac-metrics' }, [
+      el('div', {}, [
+        el('div', { class: 'ac-metric-label', text: 'Monthly inflow' }),
+        el('div', { class: 'ac-metric-value', text: fmtUSD(a.monthlyInflow) }),
+      ]),
+      el('div', { style: { textAlign: 'right' } }, [
+        el('div', { class: 'ac-metric-label', text: 'YTD net' }),
+        el('div', { class: 'ac-metric-value', text: fmtUSD(a.ytdNetIncome) }),
+      ]),
+    ]),
+  ]);
+}
+
+// Individual-account card section for a group screen (Round 5 #4).
+function accountsCardSection(entityId, heading = 'Accounts') {
+  const accts = DATA.accounts.filter(a => a.entityId === entityId);
+  if (!accts.length) return null;
+  const wrap = el('div', { style: { marginTop: '16px' } });
+  wrap.appendChild(el('h3', { class: 'accounts-group-title', text: heading }));
+  const grid = el('div', { class: 'accounts-grid' });
+  for (const a of accts) grid.appendChild(accountCard(a));
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+// Reusable transaction ledger table for an account's transactions.
+function accountLedgerTable(txs) {
+  const C = cats();
+  const table = el('table', { class: 'tbl' });
+  table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Merchant</th><th>Description</th><th>Category</th><th class="num">Amount</th></tr></thead><tbody></tbody>`;
+  const tbody = table.querySelector('tbody');
+  for (const t of txs) {
+    const tr = el('tr', {
+      class: state.selection?.kind === 'transaction' && state.selection?.id === t.id ? 'selected' : '',
+      onclick: () => openInspector('transaction', t.id),
+    });
+    tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
+    tr.appendChild(el('td', { text: t.merchant }));
+    tr.appendChild(el('td', { class: 'muted', text: t.description }));
+    tr.appendChild(el('td', { text: C[t.category]?.name || t.category }));
+    tr.appendChild(el('td', { class: 'num ' + (t.amount < 0 ? '' : 'pos'), text: fmtUSD2(t.amount) }));
+    tbody.appendChild(tr);
+  }
+  return table;
+}
+
+// Individual account screen (Round 5 #5). Edit lives in the local actions;
+// delete is offered inside the edit flow.
+function viewAccount(accountId) {
+  const a = DATA.accounts.find(x => x.id === accountId);
+  if (!a) {
+    setHeader({ title: 'Account', breadcrumb: ['Finance', 'Accounts'], actions: [] });
+    $('#content').appendChild(el('p', { style: { color: 'var(--muted)', padding: '24px' }, text: 'Account not found.' }));
+    return;
+  }
+  const entity = DATA.entities.find(e => e.id === a.entityId);
+  setHeader({
+    title: a.name,
+    breadcrumb: ['Finance', 'Accounts', entity ? entity.display : 'Account', a.name],
+    actions: [
+      { label: 'Edit', variant: '', onClick: () => editAccountFlow(a.id) },
+    ],
+  });
+  renderFilterBar([]);
+  const c = $('#content');
+
+  // Aggregate header for the account
+  c.appendChild(el('div', { class: 'accounts-aggregate' }, [
+    el('div', { class: 'agg-item' }, [
+      el('div', { class: 'agg-label', text: 'Monthly inflow' }),
+      el('div', { class: 'agg-value', text: fmtUSD(a.monthlyInflow) }),
+    ]),
+    el('div', { class: 'agg-item' }, [
+      el('div', { class: 'agg-label', text: 'YTD net income' }),
+      el('div', { class: 'agg-value', text: fmtUSD(a.ytdNetIncome) }),
+    ]),
+    el('div', { class: 'agg-item' }, [
+      el('div', { class: 'agg-label', text: 'Type' }),
+      el('div', { class: 'agg-value', text: a.group + ' · ' + a.type }),
+    ]),
+  ]));
+
+  const txs = DATA.transactions.filter(t => t.account === a.name);
+  c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Transactions · ' + a.name }),
+      el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
+      el('div', { class: 'panel-actions' }, [
+        el('button', { class: 'btn btn-ghost', text: 'Add transaction', onclick: () => addAccountTransactionFlow(a.name, a.entityId) }),
+      ]),
+    ]),
+    el('div', { class: 'panel-body flush' }, [
+      txs.length
+        ? accountLedgerTable(txs)
+        : el('div', { style: { textAlign: 'center', color: 'var(--muted)', padding: '24px' }, text: 'No transactions reference this account yet.' }),
+    ]),
+  ]));
+}
+
 function viewAccounts() {
   setHeader({
     title: 'Accounts',
     breadcrumb: ['Finance', 'Accounts', 'All Accounts'],
     actions: [
       { label: 'New account', variant: '', onClick: () => addAccountFlow() },
-      { label: 'New entity', variant: 'btn-ghost', onClick: addEntityFlow },
+      { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
       { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('accounts.csv',
         [{ label: 'name', value: 'name' }, { label: 'institution', value: 'institution' }, { label: 'group', value: 'group' }, { label: 'type', value: 'type' }, { label: 'entity', value: 'entityId' }, { label: 'monthly_inflow', value: 'monthlyInflow' }, { label: 'ytd_net_income', value: 'ytdNetIncome' }],
         DATA.accounts) },
@@ -2931,9 +3204,9 @@ function viewAccounts() {
   ]));
 
   const themes = [
-    { type: 'personal',   heading: 'Personal Assets' },
+    { type: 'personal',   heading: 'Personal Accounts' },
     { type: 'employment', heading: 'Place of Employment' },
-    { type: 'business',   heading: 'Business Entities' },
+    { type: 'business',   heading: 'Business Groups' },
   ];
 
   for (const theme of themes) {
@@ -2943,26 +3216,7 @@ function viewAccounts() {
 
     c.appendChild(el('h3', { class: 'accounts-group-title', text: theme.heading }));
     const grid = el('div', { class: 'accounts-grid' });
-    for (const a of themeAccounts) {
-      grid.appendChild(el('div', {
-        class: 'account-card' + (state.selection?.kind === 'account' && state.selection?.id === a.id ? ' selected' : ''),
-        onclick: () => openInspector('account', a.id),
-      }, [
-        el('div', { class: 'ac-name', text: a.name }),
-        el('div', { class: 'ac-inst', text: a.institution }),
-        el('div', { class: 'ac-group', text: a.group }),
-        el('div', { class: 'ac-metrics' }, [
-          el('div', {}, [
-            el('div', { class: 'ac-metric-label', text: 'Monthly inflow' }),
-            el('div', { class: 'ac-metric-value', text: fmtUSD(a.monthlyInflow) }),
-          ]),
-          el('div', { style: { textAlign: 'right' } }, [
-            el('div', { class: 'ac-metric-label', text: 'YTD net' }),
-            el('div', { class: 'ac-metric-value', text: fmtUSD(a.ytdNetIncome) }),
-          ]),
-        ]),
-      ]));
-    }
+    for (const a of themeAccounts) grid.appendChild(accountCard(a));
     c.appendChild(grid);
   }
 }
@@ -3134,6 +3388,26 @@ function select(sel) {
 }
 
 function renderInspector() {
+  renderInspectorBody();
+  appendInspectorActions();
+}
+
+// Edit/Delete actions pinned to the bottom of the inspector (Round 5 #6).
+function appendInspectorActions() {
+  if (!state.inspectorOpen || !state.selection) return;
+  const { kind, id } = state.selection;
+  const canEdit = EDITABLE_KINDS.has(kind);
+  const canDelete = DELETABLE_KINDS.has(kind);
+  if (!canEdit && !canDelete) return;
+  const body = $('#inspector-body');
+  if (!body) return;
+  body.appendChild(el('div', { class: 'insp-actions' }, [
+    canEdit ? el('button', { class: 'btn', text: 'Edit', onclick: () => editSelection(kind, id) }) : null,
+    canDelete ? el('button', { class: 'btn btn-danger', text: 'Delete', onclick: () => deleteSelection(kind, id) }) : null,
+  ]));
+}
+
+function renderInspectorBody() {
   if (!state.inspectorOpen) return;
 
   const head = $('#inspector-title');
@@ -3546,9 +3820,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const backdrop = document.getElementById('inspector-backdrop');
   if (backdrop) backdrop.addEventListener('click', closeInspector);
 
+  // The sidebar header is the entry point to the default dashboard (Round 5).
+  const head = document.getElementById('sidebar-head');
+  if (head) {
+    head.style.cursor = 'pointer';
+    head.addEventListener('click', () => navigate('overview-dashboard'));
+  }
+
   window.addEventListener('popstate', () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const viewId = urlParams.get('view') || 'accounts-overview';
+    const viewId = urlParams.get('view') || 'overview-dashboard';
     state.view = viewId;
     closeInspector();
     renderSidebar();

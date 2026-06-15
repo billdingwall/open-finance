@@ -63,12 +63,13 @@ This layout also fits a macOS productivity workflow because the navigation model
 The left sidebar is the primary navigation surface for the app. It should contain stable top-level sections and allow nested links for specific entities, accounts, goals, sleeves, reports, and saved views.
 
 Top-level navigation (v1):
-- Overview
 - Accounts
 - Budget
 - Savings & Investments
 - Taxes
 - Settings
+
+The Overview dashboard is the **default screen** on launch. It is reached via the sidebar header (the workspace title, displayed as "Finance Dashboard"), not a dedicated nav item.
 
 Deferred to V2:
 - Notes
@@ -80,11 +81,10 @@ Deferred to V2:
 The left sidebar is static and should only support expandable groups under the relevant top-level section when specified. The sidebar is for navigation only, not for temporary or view-specific filters.
 
 Examples:
-- **Overview**
 - **Accounts**
   - Overview
-  - Themes / entities (user-customizable, loaded from `Accounts/entities.csv`):
-    - Personal Assets (Personal)
+  - Account groups (user-customizable, loaded from `Accounts/entities.csv`):
+    - Personal Accounts (Personal)
     - Place of Employment (Employment)
     - Consulting LLC (Business)
     - Freelance (Business)
@@ -111,7 +111,7 @@ Examples:
   - Repairable
   - Manual review
 
-The Themes / entities group under Accounts is the primary example of data-driven nested links — items are populated from `Accounts/entities.csv` rather than hardcoded. Other sections may add entity- or item-specific links under their parent section using the same pattern. These data-driven links are part of the fixed sidebar structure, not view-specific filters.
+The Account groups group under Accounts is the primary example of data-driven nested links — items are populated from `Accounts/entities.csv` rather than hardcoded. (The account-facing term is "group", not "entity"; the file name is unchanged this round — a model-level rename is queued for a future object-model round, see `docs/_notes/object-model-audit.md`.) The local "New group" action creates a new account group. Other sections may add group- or item-specific links under their parent section using the same pattern. These data-driven links are part of the fixed sidebar structure, not view-specific filters.
 
 ### App shell
 
@@ -124,29 +124,14 @@ Primary navigation only:
 
 #### Main panel
 
-The center panel becomes the primary working area for the currently selected navigation item. It should contain the contextual header, contextual filters, and the main content view.
+The center panel becomes the primary working area for the currently selected navigation item. It should contain the contextual header and the main content view.
 
 Main-panel structure:
 1. **Context header**
-   - Selected view title
+   - Selected view title, with the **local actions row on the same line as the title, right-aligned** within the main column
    - Breadcrumb or parent context
-   - Quick actions
-   - Sync status
-   - Issue status
 
-2. **Contextual filters**
-   - Period selector
-   - Date range
-   - Account selector
-   - Business entity selector
-   - Portfolio sleeve selector
-   - Goal selector
-   - Category selector
-   - Severity selector
-   - Search
-   - Saved view selector
-
-3. **Content surface**
+2. **Content surface**
    - Table
    - Card grid
    - Chart area
@@ -155,9 +140,11 @@ Main-panel structure:
    - Empty state
    - Validation state
 
-Filters should always live in the main panel directly above or beside the content they affect. Filters should never be treated as global unless they are explicitly designed as workspace-wide state.
+Module screens have **no general filter bar** in v1; the contextual filter surface (period/date/account/group/sleeve/goal/category/severity/search/saved-view selectors) is deferred to V2. A screen shows period or account selection inline only where it is intrinsic to that screen.
 
-The **Overview section has no filters**. It is a fixed read-only dashboard. Filters apply only within module sections (Accounts, Budget, Savings & Investments, Taxes).
+Sync status and issue status are global: they live in the **top header** (issue-count chip immediately left of the sync-status chip), not in the per-view context header.
+
+The **Overview dashboard has no filters**. It is a fixed read-only dashboard and is the default landing screen.
 
 #### Right detail pane
 
@@ -177,12 +164,10 @@ Supported detail surfaces:
 ### Navigation behavior
 
 - Top-level navigation changes the active domain.
-- Nested links change the selected entity or scoped view within that domain.
-- Filters do not live in the sidebar; they are scoped to the current main-panel view.
+- Nested links change the selected group or scoped view within that domain.
 - The sidebar should preserve expansion state for nested groups.
-- The main panel should preserve filter state per view when practical.
 - The right panel should update based on selection, not navigation alone.
-- Deep links should be representable as domain plus nested entity plus local filter state.
+- Deep links should be representable as domain plus nested group or account selection. (A general filter-state surface is deferred to V2.)
 - The app should support keyboard navigation across sidebar, main panel, and detail inspector.
 
 ### Global interaction patterns
@@ -864,6 +849,7 @@ Cross-domain entities:
 ### Recommended stack
 
 - SwiftUI for macOS UI and scene management.
+- Swift Charts for all chart rendering (pie/donut, sparklines, holdings heat map, monthly net-income, portfolio). Charts use real charting, not hand-authored placeholder SVGs; the prototype uses a real charting library as the equivalent.
 - Observation for app state and model updates.
 - Foundation `FileManager` for workspace access.
 - `NSFileCoordinator` for coordinated reads and writes where needed around iCloud documents.
@@ -999,7 +985,7 @@ FinanceWorkspaceApp/
 - create backup before every write
 
 ### Domain engines
-- `AccountEngine`: aggregate account overview (all accounts, monthly inflow, YTD net income, cash inflow vs retained equity); theme/entity grouping (personal, employment, business, custom); per-theme detail dashboard (business P&L, paycheck/stock details, personal net worth & cash flow trends); per-account detail view (monthly gross vs expenses/tax, YTD net income); account rule and estimate projections; cross-references all unified transactions and investment records
+- `AccountEngine`: aggregate account overview (all accounts, monthly inflow, YTD net income, cash inflow vs retained equity); account-group grouping (personal, employment, business, custom); per-group detail screen (individual-account cards, business P&L with inline ledger, paycheck/stock details, personal net worth & cash flow trends); per-account detail screen (monthly gross vs expenses/tax, YTD net income, transactions table); account rule and estimate projections; cross-references all unified transactions and investment records
 - `BudgetEngine`: budget totals, category variance, 3-month trailing averages, contribution planning
 - `SavingsGoalEngine`: goal progress, target gap, funding schedule. No goal lifecycle states in v1 — every goal in `goals.csv` is active; the engine does not branch on status
 - `PortfolioEngine`: holdings, sleeves, allocation, performance
@@ -1023,13 +1009,19 @@ FinanceWorkspaceApp/
 
 ### Structured write flow
 
-1. User edits a supported entity in UI.
-2. App builds a write plan.
-3. App previews target file and affected rows.
+The write flow covers **add, edit, and delete** for every user-addable object (account groups, accounts, transactions, categories, goals, holdings/assets, deductions, account rules, etc.).
+
+1. User adds, edits, or deletes a supported object in UI.
+2. App builds a write plan. For a delete, it runs a **reference check** (see §15) and includes referencing rows in the plan.
+3. App previews target file and affected rows (and referencing rows on delete).
 4. App creates timestamped backup.
 5. App writes changes atomically.
 6. App re-indexes affected files.
 7. App re-validates and refreshes projections.
+
+**Edit/delete UI placement convention:**
+- Objects whose detail opens in the **right panel** — edit and delete actions live at the **bottom of the right panel**.
+- Objects with their **own dedicated screen** (e.g. an individual account) — **edit** is in the local screen actions; **delete** is offered inside the edit flow.
 
 ### Repair flow
 
@@ -1125,6 +1117,7 @@ Purpose:
 - missing benchmark data
 - duplicate transaction ID
 - orphan note link
+- **delete with reference check**: before deleting a row, resolve inbound references (e.g. an account group referenced by accounts; an account referenced by transactions/holdings; a category referenced by transactions). The write preview must list referencing rows and block or warn per the chosen default. (Default behavior — block vs. cascade-warn vs. reassign — is an open decision tracked in `docs/_notes/object-model-audit.md` G7; pick before implementing Phase 6 delete flows.)
 
 ### Domain validation
 - budget period without budget rows
@@ -1159,20 +1152,26 @@ Must show:
 - Issues table: validation issues surfaced inline, grouped by severity with repairable badge
 
 ### Accounts
-Must show:
-- Card grid: grouped by customizable theme/entity (Personal Assets, Place of Employment, Business Entities) showing institution, type, monthly cash inflow, YTD net income
+The all-accounts overview must show:
+- Card grid: grouped by customizable account group (Personal Accounts, Place of Employment, Business Groups) showing institution, type, monthly cash inflow, YTD net income. Account cards are clickable and open the per-account screen.
 - Aggregate header: total monthly cash inflow, YTD net income, total active accounts across the workspace
-- Theme-specific detail dashboards:
-  - **Business Theme**: Entity selector, monthly P&L-style summary (income, fixed expenses, discretionary, net income), expense category view, transaction ledger, category budgets, and linked entity notes/monthly reviews.
-  - **Employment Theme**: Payroll deposits, HSA/FSA benefits, employer stock vests (ESPP/RSU).
-  - **Personal Theme**: Net worth and cash flow trends, personal savings goals link.
-- Per-account detail: monthly gross income vs expenses/tax, YTD net income, transaction list
-- Transaction import, add, and edit within account context
+
+Account-group detail screens (one screen per group, no sub-tabs) must show:
+- An individual-accounts card section (the same account card as the all-accounts grid) above the transaction ledger
+- **Business group**: monthly P&L-style summary (income, fixed expenses, discretionary, net income) with the monthly net-income chart, the transaction ledger **inline below the net-income chart**, expense category view, category budgets, and linked group notes/monthly reviews.
+- **Employment group**: Payroll deposits, HSA/FSA benefits, employer stock vests (ESPP/RSU).
+- **Personal group**: Net worth and cash flow trends, personal savings goals link.
+
+Per-account detail screen (reached by selecting an account card) must show:
+- Transactions table for the account; monthly gross income vs expenses/tax, YTD net income
+- Transaction import, add, edit, and delete within account context
 - Account rules and estimates view
+- Edit in local screen actions; delete inside the edit flow (per §13 convention)
 
 ### Budget
 Must show:
 - Pie chart: breakdown of fixed expenses, discretionary, savings, investments as % of monthly net income
+- Spend Mix and Spending Variance panels at an equal 50/50 split (neither dominant nor cut off)
 - Monthly totals with plan-vs-actual variance per category
 - 3-month trailing average per category (show partial average when fewer than 3 months available)
 - Category and subcategory management with manual create and edit
@@ -1269,11 +1268,11 @@ Recommended macOS commands:
 
 1. Workspace bootstrap and indexing
 2. CSV and Markdown parsing
-3. Overview projections (simplified dashboard, no filters, issues table inline)
-4. Accounts module (master registry, per-account views, account rules)
+3. Overview projections (default landing dashboard, no filters, issues table inline; issues chip in the global header)
+4. Accounts module (master registry, account-group screens with individual-account cards and inline ledger — no sub-tabs, dedicated per-account screen, account rules)
 5. Budget module (pie chart overview, category management, 3-month trailing averages)
 6. Savings & Investments (flat goal list; holdings-focal portfolio with heat-map toggle and sleeve table)
-7. Business entity reporting
+7. Business group reporting
 8. Tax module (consolidated current-year view with payments, gains/income, and deductions inline; per-account rates; full-width prep checklist screen; archive)
 9. Structured write flows
 10. Repair workflows
@@ -1338,6 +1337,11 @@ That is the lowest-risk architecture for a macOS app whose source of truth is pl
 #### App shell
 ![App Shell wireframe](01-app-shell.svg)
 Left sidebar with collapsible navigation sections that open and close independently.
+> **Outdated (Round 5):** Overview is now the default landing screen reached via the sidebar header ("Finance Dashboard"), not a nav item; the issues chip moves to the global header (left of sync status); the local-actions row moves onto the page-title line (right-aligned); no contextual filter bar. Needs a new wireframe.
+
+#### Accounts
+![Accounts wireframe] *(not yet produced)*
+> **New (Round 5):** Account-group screen with an individual-account card section above an inline transaction ledger (no sub-tabs); a dedicated per-account screen with a transactions table; "Account groups" / "Personal Accounts" labels. Needs a new wireframe.
 
 #### Overview dashboard
 ![Overview wireframe](02-overview.svg)
@@ -1382,6 +1386,17 @@ Left sidebar with collapsible navigation sections that open and close independen
 - `taxes-prep-checklist.svg` — Full-width prep checklist with educational content
 
 ## 24. Changelog
+
+### Round 5 — 2026-06-15
+Source: `docs/_refinement/r5-review.md` (third prototype review — functional details); update plan `docs/_refinement/r5-update-technical-design.md`
+
+- §4: Overview removed as a nav item — it is the default landing screen reached via the sidebar header ("Finance Dashboard"); removed the Contextual filters block (filter bar → V2); issues count moved to a global header chip left of sync status; local-actions row moved onto the page-title line (right-aligned); account labels "themes/entities" → "account groups", "Personal Assets" → "Personal Accounts", "New entity" → "New group"
+- §11: Added Swift Charts as the charting dependency; charts are real charts, not placeholder SVGs
+- §13: Delete is now a first-class structured write for all user-addable objects; added the edit/delete UI placement convention (right-panel bottom vs. dedicated-screen edit flow)
+- §15: Added a delete-with-reference-check write rule
+- §16: Accounts — account-group screens show an individual-accounts card section and (business) ledger inline below the net-income chart; sub-tabs removed; new per-account detail screen; Budget — Spend Mix / Spending Variance panels set to 50/50; per-screen filter bar removed
+- §20/§23: Noted dashboard-default + per-account screen + real charts; flagged app-shell and added Accounts wireframes
+- No CSV file specs changed; deeper object-model work (entity→group rename, nesting, Budget/Strategy containers, asset kinds) deferred — see `docs/_notes/object-model-audit.md`
 
 ### Round 4 — 2026-06-12
 Source: `docs/_refinement/r4-review.md` (second prototype review); update plan `docs/_refinement/r4-update-technical-design.md`
