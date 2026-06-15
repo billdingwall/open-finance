@@ -93,7 +93,8 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - Source traceability from summaries to files.
 - Guided creation of missing required files.
 - Guided low-risk repair of invalid files.
-- Limited structured editing for low-risk entities.
+- Structured add, edit, and delete for user-addable objects (account groups, accounts, transactions, categories, goals, holdings/assets, deductions, etc.), with preview, backup, and reference checks on delete.
+- Charts rendered with a real charting approach (Swift Charts in the app), not hand-drawn placeholder graphics.
 - Imported benchmark support for S&P 500 comparison.
 
 ### Out of scope for v1
@@ -116,6 +117,7 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - Dedicated sleeves screen (V2, general configurable dashboard). The sleeve table lives at the bottom of the Portfolio overview in v1.
 - Dedicated benchmark screen. The benchmark heat map is a view toggle on the holdings table in v1.
 - Dedicated estimated payments, gains & income, and deductions screens. Their content surfaces within the Current Tax Year view in v1.
+- Contextual filter bar / filter chips on module screens (V2 — needs more functionality design). Inline period/account selection still exists where a screen intrinsically needs it; only the dedicated filter-bar surface is deferred.
 
 ## User stories
 
@@ -128,12 +130,12 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 
 ### Accounts
 
-- As a user, the app should let me group accounts into customizable themes / entities (e.g., personal assets, place of employment, and business entities).
-- As a user, the app should show an aggregate accounts overview with a card for each account grouped by theme/entity, with aggregate metrics for monthly inflow, YTD net income, and total active accounts.
-- As a user, selecting a customizable Business theme/entity should show a dedicated business dashboard with monthly net income (revenue vs expenses), YTD net income, tax-deductible expense tracking, business category budgets, and a dedicated transaction ledger.
-- As a user, selecting a customizable Place of Employment theme/entity should show paycheck details, employer benefits (HSA/FSA), employer stock plans (ESPP/RSU), and related paycheck transaction ledger.
-- As a user, selecting a customizable Personal Assets theme/entity should show net worth and cash flow trends.
-- As a user, the app should show a per-account view with monthly gross income vs expenses, YTD net income, and the ability to import, add, or edit transactions and account rules.
+- As a user, the app should let me group accounts into customizable account groups (e.g., personal accounts, place of employment, and business groups).
+- As a user, the app should show an aggregate accounts overview with a card for each account grouped by account group, with aggregate metrics for monthly inflow, YTD net income, and total active accounts.
+- As a user, selecting a customizable Business group should show a business screen with monthly net income (revenue vs expenses), YTD net income, tax-deductible expense tracking, business category budgets, its individual-account cards, and the transaction ledger inline below the net-income chart.
+- As a user, selecting a customizable Place of Employment group should show paycheck details, employer benefits (HSA/FSA), employer stock plans (ESPP/RSU), and related paycheck transaction ledger.
+- As a user, selecting a customizable Personal Accounts group should show net worth and cash flow trends.
+- As a user, selecting an individual-account card should open a dedicated per-account screen with a transactions table and the ability to import, add, edit, or delete transactions and account rules.
 
 ### Budget
 
@@ -217,7 +219,7 @@ Requirements:
 
 ### 5. Accounts module
 
-The Accounts module is the master data and actuals hub for all accounts, grouped into user-customizable **Themes or Entities** (such as Personal, Place of Employment, and Business).
+The Accounts module is the master data and actuals hub for all accounts, grouped into user-customizable **Account Groups** (such as Personal, Place of Employment, and Business). "Personal" groups present their accounts as accounts, not "assets".
 
 Account types supported:
 
@@ -232,22 +234,24 @@ Account types supported:
 | Loans & Debt | Mortgage, auto, student, personal, BNPL |
 
 Requirements:
-- Support user-defined, customizable themes and entities (e.g. personal assets, place of employment, W-2 compensation, specific small businesses and LLCs) as the primary organizational structure.
-- Show an aggregate accounts overview: card per account grouped by theme/entity, total monthly cash inflow, YTD net income (gross − expenses − tax), YTD cash inflow vs retained equity.
-- Show a per-account view: monthly gross income vs expenses/tax, YTD net income, YTD cash inflow vs retained equity.
-- For `business` type themes/entities:
-  - Support multiple business entities in one workspace.
+- Support user-defined, customizable account groups (e.g. personal accounts, place of employment, W-2 compensation, specific small businesses and LLCs) as the primary organizational structure.
+- Show an aggregate accounts overview: card per account grouped by account group, total monthly cash inflow, YTD net income (gross − expenses − tax), YTD cash inflow vs retained equity.
+- On each account-group screen, show a section of individual-account cards (the same card used on the all-accounts overview) above the transaction ledger.
+- Provide a dedicated per-account screen, reached by selecting an individual-account card from the all-accounts overview or a group screen, scoped to that account with at minimum a transactions table; monthly gross income vs expenses/tax and YTD net income.
+- For `business` type groups:
+  - Support multiple business groups in one workspace.
   - Track business income, fixed expenses, discretionary expenses, transfers, and owner distributions.
-  - Show monthly net income and category budget variance by business entity.
-  - Support entity-specific category definitions and monthly budget targets.
+  - Show monthly net income and category budget variance by business group, with the transaction ledger inline below the monthly net-income chart (no sub-tabs).
+  - Support group-specific category definitions and monthly budget targets.
   - Include default business categories aligned with common tax-prep expense groupings.
   - Support transaction review by category, merchant, account, and period.
-- For `employment` type themes/entities:
+- For `employment` type groups:
   - Track paycheck deposits, HSA/FSA contributions, ESPP/RSU vests.
   - Show paycheck metrics and YTD gross pay.
-- For `personal` type themes/entities:
+- For `personal` type groups:
   - Show net worth and cash flow trends.
 - Support import, add, and edit of transactions per account.
+- Support add, edit, and delete of account groups and individual accounts (see Object management).
 - Support account-level rules and estimates.
 
 ### 6. Budget module
@@ -332,6 +336,18 @@ Requirements:
 - Preserve traceability context in exports where practical.
 - xlsx export is deferred to V2.
 
+### 12. Object management (add / edit / delete)
+
+Object management is cross-cutting across all modules.
+
+Requirements:
+- Any object the user can add — manually or via import — can also be edited and deleted: account groups, individual accounts, transactions, categories, savings goals, holdings/assets, deductions, account rules, and similar.
+- UI placement convention:
+  - Objects whose detail opens in the right panel: edit and delete actions appear at the bottom of that panel.
+  - Objects with their own dedicated screen (e.g. an individual account): edit is in the local screen navigation/actions, and delete is an option within the edit flow.
+- All edits and deletes follow the safe-write model: preview, timestamped backup, and atomic apply.
+- Delete must surface any rows that reference the object before applying (reference check).
+
 ## Non-functional requirements
 
 ### Performance
@@ -372,8 +388,7 @@ Without live sync, month-over-month continuity depends on user-imported transact
 ## Information architecture
 
 Recommended primary navigation:
-- Overview
-- Accounts (listing customizable themes/entities)
+- Accounts (listing customizable account groups)
 - Budget
 - Savings & Investments
 - Taxes
@@ -382,11 +397,15 @@ Recommended primary navigation:
 - Issues *(V2)*
 - Files *(V2)*
 
-Within modules, screens are kept few and dense. Savings & Investments presents Overview, Goals, and Portfolio (holdings and the sleeve table live inside the Portfolio view — no separate Accounts, Sleeves, or Benchmark screens). Taxes presents Current Tax Year, Prep Checklist, and Tax Archive (estimated payments, gains & income, and deductions surface within Current Tax Year). Removed screens fold their content into these parents; nothing is dropped from v1 except goal lifecycle states.
+The Overview dashboard is the default screen shown on launch; it is reached via the workspace/sidebar header (titled "Finance Dashboard") rather than a dedicated nav item.
+
+Within modules, screens are kept few and dense. Accounts presents an all-accounts overview, per-group screens (each listing its individual-account cards above the transaction ledger), and a dedicated per-account screen reached by selecting an account card. Savings & Investments presents Overview, Goals, and Portfolio (holdings and the sleeve table live inside the Portfolio view — no separate Accounts, Sleeves, or Benchmark screens). Taxes presents Current Tax Year, Prep Checklist, and Tax Archive (estimated payments, gains & income, and deductions surface within Current Tax Year). Removed screens fold their content into these parents; nothing is dropped from v1 except goal lifecycle states.
+
+The account-facing organizing term is "account group" / "group" (not "entity"). Module screens have no general filter bar in v1.
 
 Recommended shell:
 - Left sidebar for primary navigation.
-- Center pane for list, period, account, business entity, sleeve, goal, or report selection.
+- Center pane for list, period, account, business group, sleeve, goal, or report selection.
 - Right detail pane for table, chart, note, or inspector. Collapsible and closed by default; opens as a slide-over panel.
 
 ## Data model
@@ -395,12 +414,14 @@ Recommended shell:
 
 | Domain | Entities |
 |---|---|
-| Accounts | Theme/Entity, Account, AccountType, AccountRule, AccountEstimate, OwnerDistribution |
+| Accounts | Theme/Entity[^group], Account, AccountType, AccountRule, AccountEstimate, OwnerDistribution |
 | Budget | Transaction, Category, BudgetPlan, BudgetContribution, Merchant |
 | Savings & Investments | SavingsGoal, GoalContribution, GoalProgressSnapshot, Security, Trade, Lot, Position, Dividend, PricePoint, PortfolioSleeve, SleeveTarget, BenchmarkSeries, BenchmarkPeriod |
 | Taxes | TaxSetting, RealizedGain, IncomeEvent, EstimatedPayment, TaxPrepIssue, DeductionRecord, TaxArchiveYear |
 | Notes | NoteDocument, MonthlyReview, StrategyNote |
 | Platform | Workspace, FileRecord, ImportIssue, RepairAction, SchemaVersion, SyncStatus |
+
+[^group]: User-facing label is "Account Group". A model-level rename (`entity_id` → `group_id`) and the related Budget/Strategy object work are queued for a future object-model round — see `docs/_notes/object-model-audit.md`.
 
 ### Internal architecture model
 
@@ -466,6 +487,17 @@ Presentation Layer
 ```
 
 ## Changelog
+
+### Round 5 — 2026-06-15
+Source: `docs/_refinement/r5-review.md` (third prototype review — functional details); update plan `docs/_refinement/r5-update-product-requirements.md`
+
+- Overview dashboard is now the default landing screen (reached via the workspace header, "Finance Dashboard"), not a sidebar nav item
+- Contextual filter bar removed from module screens and deferred to V2
+- Accounts: account-group screens now show an individual-accounts card section and (for business groups) the transaction ledger inline below the net-income chart; sub-tabs removed; individual accounts open a dedicated per-account screen
+- Account-facing terminology changed from "entity" to "group"; "Personal Assets" → "Personal Accounts" (and "Add Asset" → "Add Account")
+- Universal object management: every user-addable object can also be edited and deleted, with preview/backup/reference-check (new functional requirement §12)
+- Charts are rendered with a real charting approach (Swift Charts), not placeholder SVGs
+- Deferred (not in this round): deeper Budget⇄Strategy object model, group nesting, file/column rename, asset kinds — see `docs/_notes/object-model-audit.md` for the next round
 
 ### Round 4 — 2026-06-12
 Source: `docs/_refinement/r4-review.md` (second prototype review); update plan `docs/_refinement/r4-update-product-requirements.md`

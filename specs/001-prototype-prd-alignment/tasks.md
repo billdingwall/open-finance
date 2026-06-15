@@ -2,8 +2,8 @@
 
 **Input**: Design documents from `specs/001-prototype-prd-alignment/`
 **Prerequisites**: plan.md ✅ · spec.md ✅ · research.md ✅ · data-model.md ✅ · contracts/ ✅
-**Tests**: Not requested. No test tasks generated.
-**Source files**: `prototype/app.js` · `styles.css` · `index.html` · `data.js`
+**Tests**: SC-013 (jsdom smoke test) was run from `/tmp/protosmoke` during the Round 5 audit — 19/19 assertions passed. Committing `prototype/smoke.js` is a P4 Known Gap tracked in `spec.md`.
+**Source files**: `prototype/app.js` · `styles.css` · `index.html` · `data.js` · `store.js` (added Round 5)
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -164,11 +164,13 @@ prerequisites for every user story phase that follows.
 
 ## Phase 11: User Story 9 — Taxes Expanded and Accounts Placeholder (Priority: P9)
 
-**Goal**: Taxes has a Deductions sub-view with 4 groups. Current Tax Year shows per-account rate table. Accounts section renders a card grid.
+**Goal**: Current Tax Year shows deduction groups inline (not as a separate screen), plus a per-account rate table. Accounts section renders a card grid.
 
-**Independent Test**: Taxes → Deductions: 4 labeled group sections visible (Standard, Above-the-Line, Schedule A, Schedule C). Taxes → Current Tax Year: per-account rate table visible. Accounts: card grid with ≥2 account cards, each showing name, group label, and placeholder values.
+**Independent Test**: Taxes → Current Tax Year: scroll past estimated payments and gains panels to confirm 4 labeled deduction group sections appear inline (Standard, Above-the-Line, Schedule A, Schedule C); per-account rate table visible. Accounts: card grid with ≥2 account cards, each showing name, group label, and placeholder values.
 
-- [x] T039 [US9] Add `viewTaxesDeductions()` function to `prototype/app.js`: renders 4 labeled sections using `DATA.deductions` grouped by `type`; each section has a heading, a list of deduction items with name + estimated amount + status badge; include a total row for each group
+*(Note: T039 as originally written described a standalone `viewTaxesDeductions()` view. The implementation was corrected per FR-023 — deductions are rendered inline via `appendDeductionGroups(c)` appended to `viewTaxesCurrent()`. A standalone deductions route does not exist.)*
+
+- [x] T039 [US9] Add `appendDeductionGroups(c)` function to `prototype/app.js`: called at the end of `viewTaxesCurrent()` to append 4 labeled deduction group panels inline — Standard Deduction, Above-the-Line Deductions, Schedule A — Itemized Deductions, Schedule C — Self-Employment Deductions. Each group shows a table with `Deduction`, `Estimated Amount`, `Status` columns and a totals row. Deduction rows are read-only (no inspector, no click handler). **Not** a standalone route.
 - [x] T040 [US9] Update `viewTaxesCurrent()` in `prototype/app.js` to append a per-account effective rate table below existing content using `DATA.accountTaxRates`; columns: Account, Taxable Income, Taxes Paid, Taxes Owed, Effective Rate; format rate as percentage
 - [x] T041 [US9] Add `viewAccounts()` function to `prototype/app.js`: renders an aggregate header row (sum of monthlyInflow, sum of ytdNetIncome across all accounts) followed by a card grid from `DATA.accounts`; each card shows account name, institution, group label badge, and placeholder values; include an empty state when `DATA.accounts` is empty
 
@@ -277,7 +279,18 @@ Each phase (US2 through US9) adds one independently verifiable story. After each
 | Phase 10 | 3 | US8 |
 | Phase 11 | 3 | US9 |
 | Phase 12: Polish | 5 | — |
-| **Total** | **46** | |
+| **Total (Round 1)** | **46** | |
+| Phase 13: Persistence | 3 | US10 |
+| Phase 14: Interaction Infrastructure | 3 | US10–11 |
+| Phase 15: Create Flows | 5 | US11–12 |
+| Phase 16: Repair, Checklist, Reindex | 3 | US5 (extended), US10 |
+| Phase 17: Export Shapes | 5 | US13 |
+| Phase 18: Settings & Review Controls | 1 | US10 |
+| Phase 19: Live Search | 3 | US14 |
+| Phase 20: Entity Dashboards & Tax Archive | 2 | US9 (extended) |
+| Phase 21: Inspector & Routing | 4 | — |
+| Phase 22: Smoke Test | 1 | SC-013 |
+| **Total (Round 1 + Round 5)** | **76** | |
 
 ---
 
@@ -287,4 +300,116 @@ Each phase (US2 through US9) adds one independently verifiable story. After each
 - Each user story phase ends with an **Independent Test** that can be run immediately after that phase completes
 - Commit after each phase checkpoint — gives clean rollback points per user story
 - `renderCenter()` dispatch table is the central routing hub; keep it in sync with NAV changes
-- No automated tests. Manual verification is the acceptance gate (SC-003: zero console errors is the clearest signal)
+- Round 1 tasks (T001–T046): manual verification only. Round 5 (T047–T076): SC-013 smoke test adds a headless gate.
+
+---
+
+## Phase 13: Round 5 — Persistence Layer (US-10, FR-026–030, FR-062–063)
+
+**Purpose**: Add `store.js` module and `commit()` write pipeline. All subsequent Round 5 flows depend on this.
+
+All tasks complete [x] — implemented during the Round 5 interactive pass (2026-06-14).
+
+- [x] T047 [US10] Create `prototype/store.js`: expose `Store.hydrate()`, `Store.save()`, `Store.reset()`, `Store.isDirty()`, `Store.syncDerived()`. Storage key: `finance-proto-workspace-v1`. `hydrate()` overlays 16 mutable collections from localStorage onto seed DATA; `syncDerived()` recomputes `DATA.businessTransactions`. Load order in `index.html`: `data.js → store.js → app.js`. (FR-026–029)
+- [x] T048 [US10] Add `commit()` to `prototype/app.js`: calls `Store.save() → renderSidebar() → renderCenter() → renderInspector()` in order. Every DATA mutation MUST call `commit()` — never mutate DATA and re-render directly. (FR-030)
+- [x] T049 [US10] Update `viewSettingsWorkspace()` in `prototype/app.js`: add a live dirty-state note (reads `Store.isDirty()`); add "Reset prototype data" as `.btn.btn-danger` that calls `openModal()` for confirmation, only calling `Store.reset()` on confirm. (FR-062, FR-063)
+
+**Checkpoint**: Add a goal in the browser, reload — goal persists. Click "Reset prototype data", cancel — data unchanged. Confirm — page reloads with seed data. No JS errors.
+
+---
+
+## Phase 14: Round 5 — Interaction Infrastructure (FR-031–035)
+
+**Purpose**: Reusable modal, toast, and menu primitives. All create/import flows depend on these.
+
+- [x] T050 [US11] Add `openModal({ title, subtitle, fields, body, submitLabel, cancelLabel, onSubmit })` to `prototype/app.js`. Fields: `text`, `number`, `date`, `select`, `textarea`. Required fields show `field-error` on empty submit; `onSubmit` returns `true` to close or `false` to keep open. (FR-031)
+- [x] T051 Add `toast(message, kind)` and `openMenu(anchor, options, onPick)` to `prototype/app.js`. Toast appends to `.toast-host`, auto-dismisses; kinds: `ok` / `warn` / `info`. Menu positions `.proto-menu` relative to anchor, closes on outside click. (FR-032, FR-033)
+- [x] T052 Wire filter bar chips in `prototype/app.js`: chips with an `options` array call `openMenu` on click; chips without options call `toast` fallback. Add `osAction(label, target)` function that shows an `info` toast for OS-level operations (Reveal in Finder, Open in editor, file downloads). (FR-034, FR-035)
+
+**Checkpoint**: Click a filter chip with options — dropdown appears. Click outside — closes. Click "Reveal in Finder" in any inspector — toast appears. No JS errors.
+
+---
+
+## Phase 15: Round 5 — Create Flows (US-11, US-12, FR-036–045)
+
+**Purpose**: All new-entity and import flows. Each opens a modal, validates required fields, and calls `commit()`.
+
+- [x] T053 [US11] Add create modals to `prototype/app.js` for goal (FR-036), category (FR-038), account/asset (FR-040), and entity (FR-039). Each pushes to the corresponding `DATA` collection, updates any related badge or aggregate, and calls `commit()`. Required field validation must block submit.
+- [x] T054 [US12] Add `ingestTransactionCSV(text, { entityId, business })` and `addTransaction(v)` to `prototype/app.js`. Wire "Import CSV" modal (FR-037): file upload accepts `.csv`, format hint shows `date, merchant, description, category, amount`; manual-entry form is the fallback. CSV read via FileReader; valid rows call `addTransaction` and `commit()`. Warn toast on empty result; warn toast if neither file nor merchant+amount provided.
+- [x] T055 [US11] Add Import Paystub modal to employment entity dashboard (FR-041): fields Pay period, Gross pay, Net pay — adds payroll credit to `DATA.transactions`, calls `commit()`. Add New estimated payment modal to Taxes (FR-042): fields Quarter, Year, Jurisdiction, Due date, Amount — pushes to `DATA.estimatedPayments` with `status: 'pending'`, calls `commit()`. Add Import prices modal to Portfolio/Holdings (FR-043): select holding ticker, new price — updates `holding.price`, calls `commit()`.
+- [x] T056 [US11] Add Rebalance plan modal to Portfolio (FR-044): compute drift = actual weight − target weight per sleeve; show only |drift| > 0.5%; "Export plan" downloads `rebalance-plan.csv` with columns `ticker, sleeve, drift, trade_usd`.
+- [x] T057 [US11] Add Business Categories "New" modal (FR-045): Name (required), Group — pushes to `DATA.businessCategories`, calls `commit()`.
+
+**Checkpoint**: Add goal via New Goal modal — appears immediately. Import a valid CSV on Budget screen — rows appear; reload — rows persist. Required-field error blocks submit. No JS errors.
+
+---
+
+## Phase 16: Round 5 — Repair, Checklist, Reindex (FR-046–049)
+
+**Purpose**: Extend existing repair wiring to persist, add checklist toggle, and add reindex flow.
+
+- [x] T058 [US5-extended] Add `applyRepair(id)` to `prototype/app.js` (FR-046): removes issue from `DATA.issues`, decrements `DATA.workspace.issueCount`, closes inspector, toasts "1 issue repaired · backup saved", calls `commit()`. Add Overview "Apply repairable fixes" action (FR-047): bulk-removes all repairable issues, toasts "{n} issues repaired · backups saved", calls `commit()`. If none repairable: `info` toast.
+- [x] T059 [US10] Add `toggleChecklistItem(id)` to `prototype/app.js` (FR-048): flips the `done` field on the matching item in `DATA.taxChecklist`, calls `commit()`. Checklist item click handler calls `toggleChecklistItem`. State persists on reload.
+- [x] T060 Add `runReindex()` to `prototype/app.js` (FR-049): sets `state.syncState = 'syncing'`, re-renders sidebar, waits ~2s, sets `state.syncState = 'synced'`, re-renders, shows `info` toast. Wire to all Reindex buttons.
+
+**Checkpoint**: Apply a repair — issue disappears, count decrements, reload confirms removal. Toggle checklist item — reloads with same state. Reindex shows syncing animation then returns to synced.
+
+---
+
+## Phase 17: Round 5 — Export Shapes (US-13, FR-050–060)
+
+**Purpose**: All 11 export surfaces produce real file downloads from live DATA using `exportCSV` / `exportMarkdown`.
+
+- [x] T061 Add `exportCSV(filename, headers, rows)` and `exportMarkdown(filename, md)` to `prototype/app.js`: Blob + URL.createObjectURL downloads. `toCSV(headers, rows)` handles RFC 4180 escaping. Wire Budget Overview export → `transactions-2026-05.csv` (FR-050), Budget History export → `budget-history.csv` (FR-051), Budget Categories export → `categories.csv` (FR-052).
+- [x] T062 Wire Savings Goals export → `savings-goals.csv` (FR-053). Wire Portfolio Overview export → `holdings.csv` with `market_value` computed column (FR-054). Wire Holdings export → `holdings.csv` without market_value (FR-055).
+- [x] T063 Wire Overview Issues export → `overview-issues.csv` (FR-056). Wire Rebalance plan "Export plan" → `rebalance-plan.csv` (FR-057).
+- [x] T064 Wire Business / Account Entity "Export P&L" → `{entityId}-pl.md` Markdown with Revenue/Expenses/Net summary + Transactions table (FR-058). Wire Taxes "Export prep packet" → `2026-tax-prep-packet.md` with GFM checklist + Estimated Payments + Deductions tables (FR-059).
+- [x] T065 Wire Accounts Overview export → `accounts.csv` with columns `name, institution, group, type, entity, monthly_inflow, ytd_net_income` (FR-060). Warn toast on all exports when the target collection is empty.
+
+**Checkpoint**: Click every Export button on a populated dataset — file downloads in each case. Add a goal, export savings-goals.csv — new goal appears in the file. No export button shows a broken state.
+
+---
+
+## Phase 18: Round 5 — Prototype Review Controls (FR-061)
+
+- [x] T066 [US10] Add clearly labeled "Prototype Review Controls" section to `viewSettingsWorkspace()` in `prototype/app.js` (FR-061). Must include disclaimer: *"These buttons control prototype state for design review. They do not represent real app functionality."* Four controls in order: Show onboarding flow (navigate), Cycle sync state (cycle and re-render), Show indexing state (navigate), Reset prototype data (danger button → T049 confirmation flow). Visually separate this section from real Settings content.
+
+**Checkpoint**: Settings → Workspace shows the Review Controls section with the disclaimer text. All four buttons respond correctly. Section is visually distinct from non-prototype settings.
+
+---
+
+## Phase 19: Round 5 — Live Search (US-14, FR-064–066)
+
+- [x] T067 [US14] Add search input to Savings Goals view in `prototype/app.js` (FR-064): text input above goal cards; on `input` event filter `DATA.goals` by name (case-insensitive substring); re-render only matching cards; clearing input restores all cards.
+- [x] T068 [US14] Add search input to Holdings view in `prototype/app.js` (FR-065): filters holding rows by ticker or name (case-insensitive) on `input` event.
+- [x] T069 [US14] Add search input to Budget transaction ledger and Business entity transaction ledger in `prototype/app.js` (FR-066): filters table rows by any text column content (case-insensitive) on `input` event.
+
+**Checkpoint**: Type in Savings Goals search — only matching cards shown. Clear — all cards return. Type in Holdings — only matching rows shown. Type in Budget ledger — matching rows only.
+
+---
+
+## Phase 20: Round 5 — Entity Dashboards and Tax Archive (FR-067–068)
+
+- [x] T070 [US9-extended] Update `viewAccountEntity()` in `prototype/app.js` (FR-067): business entities show a 4-tab bar (Dashboard, Transactions, Budgets, Categories); employment entities show 2 tabs (Dashboard, Transactions); personal entities show Dashboard only. Tab state stored in `state.entityTabs[entityId]` — session-only, NOT in `PERSIST_KEYS`, resets to `'dashboard'` on reload. Import CSV and Export P&L actions available on business entity dashboards.
+- [x] T071 Update `viewTaxesArchive()` in `prototype/app.js` (FR-068): renders a read-only table of prior closed tax years — columns: Tax year, Closed date, Total deductions, Total estimated payments, Archive file path chip. No edit/delete affordances. "Close Tax Year" action is deferred (locked decision per `technical-design.md §21`) — no button.
+
+**Checkpoint**: Navigate to a business entity — 4-tab bar shown. Switch tabs — content changes. Reload — tab resets to Dashboard. Taxes → Tax Archive — read-only table renders. No Close Tax Year button.
+
+---
+
+## Phase 21: Round 5 — Inspector and Legacy Routing (FR-069–072)
+
+- [x] T072 Add `account` inspector kind to `renderInspector()` in `prototype/app.js` (FR-069): Monthly Inflow (large value display), Account details (Institution, Type, Group, YTD net income), Source section linking to `Accounts/accounts.csv`. Triggered when an account card is clicked in Accounts view.
+- [x] T073 Ensure `renderInspector()` in `prototype/app.js` handles all 13 kinds in the FR-070 catalog: `transaction`, `category`, `rule`, `goal`, `holding`, `sleeve`, `biz-tx`, `issue`, `note`, `account`, `estimatedPayment`, `realized`, `overview-kpi`. All other kinds fall to generic fallback. Verify no kind in the catalog is missing a handler.
+- [x] T074 Ensure `renderCenter()` in `prototype/app.js` contains the full legacy redirect map from FR-071: `savings-goals-active / savings-goals-archived → savings-goals`; `investments-accounts / investments-sleeves / savings-accounts → investments-portfolio`; `investments-benchmarks / investments-benchmark → investments-holdings`; `business-entity / business-all-entities / business-monthly → viewBusiness()`; `taxes-deductions / taxes-estimated / taxes-gains / taxes-estimated-payments / taxes-gains-income → taxes-current`. Redirects must be silent (no toast).
+- [x] T075 Ensure `viewNotes()`, `viewIssues()`, and `viewBudgetRules()` remain as unreachable stub functions in `prototype/app.js` — NOT in the NAV array (FR-072). Search inputs in `viewNotes` and `viewIssues` use `onChange: () => {}` no-ops intentionally.
+
+**Checkpoint**: Click an account card — `account` inspector slides in with correct layout. Navigate to `/investments-benchmarks` (legacy) — Holdings screen loads. No 13-kind inspector handler is missing. V2 stubs not reachable from sidebar.
+
+---
+
+## Phase 22: Round 5 — Smoke Test (SC-013)
+
+- [x] T076 Run jsdom headless smoke test from `/tmp/protosmoke` (see `prototype/README.md §Smoke test` for setup instructions): concatenate `data.js + store.js + app.js`, eval in jsdom context, assert 19 outcomes: initial render, add-goal → DATA → badge → card → persist, apply-repair, checklist toggle, manual transaction import, CSV export, filter-menu click, all nav + entity views without error, persistence across simulated reload. **Target: 19/19 passing.** *(Committing `prototype/smoke.js` to the repo is a P4 Known Gap — see `spec.md §Known Gaps`.)*
+
+**Checkpoint**: 19/19 assertions pass. Any failure is a regression to investigate before the round is closed.

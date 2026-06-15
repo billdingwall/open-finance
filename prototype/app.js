@@ -75,7 +75,7 @@ const goalById = () => Object.fromEntries(DATA.goals.map(g => [g.id, g]));
 // ---------- State ------------------------------------------------------------
 
 const state = {
-  view: 'accounts-overview',
+  view: 'overview-dashboard',
   selection: null, // { kind, id }
   filters: {
     'budget-overview':       { period: '2026-05', account: 'all', category: 'all', search: '' },
@@ -95,14 +95,12 @@ const state = {
   navCollapsed: new Set(),
   syncState: 'synced',
   inspectorOpen: false,
+  searchQuery: {}, // persists active search query per view across commit() re-renders
 };
 
 // ---------- Sidebar ----------------------------------------------------------
 
 const NAV = [
-  { id: 'overview', label: 'Overview', items: [
-    { id: 'overview-dashboard', label: 'Dashboard' },
-  ]},
   { id: 'accounts', label: 'Accounts', items: [
     { id: 'accounts-overview', label: 'All Accounts' },
   ]},
@@ -135,6 +133,8 @@ function renderSidebar() {
     const labelEl = pill.querySelector('.sync-pill-label');
     if (labelEl) labelEl.textContent = labels[state.syncState] || state.syncState;
   }
+  const head = document.getElementById('sidebar-head');
+  if (head) head.classList.toggle('active', state.view === 'overview-dashboard');
   const root = $('#sidebar-nav');
   root.innerHTML = '';
   for (const group of NAV) {
@@ -156,12 +156,13 @@ function renderSidebar() {
         ...DATA.entities.filter(e => e.active).map(e => ({ id: `accounts-entity-${e.id}`, label: e.display }))
       ] : group.items).map(item => {
         const active = state.view === item.id;
+        const badge = item.id === 'savings-goals' ? (DATA.goals.length ? String(DATA.goals.length) : null) : item.badge;
         return el('div', {
           class: 'nav-item' + (active ? ' active' : ''),
           onclick: () => navigate(item.id),
         }, [
           el('span', { text: item.label }),
-          item.badge ? el('span', { class: 'badge', text: item.badge }) : null,
+          badge ? el('span', { class: 'badge', text: badge }) : null,
         ]);
       })),
     ]);
@@ -206,34 +207,11 @@ function closeInspector() {
 
 // ---------- Filter bar -------------------------------------------------------
 
-function renderFilterBar(filters) {
+// The contextual filter bar is removed for MVP (Round 5) and deferred to V2.
+// Kept as a no-op so existing per-view calls remain harmless.
+function renderFilterBar(_filters) {
   const bar = $('#filter-bar');
-  bar.innerHTML = '';
-  if (!filters || filters.length === 0) {
-    bar.style.display = 'none';
-    return;
-  }
-  bar.style.display = 'flex';
-  for (const f of filters) {
-    if (f.kind === 'search') {
-      const wrap = el('div', { class: 'search-filter' }, [
-        el('input', { type: 'text', placeholder: f.placeholder || 'Search', value: f.value || '', oninput: e => f.onChange(e.target.value) }),
-      ]);
-      bar.appendChild(wrap);
-    } else if (f.kind === 'spacer') {
-      bar.appendChild(el('div', { class: 'filter-spacer' }));
-    } else {
-      const node = el('button', {
-        class: 'filter' + (f.active ? ' is-active' : ''),
-        onclick: f.onClick || (() => {}),
-      }, [
-        el('span', { class: 'filter-label', text: f.label + ':' }),
-        el('span', { class: 'filter-value', text: f.value }),
-        el('span', { class: 'filter-caret' }),
-      ]);
-      bar.appendChild(node);
-    }
-  }
+  if (bar) { bar.innerHTML = ''; bar.style.display = 'none'; }
 }
 
 // ---------- Header helpers ---------------------------------------------------
@@ -257,53 +235,41 @@ function setHeader({ title, breadcrumb, actions }) {
   $('#issue-count').textContent = DATA.issues.length;
 }
 
-// ---------- Charts (SVG) -----------------------------------------------------
+// ---------- Charts (Chart.js) ------------------------------------------------
+// Chart helpers emit a sized <canvas> placeholder and queue a Chart.js config.
+// renderCenter() destroys live instances before a re-render and flushes the
+// queue after the new DOM is in place (canvases must be attached first).
 
-function lineChart(series, opts = {}) {
-  const { width = 460, height = 200, padding = { t: 16, r: 14, b: 26, l: 36 }, colors = ['#3651d3'], labels = [], dashed = [] } = opts;
-  const allValues = series.flat();
-  const minV = Math.min(...allValues);
-  const maxV = Math.max(...allValues);
-  const range = maxV - minV || 1;
-  const xPad = padding.l;
-  const xMax = width - padding.r;
-  const yPad = padding.t;
-  const yMax = height - padding.b;
-  const innerW = xMax - xPad;
-  const innerH = yMax - yPad;
+let __chartSeq = 0;
+const __chartQueue = [];
+const __chartInstances = [];
 
-  const xs = (i, n) => xPad + (i / Math.max(n - 1, 1)) * innerW;
-  const ys = v => yMax - ((v - minV) / range) * innerH;
+const CHART_INK = '#3651d3';
+const CHART_MUTE = '#94a3b8';
+const CHART_NEG = '#b91c1c';
+const CHART_GRID = 'rgba(148,163,184,0.20)';
 
-  const svg = `
-    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
-      <g class="chart-grid">
-        ${[0, 0.25, 0.5, 0.75, 1].map(p => {
-          const y = yPad + p * innerH;
-          return `<line x1="${xPad}" x2="${xMax}" y1="${y}" y2="${y}"/>`;
-        }).join('')}
-      </g>
-      <g class="chart-axis">
-        <line x1="${xPad}" x2="${xMax}" y1="${yMax}" y2="${yMax}"/>
-      </g>
-      ${series.map((s, idx) => {
-        const path = s.map((v, i) => `${i === 0 ? 'M' : 'L'} ${xs(i, s.length).toFixed(1)} ${ys(v).toFixed(1)}`).join(' ');
-        const dash = dashed[idx] ? 'stroke-dasharray="4 4"' : '';
-        return `<path d="${path}" fill="none" stroke="${colors[idx] || '#94a3b8'}" stroke-width="1.75" ${dash}/>`;
-      }).join('')}
-      ${series.map((s, idx) => s.map((v, i) =>
-          `<circle cx="${xs(i, s.length).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="2.4" fill="${colors[idx] || '#94a3b8'}"/>`
-        ).join('')
-      ).join('')}
-      ${labels.map((label, i) => {
-        const x = xs(i, labels.length);
-        return `<text class="chart-axis-label" x="${x}" y="${height - 8}" text-anchor="middle">${label}</text>`;
-      }).join('')}
-      ${[minV, (minV + maxV)/2, maxV].map(v => {
-        return `<text class="chart-axis-label" x="${xPad - 6}" y="${ys(v) + 3}" text-anchor="end">${shortNum(v)}</text>`;
-      }).join('')}
-    </svg>`;
-  return svg;
+function destroyCharts() {
+  while (__chartInstances.length) { try { __chartInstances.pop().destroy(); } catch (_) {} }
+  __chartQueue.length = 0;
+}
+
+function flushCharts() {
+  if (typeof Chart === 'undefined') return;
+  while (__chartQueue.length) {
+    const spec = __chartQueue.shift();
+    const cv = document.getElementById(spec.id);
+    if (!cv) continue;
+    try { __chartInstances.push(new Chart(cv.getContext('2d'), spec.config)); }
+    catch (e) { console.error('chart render failed', e); }
+  }
+}
+
+function queueChart(config, { height = 200, width = null } = {}) {
+  const id = 'chart-' + (++__chartSeq);
+  __chartQueue.push({ id, config });
+  const wstyle = width ? `width:${width}px;` : '';
+  return `<div class="chart-canvas" style="height:${height}px;${wstyle}"><canvas id="${id}"></canvas></div>`;
 }
 
 function shortNum(v) {
@@ -313,68 +279,905 @@ function shortNum(v) {
   return v.toFixed(1);
 }
 
+function baseAxisOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: CHART_MUTE, font: { size: 10 } } },
+      y: { grid: { color: CHART_GRID, drawBorder: false }, ticks: { color: CHART_MUTE, font: { size: 10 }, callback: v => shortNum(v) } },
+    },
+  };
+}
+
+function lineChart(series, opts = {}) {
+  const { labels = [], colors = [CHART_INK], dashed = [], height = 200 } = opts;
+  const datasets = series.map((s, i) => ({
+    data: s,
+    borderColor: colors[i] || CHART_MUTE,
+    backgroundColor: 'transparent',
+    borderWidth: 1.75,
+    borderDash: dashed[i] ? [4, 4] : [],
+    pointRadius: 2.2,
+    pointBackgroundColor: colors[i] || CHART_MUTE,
+    tension: 0.25,
+  }));
+  const lbls = labels.length ? labels : (series[0] || []).map((_, i) => i + 1);
+  return queueChart({ type: 'line', data: { labels: lbls, datasets }, options: baseAxisOptions() }, { height });
+}
+
 function barChart(values, opts = {}) {
-  const { width = 460, height = 200, padding = { t: 16, r: 14, b: 26, l: 36 }, color = '#3651d3', labels = [], negColor = '#b91c1c' } = opts;
-  const minV = Math.min(0, ...values);
-  const maxV = Math.max(0, ...values);
-  const range = (maxV - minV) || 1;
-  const xPad = padding.l, xMax = width - padding.r, yPad = padding.t, yMax = height - padding.b;
-  const innerW = xMax - xPad, innerH = yMax - yPad;
-  const slot = innerW / values.length;
-  const bw = slot * 0.6;
-  const zeroY = yMax - ((0 - minV) / range) * innerH;
-
-  const bars = values.map((v, i) => {
-    const x = xPad + slot * i + (slot - bw) / 2;
-    const y = yMax - ((v - minV) / range) * innerH;
-    const h = Math.abs(y - zeroY);
-    const top = v >= 0 ? y : zeroY;
-    return `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${v >= 0 ? color : negColor}"/>`;
-  }).join('');
-
-  return `
-    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
-      <g class="chart-grid">
-        ${[0, 0.25, 0.5, 0.75, 1].map(p => {
-          const y = yPad + p * innerH;
-          return `<line x1="${xPad}" x2="${xMax}" y1="${y}" y2="${y}"/>`;
-        }).join('')}
-      </g>
-      <line class="chart-axis" x1="${xPad}" x2="${xMax}" y1="${zeroY}" y2="${zeroY}" stroke="#94a3b8"/>
-      ${bars}
-      ${labels.map((label, i) => {
-        const x = xPad + slot * i + slot / 2;
-        return `<text class="chart-axis-label" x="${x}" y="${height - 8}" text-anchor="middle">${label}</text>`;
-      }).join('')}
-      ${[minV, 0, maxV].filter((v, i, a) => a.indexOf(v) === i).map(v => {
-        const y = yMax - ((v - minV) / range) * innerH;
-        return `<text class="chart-axis-label" x="${xPad - 6}" y="${y + 3}" text-anchor="end">${shortNum(v)}</text>`;
-      }).join('')}
-    </svg>`;
+  const { labels = [], color = CHART_INK, negColor = CHART_NEG, height = 200 } = opts;
+  const lbls = labels.length ? labels : values.map((_, i) => i + 1);
+  return queueChart({
+    type: 'bar',
+    data: { labels: lbls, datasets: [{
+      data: values,
+      backgroundColor: values.map(v => v >= 0 ? color : negColor),
+      borderRadius: 2,
+      barPercentage: 0.6,
+      categoryPercentage: 0.85,
+    }] },
+    options: baseAxisOptions(),
+  }, { height });
 }
 
 function donutChart(slices, opts = {}) {
   const { size = 160, thickness = 26 } = opts;
-  const r = size / 2;
-  const inner = r - thickness;
-  const total = slices.reduce((s, x) => s + x.value, 0) || 1;
-  let acc = 0;
-  const arcs = slices.map(s => {
-    const start = acc / total * Math.PI * 2 - Math.PI / 2;
-    acc += s.value;
-    const end = acc / total * Math.PI * 2 - Math.PI / 2;
-    const large = (end - start) > Math.PI ? 1 : 0;
-    const x1 = r + Math.cos(start) * r;
-    const y1 = r + Math.sin(start) * r;
-    const x2 = r + Math.cos(end) * r;
-    const y2 = r + Math.sin(end) * r;
-    const x3 = r + Math.cos(end) * inner;
-    const y3 = r + Math.sin(end) * inner;
-    const x4 = r + Math.cos(start) * inner;
-    const y4 = r + Math.sin(start) * inner;
-    return `<path d="M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${x3.toFixed(2)} ${y3.toFixed(2)} A ${inner} ${inner} 0 ${large} 0 ${x4.toFixed(2)} ${y4.toFixed(2)} Z" fill="${s.color}" />`;
-  }).join('');
-  return `<svg viewBox="0 0 ${size} ${size}" style="display:block;">${arcs}</svg>`;
+  const cutout = Math.max(0, Math.round(((size / 2 - thickness) / (size / 2)) * 100));
+  return queueChart({
+    type: 'doughnut',
+    data: {
+      labels: slices.map(s => s.label || ''),
+      datasets: [{ data: slices.map(s => s.value), backgroundColor: slices.map(s => s.color), borderWidth: 0 }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: cutout + '%',
+      plugins: { legend: { display: false }, tooltip: { enabled: true } },
+    },
+  }, { height: size, width: size });
+}
+
+// =====================================================================
+// INTERACTION INFRASTRUCTURE — modals, toasts, persistence, export
+// =====================================================================
+
+// Persist mutations, refresh derived projections, and re-render everything
+// that could depend on the changed data. This is the prototype stand-in for
+// the technical-design "structured write flow" (build plan → write → re-index
+// → refresh projections).
+function commit() {
+  if (!Store.save()) toast('Could not save to localStorage — changes will not persist after reload', 'warn');
+  renderSidebar();
+  renderCenter();
+  if (state.inspectorOpen) renderInspector();
+}
+
+// ---- Toasts ----------------------------------------------------------------
+function toast(message, kind = 'info') {
+  let host = document.getElementById('toast-host');
+  if (!host) {
+    host = el('div', { id: 'toast-host', class: 'toast-host' });
+    document.body.appendChild(host);
+  }
+  const node = el('div', { class: 'toast toast-' + kind }, [
+    el('span', { class: 'toast-dot' }),
+    el('span', { text: message }),
+  ]);
+  host.appendChild(node);
+  requestAnimationFrame(() => node.classList.add('show'));
+  setTimeout(() => {
+    node.classList.remove('show');
+    setTimeout(() => node.remove(), 250);
+  }, 2800);
+}
+
+// ---- Modal / form builder --------------------------------------------------
+// fields: [{ key, label, type, options, value, required, placeholder, step, hint, rows }]
+function openModal({ title, subtitle, fields = [], body, submitLabel = 'Save', onSubmit, danger, secondary }) {
+  closeModal();
+  const overlay = el('div', {
+    class: 'modal-overlay',
+    id: 'modal-overlay',
+    onclick: (e) => { if (e.target === e.currentTarget) closeModal(); },
+  });
+  const form = el('form', {
+    class: 'modal',
+    onsubmit: (e) => {
+      e.preventDefault();
+      const values = {};
+      let ok = true;
+      for (const f of fields) {
+        const input = form.querySelector(`[name="${f.key}"]`);
+        if (!input) continue;
+        let v = input.value;
+        if (f.type === 'number') v = v === '' ? null : Number(v);
+        if (typeof v === 'string') v = v.trim();
+        if (f.required && (v == null || v === '')) {
+          ok = false;
+          input.classList.add('field-error');
+        } else {
+          input.classList.remove('field-error');
+        }
+        values[f.key] = v;
+      }
+      if (!ok) { toast('Fill in the required fields', 'warn'); return; }
+      const result = onSubmit ? onSubmit(values, form) : true;
+      if (result !== false) closeModal();
+    },
+  });
+
+  form.appendChild(el('div', { class: 'modal-head' }, [
+    el('h2', { text: title }),
+    subtitle ? el('p', { class: 'modal-sub', text: subtitle }) : null,
+  ]));
+
+  const bodyEl = el('div', { class: 'modal-body' });
+  if (body) bodyEl.appendChild(body);
+  for (const f of fields) {
+    const id = 'mf-' + f.key;
+    let input;
+    if (f.type === 'select') {
+      input = el('select', { name: f.key, id });
+      for (const o of f.options) {
+        const opt = el('option', { value: o.value }, [o.label]);
+        if (String(o.value) === String(f.value)) opt.selected = true;
+        input.appendChild(opt);
+      }
+    } else if (f.type === 'textarea') {
+      input = el('textarea', { name: f.key, id, rows: f.rows || 3, placeholder: f.placeholder || '' }, [f.value || '']);
+    } else {
+      input = el('input', {
+        name: f.key, id, type: f.type || 'text',
+        value: f.value != null ? f.value : '',
+        placeholder: f.placeholder || '',
+      });
+      if (f.step) input.setAttribute('step', f.step);
+    }
+    bodyEl.appendChild(el('div', { class: 'modal-field' }, [
+      el('label', { for: id, text: f.label + (f.required ? ' *' : '') }),
+      input,
+      f.hint ? el('div', { class: 'modal-hint', text: f.hint }) : null,
+    ]));
+  }
+  form.appendChild(bodyEl);
+
+  form.appendChild(el('div', { class: 'modal-foot' }, [
+    // Secondary action (e.g. Delete) sits left, separated from the primary actions.
+    secondary ? el('button', {
+      type: 'button',
+      class: 'btn ' + (secondary.danger ? 'btn-danger' : 'btn-ghost'),
+      style: { marginRight: 'auto' },
+      onclick: () => { if (secondary.onClick) secondary.onClick(); },
+    }, [secondary.label]) : null,
+    el('button', { type: 'button', class: 'btn btn-ghost', onclick: closeModal }, ['Cancel']),
+    el('button', { type: 'submit', class: 'btn ' + (danger ? 'btn-danger' : 'btn-primary') }, [submitLabel]),
+  ]));
+
+  overlay.appendChild(form);
+  document.body.appendChild(overlay);
+  const first = form.querySelector('input, select, textarea');
+  if (first) setTimeout(() => first.focus(), 30);
+}
+
+function closeModal() {
+  const o = document.getElementById('modal-overlay');
+  if (o) o.remove();
+}
+
+// ---- Lightweight dropdown menu (for filter bar choices) --------------------
+function openMenu(anchorEl, options, onPick) {
+  document.querySelectorAll('.proto-menu').forEach(m => m.remove());
+  const rect = anchorEl.getBoundingClientRect();
+  const menu = el('div', { class: 'proto-menu' });
+  for (const o of options) {
+    menu.appendChild(el('div', {
+      class: 'proto-menu-item' + (o.active ? ' active' : ''),
+      onclick: () => { menu.remove(); onPick(o.value); },
+    }, [o.label]));
+  }
+  menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  menu.style.left = (rect.left + window.scrollX) + 'px';
+  document.body.appendChild(menu);
+  setTimeout(() => {
+    const close = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', close); } };
+    document.addEventListener('click', close);
+  }, 0);
+}
+
+// ---- Export helpers (real downloads from live mock data) -------------------
+function downloadFile(filename, content, mime = 'text/plain') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = el('a', { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function toCSV(headers, rows) {
+  const esc = (v) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const head = headers.map(h => esc(h.label)).join(',');
+  const lines = rows.map(r => headers.map(h => esc(typeof h.value === 'function' ? h.value(r) : r[h.value])).join(','));
+  return [head, ...lines].join('\n');
+}
+
+function exportCSV(filename, headers, rows) {
+  if (!rows.length) { toast('Nothing to export', 'warn'); return; }
+  downloadFile(filename, toCSV(headers, rows), 'text/csv');
+  toast(filename + ' exported (' + rows.length + ' rows)', 'ok');
+}
+
+function exportMarkdown(filename, md) {
+  downloadFile(filename, md, 'text/markdown');
+  toast(filename + ' exported', 'ok');
+}
+
+// Simulated reindex: pulse the sync pill through syncing → synced.
+function runReindex() {
+  state.syncState = 'syncing';
+  renderSidebar();
+  toast('Reindexing workspace…', 'info');
+  setTimeout(() => {
+    state.syncState = 'synced';
+    renderSidebar();
+    toast('Workspace reindexed · ' + DATA.transactions.length + ' transactions', 'ok');
+  }, 1100);
+}
+
+// OS-level affordances we can only simulate in a browser prototype.
+function osAction(label, target) {
+  toast(label + (target ? ' · ' + target : '') + ' (native action in the macOS app)', 'info');
+}
+
+// =====================================================================
+// CREATE / IMPORT / EDIT FLOWS
+// =====================================================================
+
+function addTransaction(v) {
+  const business = !!v.business;
+  const amount = Number(v.amount);
+  const tx = {
+    id: (business ? 'BX-' : 'TX-') + Date.now(),
+    date: v.date,
+    merchant: v.merchant,
+    description: v.description || '',
+    account: business ? 'Brex Checking' : (v.account || 'Chase Checking'),
+    category: v.category,
+    amount,
+    direction: amount < 0 ? 'debit' : 'credit',
+    recurring: false,
+    source: (business ? 'Business/transactions/' + (v.entityId || 'entity') + '-' : 'Personal/transactions/') + (v.date ? v.date.slice(0, 7) : '2026-05') + '.csv',
+    row: DATA.transactions.length + 2,
+    importedFrom: v.importedFrom || 'manual-entry',
+    entityId: v.entityId || 'personal',
+    deductible: business ? amount < 0 : false,
+  };
+  if (business) tx.entity = v.entityId;
+  DATA.transactions.push(tx);
+  return tx;
+}
+
+// Parse a simple CSV: date,merchant,description,category,amount (header optional).
+function ingestTransactionCSV(text, { entityId, business }) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return 0;
+  const looksLikeHeader = /date/i.test(lines[0]) && /amount/i.test(lines[0]);
+  const rows = looksLikeHeader ? lines.slice(1) : lines;
+  let n = 0;
+  for (const line of rows) {
+    const cells = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    if (cells.length < 2) continue;
+    // Always treat the last cell as the amount so 3-, 4-, and 5-column bank
+    // exports all parse correctly (date, merchant[, description[, category]], amount).
+    const amt = Number(cells[cells.length - 1]);
+    if (Number.isNaN(amt)) continue;
+    addTransaction({
+      date: cells[0] || '2026-05-25',
+      merchant: cells[1] || 'Imported',
+      description: cells.length >= 5 ? cells[2] : '',
+      category: cells.length >= 5 ? (cells[3] || 'groceries') : 'groceries',
+      amount: amt,
+      entityId, business, importedFrom: 'import.csv',
+    });
+    n++;
+  }
+  return n;
+}
+
+function importTransactionsFlow({ entityId = 'personal', business = false } = {}) {
+  const catSource = business ? DATA.businessCategories : DATA.categories.filter(c => c.id !== 'income');
+  const catOptions = [{ value: 'income', label: 'Income' }, ...catSource.map(c => ({ value: c.id, label: c.name }))];
+  const fileInput = el('input', { type: 'file', accept: '.csv,text/csv', class: 'modal-file' });
+  const filePicker = el('div', { class: 'modal-import-file' }, [
+    el('label', { class: 'modal-field-label', text: 'Import a CSV file' }),
+    fileInput,
+    el('div', { class: 'modal-hint', text: 'Columns: date, merchant, description, category, amount (negative = expense).' }),
+    el('div', { class: 'modal-or', text: 'or add one manually' }),
+  ]);
+
+  openModal({
+    title: business ? 'Import business transactions' : 'Import transactions',
+    subtitle: 'Drop in a bank/brokerage CSV export, or enter a single transaction.',
+    body: filePicker,
+    fields: [
+      { key: 'date', label: 'Date', type: 'date', value: '2026-05-25' },
+      { key: 'merchant', label: 'Merchant', placeholder: 'e.g. Whole Foods' },
+      { key: 'description', label: 'Description', placeholder: 'optional' },
+      { key: 'category', label: 'Category', type: 'select', options: catOptions, value: catOptions[1] ? catOptions[1].value : 'income' },
+      { key: 'amount', label: 'Amount', type: 'number', step: '0.01', placeholder: '-120.00', hint: 'Negative for an expense, positive for income.' },
+    ],
+    submitLabel: 'Import',
+    onSubmit: (v) => {
+      const file = fileInput.files && fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const n = ingestTransactionCSV(String(reader.result), { entityId, business });
+          if (n) { commit(); toast(n + ' transaction' + (n === 1 ? '' : 's') + ' imported from ' + file.name, 'ok'); }
+          else toast('No valid rows found in ' + file.name, 'warn');
+        };
+        reader.onerror = () => toast('Could not read ' + file.name + ' — try again', 'warn');
+        reader.readAsText(file);
+        return true;
+      }
+      if (v.merchant && v.amount != null && v.amount !== '') {
+        addTransaction({ ...v, entityId, business });
+        commit();
+        toast('Transaction added to the ledger', 'ok');
+        return true;
+      }
+      toast('Choose a file or enter a merchant and amount', 'warn');
+      return false;
+    },
+  });
+}
+
+function addGoalFlow() {
+  openModal({
+    title: 'New savings goal',
+    subtitle: 'Goals link to a source account and a monthly budgeted contribution.',
+    fields: [
+      { key: 'name', label: 'Goal name', required: true, placeholder: 'e.g. New car' },
+      { key: 'target', label: 'Target amount', type: 'number', step: '100', required: true, placeholder: '20000' },
+      { key: 'balance', label: 'Starting balance', type: 'number', step: '100', value: 0 },
+      { key: 'monthlyTarget', label: 'Monthly contribution', type: 'number', step: '50', value: 0 },
+      { key: 'targetDate', label: 'Target date', type: 'date', value: '2027-12-01' },
+      { key: 'account', label: 'Source account', value: 'Marcus · New Fund' },
+    ],
+    submitLabel: 'Create goal',
+    onSubmit: (v) => {
+      DATA.goals.push({
+        id: 'goal-' + Date.now(),
+        name: v.name,
+        target: Number(v.target),
+        balance: Number(v.balance) || 0,
+        monthlyTarget: Number(v.monthlyTarget) || 0,
+        monthlyActual: 0,
+        targetDate: v.targetDate,
+        account: v.account || 'Marcus · New Fund',
+        note: null,
+        contributions: [],
+        source: 'Savings/goals.csv',
+        row: DATA.goals.length + 2,
+      });
+      commit();
+      toast('Goal “' + v.name + '” created', 'ok');
+    },
+  });
+}
+
+function addCategoryFlow() {
+  openModal({
+    title: 'New budget category',
+    fields: [
+      { key: 'name', label: 'Category name', required: true, placeholder: 'e.g. Subscriptions' },
+      { key: 'group', label: 'Group', type: 'select', value: 'Discretionary', options: [
+        { value: 'Fixed', label: 'Fixed' },
+        { value: 'Variable', label: 'Variable' },
+        { value: 'Discretionary', label: 'Discretionary' },
+        { value: 'Savings', label: 'Savings' },
+      ] },
+      { key: 'planned', label: 'Monthly budget target', type: 'number', step: '10', value: 0 },
+    ],
+    submitLabel: 'Create category',
+    onSubmit: (v) => {
+      const palette = ['#6366f1', '#0ea5e9', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#06b6d4', '#22c55e'];
+      DATA.categories.push({
+        id: v.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'cat-' + Date.now(),
+        name: v.name,
+        group: v.group,
+        planned: Number(v.planned) || 0,
+        color: palette[DATA.categories.length % palette.length],
+      });
+      commit();
+      toast('Category “' + v.name + '” added', 'ok');
+    },
+  });
+}
+
+function addEntityFlow() {
+  openModal({
+    title: 'New group',
+    subtitle: 'Groups organize accounts (Personal, Place of Employment, a specific LLC).',
+    fields: [
+      { key: 'display', label: 'Display name', required: true, placeholder: 'e.g. Rental LLC' },
+      { key: 'type', label: 'Type', type: 'select', value: 'business', options: [
+        { value: 'personal', label: 'Personal' },
+        { value: 'employment', label: 'Place of Employment' },
+        { value: 'business', label: 'Business' },
+      ] },
+      { key: 'taxId', label: 'Tax ID (optional)', placeholder: 'xx-xxxxxxx' },
+    ],
+    submitLabel: 'Create group',
+    onSubmit: (v) => {
+      DATA.entities.push({
+        id: v.display.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'group-' + Date.now(),
+        display: v.display,
+        type: v.type,
+        taxId: v.taxId || '—',
+        active: true,
+      });
+      commit();
+      toast('Group “' + v.display + '” created', 'ok');
+    },
+  });
+}
+
+function addAccountFlow(entityId) {
+  const entityOptions = DATA.entities.map(e => ({ value: e.id, label: e.display }));
+  openModal({
+    title: 'Add account',
+    subtitle: 'Accounts register in the master Accounts/accounts.csv registry.',
+    fields: [
+      { key: 'name', label: 'Account name', required: true, placeholder: 'e.g. Ally Savings' },
+      { key: 'institution', label: 'Institution', placeholder: 'e.g. Ally' },
+      { key: 'group', label: 'Group', type: 'select', value: 'Everyday Banking', options: [
+        { value: 'Everyday Banking', label: 'Everyday Banking' },
+        { value: 'Credit Cards', label: 'Credit Cards' },
+        { value: 'Investments', label: 'Investments' },
+        { value: 'Savings', label: 'Savings' },
+        { value: 'Business', label: 'Business' },
+        { value: 'Benefits', label: 'Benefits' },
+        { value: 'Loans & Debt', label: 'Loans & Debt' },
+      ] },
+      { key: 'type', label: 'Type', value: 'checking' },
+      { key: 'entityId', label: 'Theme / entity', type: 'select', value: entityId || 'personal', options: entityOptions },
+      { key: 'monthlyInflow', label: 'Monthly inflow', type: 'number', step: '50', value: 0 },
+      { key: 'ytdNetIncome', label: 'YTD net income', type: 'number', step: '100', value: 0 },
+    ],
+    submitLabel: 'Add account',
+    onSubmit: (v) => {
+      DATA.accounts.push({
+        id: 'acct-' + Date.now(),
+        name: v.name,
+        institution: v.institution || '—',
+        group: v.group,
+        type: v.type || 'checking',
+        monthlyInflow: Number(v.monthlyInflow) || 0,
+        ytdNetIncome: Number(v.ytdNetIncome) || 0,
+        entityId: v.entityId,
+      });
+      commit();
+      toast('Account “' + v.name + '” added', 'ok');
+    },
+  });
+}
+
+// =====================================================================
+// EDIT / DELETE — universal object management (Round 5 #6)
+// Right-panel objects show Edit/Delete at the bottom of the inspector;
+// dedicated-screen objects (individual account) edit via local actions
+// with Delete offered inside the edit flow.
+// =====================================================================
+
+const ACCOUNT_GROUP_OPTS = ['Everyday Banking', 'Credit Cards', 'Investments', 'Savings', 'Business', 'Benefits', 'Loans & Debt']
+  .map(g => ({ value: g, label: g }));
+
+const EDITABLE_KINDS = new Set(['account', 'transaction', 'biz-tx', 'goal', 'category', 'deduction', 'holding', 'entity']);
+const DELETABLE_KINDS = new Set(['account', 'transaction', 'biz-tx', 'goal', 'category', 'deduction', 'holding', 'entity', 'payment']);
+
+function editSelection(kind, id) {
+  switch (kind) {
+    case 'account': return editAccountFlow(id);
+    case 'transaction': case 'biz-tx': return editTransactionFlow(id);
+    case 'goal': return editGoalFlow(id);
+    case 'category': return editCategoryFlow(id);
+    case 'deduction': return editDeductionFlow(id);
+    case 'holding': return editHoldingFlow(id);
+    case 'entity': return editEntityFlow(id);
+    default: toast('Editing isn’t available for this item', 'info');
+  }
+}
+
+// Generic delete with a reference check + previewed, backed-up write.
+function deleteSelection(kind, id) {
+  const map = {
+    account:     { coll: 'accounts',  label: 'account',     name: o => o.name,             refs: o => DATA.transactions.filter(t => t.account === o.name).length, refLabel: 'transactions' },
+    entity:      { coll: 'entities',  label: 'group',       name: o => o.display,          refs: o => DATA.accounts.filter(a => a.entityId === o.id).length,      refLabel: 'accounts' },
+    transaction: { coll: 'transactions', label: 'transaction', name: o => o.merchant },
+    'biz-tx':    { coll: 'transactions', label: 'transaction', name: o => o.merchant },
+    goal:        { coll: 'goals',     label: 'goal',        name: o => o.name },
+    category:    { coll: 'categories', label: 'category',   name: o => o.name,             refs: o => DATA.transactions.filter(t => t.category === o.id).length,   refLabel: 'transactions' },
+    deduction:   { coll: 'deductions', label: 'deduction',  name: o => o.name },
+    holding:     { coll: 'holdings',  label: 'holding',     name: o => o.name || o.ticker },
+    payment:     { coll: 'estimatedPayments', label: 'payment', name: o => o.jurisdiction + ' Q' + o.quarter },
+  };
+  const cfg = map[kind];
+  if (!cfg) { toast('This object can’t be deleted', 'warn'); return; }
+  const coll = DATA[cfg.coll];
+  const obj = coll.find(o => o.id === id);
+  if (!obj) return;
+  const refCount = cfg.refs ? cfg.refs(obj) : 0;
+  const refMsg = refCount > 0
+    ? `${refCount} ${cfg.refLabel} reference this ${cfg.label} — they’ll be kept but left unlinked. `
+    : '';
+  openModal({
+    title: `Delete ${cfg.label}?`,
+    subtitle: cfg.name(obj),
+    body: el('p', { class: 'modal-sub', style: { margin: '4px 0 0' }, text: `${refMsg}This writes to the source file and saves a timestamped backup.` }),
+    submitLabel: 'Delete',
+    danger: true,
+    onSubmit: () => {
+      const idx = coll.findIndex(o => o.id === id);
+      if (idx > -1) coll.splice(idx, 1);
+      if (state.selection && state.selection.id === id) closeInspector();
+      if (kind === 'account' && state.view === 'accounts-account-' + id) state.view = 'accounts-overview';
+      if (kind === 'entity' && state.view === 'accounts-entity-' + id) state.view = 'accounts-overview';
+      commit();
+      toast(`${cfg.label[0].toUpperCase() + cfg.label.slice(1)} deleted · backup saved`, 'ok');
+    },
+  });
+}
+
+function editAccountFlow(accountId) {
+  const a = DATA.accounts.find(x => x.id === accountId);
+  if (!a) return;
+  openModal({
+    title: 'Edit account',
+    subtitle: a.name,
+    fields: [
+      { key: 'name', label: 'Account name', required: true, value: a.name },
+      { key: 'institution', label: 'Institution', value: a.institution },
+      { key: 'group', label: 'Banking group', type: 'select', value: a.group, options: ACCOUNT_GROUP_OPTS },
+      { key: 'type', label: 'Type', value: a.type },
+      { key: 'entityId', label: 'Account group', type: 'select', value: a.entityId, options: DATA.entities.map(e => ({ value: e.id, label: e.display })) },
+      { key: 'monthlyInflow', label: 'Monthly inflow', type: 'number', step: '50', value: a.monthlyInflow },
+      { key: 'ytdNetIncome', label: 'YTD net income', type: 'number', step: '100', value: a.ytdNetIncome },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete account', danger: true, onClick: () => { closeModal(); deleteSelection('account', a.id); } },
+    onSubmit: (v) => {
+      a.name = v.name; a.institution = v.institution || '—'; a.group = v.group; a.type = v.type || 'checking';
+      a.entityId = v.entityId; a.monthlyInflow = Number(v.monthlyInflow) || 0; a.ytdNetIncome = Number(v.ytdNetIncome) || 0;
+      commit(); toast('Account updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editTransactionFlow(id) {
+  const t = DATA.transactions.find(x => x.id === id);
+  if (!t) return;
+  const isBiz = /^BX-/.test(t.id);
+  const catOpts = [{ value: 'income', label: 'Income' },
+    ...(isBiz ? DATA.businessCategories : DATA.categories.filter(c => c.id !== 'income')).map(c => ({ value: c.id, label: c.name }))];
+  openModal({
+    title: 'Edit transaction',
+    subtitle: t.merchant,
+    fields: [
+      { key: 'date', label: 'Date', type: 'date', value: t.date },
+      { key: 'merchant', label: 'Merchant', required: true, value: t.merchant },
+      { key: 'description', label: 'Description', value: t.description || '' },
+      { key: 'category', label: 'Category', type: 'select', value: t.category, options: catOpts },
+      { key: 'amount', label: 'Amount', type: 'number', step: '0.01', value: t.amount },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete transaction', danger: true, onClick: () => { closeModal(); deleteSelection(isBiz ? 'biz-tx' : 'transaction', t.id); } },
+    onSubmit: (v) => {
+      t.date = v.date; t.merchant = v.merchant; t.description = v.description; t.category = v.category;
+      t.amount = Number(v.amount); t.direction = t.amount < 0 ? 'debit' : 'credit';
+      commit(); toast('Transaction updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editGoalFlow(id) {
+  const g = DATA.goals.find(x => x.id === id);
+  if (!g) return;
+  openModal({
+    title: 'Edit goal', subtitle: g.name,
+    fields: [
+      { key: 'name', label: 'Goal name', required: true, value: g.name },
+      { key: 'target', label: 'Target amount', type: 'number', step: '100', value: g.target },
+      { key: 'balance', label: 'Current balance', type: 'number', step: '100', value: g.balance },
+      { key: 'monthlyTarget', label: 'Monthly target', type: 'number', step: '50', value: g.monthlyTarget },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete goal', danger: true, onClick: () => { closeModal(); deleteSelection('goal', g.id); } },
+    onSubmit: (v) => {
+      g.name = v.name; g.target = Number(v.target); g.balance = Number(v.balance); g.monthlyTarget = Number(v.monthlyTarget);
+      commit(); toast('Goal updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editCategoryFlow(id) {
+  const cat = DATA.categories.find(x => x.id === id);
+  if (!cat) return;
+  openModal({
+    title: 'Edit category', subtitle: cat.name,
+    fields: [
+      { key: 'name', label: 'Name', required: true, value: cat.name },
+      { key: 'group', label: 'Group', type: 'select', value: cat.group, options: ['Fixed', 'Variable', 'Discretionary', 'Savings'].map(g => ({ value: g, label: g })) },
+      { key: 'planned', label: 'Planned', type: 'number', step: '10', value: cat.planned },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete category', danger: true, onClick: () => { closeModal(); deleteSelection('category', cat.id); } },
+    onSubmit: (v) => {
+      cat.name = v.name; cat.group = v.group; cat.planned = Number(v.planned);
+      commit(); toast('Category updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editDeductionFlow(id) {
+  const d = DATA.deductions.find(x => x.id === id);
+  if (!d) return;
+  openModal({
+    title: 'Edit deduction', subtitle: d.name,
+    fields: [
+      { key: 'name', label: 'Name', required: true, value: d.name },
+      { key: 'estimatedAmount', label: 'Estimated amount', type: 'number', step: '50', value: d.estimatedAmount },
+      { key: 'status', label: 'Status', type: 'select', value: d.status, options: ['confirmed', 'estimated', 'missing'].map(s => ({ value: s, label: s })) },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete deduction', danger: true, onClick: () => { closeModal(); deleteSelection('deduction', d.id); } },
+    onSubmit: (v) => {
+      d.name = v.name; d.estimatedAmount = Number(v.estimatedAmount); d.status = v.status;
+      commit(); toast('Deduction updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editHoldingFlow(id) {
+  const h = DATA.holdings.find(x => x.id === id);
+  if (!h) return;
+  openModal({
+    title: 'Edit holding', subtitle: h.name || h.ticker,
+    fields: [
+      { key: 'name', label: 'Name', value: h.name || '' },
+      { key: 'ticker', label: 'Ticker', value: h.ticker || '' },
+      { key: 'qty', label: 'Quantity', type: 'number', step: '0.01', value: h.qty },
+      { key: 'price', label: 'Price', type: 'number', step: '0.01', value: h.price },
+      { key: 'basis', label: 'Cost basis', type: 'number', step: '100', value: h.basis },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete holding', danger: true, onClick: () => { closeModal(); deleteSelection('holding', h.id); } },
+    onSubmit: (v) => {
+      h.name = v.name; h.ticker = v.ticker; h.qty = Number(v.qty); h.price = Number(v.price); h.basis = Number(v.basis);
+      commit(); toast('Holding updated · backup saved', 'ok');
+    },
+  });
+}
+
+function editEntityFlow(id) {
+  const e = DATA.entities.find(x => x.id === id);
+  if (!e) return;
+  openModal({
+    title: 'Edit group', subtitle: e.display,
+    fields: [
+      { key: 'display', label: 'Display name', required: true, value: e.display },
+      { key: 'type', label: 'Type', type: 'select', value: e.type, options: [
+        { value: 'personal', label: 'Personal' },
+        { value: 'employment', label: 'Place of Employment' },
+        { value: 'business', label: 'Business' },
+      ] },
+      { key: 'taxId', label: 'Tax ID', value: e.taxId || '' },
+    ],
+    submitLabel: 'Save changes',
+    secondary: { label: 'Delete group', danger: true, onClick: () => { closeModal(); deleteSelection('entity', e.id); } },
+    onSubmit: (v) => {
+      e.display = v.display; e.type = v.type; e.taxId = v.taxId || '—';
+      commit(); toast('Group updated · backup saved', 'ok');
+    },
+  });
+}
+
+// Add a transaction scoped to a specific account (individual account screen).
+function addAccountTransactionFlow(account, entityId) {
+  const catOpts = [{ value: 'income', label: 'Income' },
+    ...DATA.categories.filter(c => c.id !== 'income').map(c => ({ value: c.id, label: c.name }))];
+  openModal({
+    title: 'Add transaction',
+    subtitle: 'Adds a row to ' + account,
+    fields: [
+      { key: 'date', label: 'Date', type: 'date', value: '2026-05-25' },
+      { key: 'merchant', label: 'Merchant', required: true, placeholder: 'e.g. Whole Foods' },
+      { key: 'description', label: 'Description', placeholder: 'optional' },
+      { key: 'category', label: 'Category', type: 'select', value: catOpts[1] ? catOpts[1].value : 'income', options: catOpts },
+      { key: 'amount', label: 'Amount', type: 'number', step: '0.01', placeholder: '-120.00' },
+    ],
+    submitLabel: 'Add',
+    onSubmit: (v) => {
+      addTransaction({ ...v, account, entityId });
+      commit(); toast('Transaction added · backup saved', 'ok');
+    },
+  });
+}
+
+function addPaymentFlow() {
+  openModal({
+    title: 'New estimated payment',
+    fields: [
+      { key: 'quarter', label: 'Quarter', type: 'select', value: '2', options: [
+        { value: '1', label: 'Q1' }, { value: '2', label: 'Q2' }, { value: '3', label: 'Q3' }, { value: '4', label: 'Q4' },
+      ] },
+      { key: 'jurisdiction', label: 'Jurisdiction', type: 'select', value: 'Federal', options: [
+        { value: 'Federal', label: 'Federal' }, { value: 'Colorado', label: 'Colorado' },
+      ] },
+      { key: 'due', label: 'Due date', type: 'date', value: '2026-06-15' },
+      { key: 'amount', label: 'Amount', type: 'number', step: '50', required: true, value: 4200 },
+      { key: 'paid', label: 'Amount paid', type: 'number', step: '50', value: 0 },
+    ],
+    submitLabel: 'Add payment',
+    onSubmit: (v) => {
+      const paid = Number(v.paid) || 0;
+      DATA.estimatedPayments.push({
+        id: 'ep-' + Date.now(),
+        year: 2026,
+        quarter: Number(v.quarter),
+        due: v.due,
+        amount: Number(v.amount),
+        paid,
+        paidDate: paid > 0 ? '2026-06-14' : null,
+        jurisdiction: v.jurisdiction,
+        status: paid >= Number(v.amount) ? 'paid' : 'upcoming',
+      });
+      commit();
+      toast('Estimated payment added', 'ok');
+    },
+  });
+}
+
+function addPaystubFlow(entityId) {
+  openModal({
+    title: 'Import paystub',
+    subtitle: 'Records a paycheck deposit against this employer.',
+    fields: [
+      { key: 'date', label: 'Pay date', type: 'date', value: '2026-05-29' },
+      { key: 'merchant', label: 'Employer', value: 'Acme Employer' },
+      { key: 'description', label: 'Description', value: 'Payroll deposit' },
+      { key: 'amount', label: 'Net deposit', type: 'number', step: '0.01', required: true, value: 4825.40 },
+    ],
+    submitLabel: 'Import',
+    onSubmit: (v) => {
+      addTransaction({ ...v, amount: Math.abs(Number(v.amount)), category: 'income', entityId, account: 'Chase Checking', importedFrom: 'paystub' });
+      commit();
+      toast('Paycheck imported', 'ok');
+    },
+  });
+}
+
+function updatePriceFlow() {
+  const holdingOptions = DATA.holdings.map(h => ({ value: h.id, label: h.ticker + ' · ' + fmtUSD2(h.price) }));
+  openModal({
+    title: 'Update prices',
+    subtitle: 'Set the latest close for a holding (stands in for a price-file import).',
+    fields: [
+      { key: 'holding', label: 'Holding', type: 'select', options: holdingOptions, value: holdingOptions[0] && holdingOptions[0].value },
+      { key: 'price', label: 'New price', type: 'number', step: '0.01', required: true },
+    ],
+    submitLabel: 'Update',
+    onSubmit: (v) => {
+      const h = DATA.holdings.find(x => x.id === v.holding);
+      if (h) { h.price = Number(v.price); commit(); toast(h.ticker + ' repriced to ' + fmtUSD2(h.price), 'ok'); }
+    },
+  });
+}
+
+function rebalancePlanFlow() {
+  const total = DATA.holdings.reduce((s, h) => s + h.qty * h.price, 0);
+  const rows = DATA.sleeveTargets.map(t => {
+    const drift = t.actual - t.target;
+    const dollar = -drift * total;
+    return { ticker: t.ticker, sleeve: sleeveById()[t.sleeve] ? sleeveById()[t.sleeve].name : t.sleeve, drift, dollar };
+  }).filter(r => Math.abs(r.drift) > 0.005);
+
+  const table = el('table', { class: 'tbl' });
+  table.innerHTML = `<thead><tr><th>Holding</th><th>Sleeve</th><th class="num">Drift</th><th class="num">Suggested trade</th></tr></thead><tbody></tbody>`;
+  const tbody = table.querySelector('tbody');
+  for (const r of rows) {
+    const tr = tbody.insertRow();
+    tr.insertCell().textContent = r.ticker;
+    const sl = tr.insertCell(); sl.className = 'muted'; sl.textContent = r.sleeve;
+    const d = tr.insertCell(); d.className = 'num ' + (r.drift > 0 ? 'neg' : 'pos'); d.textContent = fmtPctSigned(r.drift, 1);
+    const a = tr.insertCell(); a.className = 'num'; a.textContent = (r.dollar >= 0 ? 'Buy ' : 'Sell ') + fmtUSD(Math.abs(r.dollar));
+  }
+  openModal({
+    title: 'Rebalance plan',
+    subtitle: 'Trades to bring each sleeve back to target weight (drift > 0.5%).',
+    body: el('div', { class: 'panel-body flush', style: { margin: '0 -4px' } }, [
+      rows.length ? table : el('p', { style: { color: 'var(--muted)', fontSize: '12px' }, text: 'All sleeves are within tolerance — no rebalance needed.' }),
+    ]),
+    submitLabel: 'Export plan',
+    onSubmit: () => {
+      exportCSV('rebalance-plan.csv',
+        [{ label: 'ticker', value: 'ticker' }, { label: 'sleeve', value: 'sleeve' },
+         { label: 'drift', value: r => fmtPctSigned(r.drift, 1) }, { label: 'trade_usd', value: r => Math.round(r.dollar) }],
+        rows);
+    },
+  });
+}
+
+function applyRepair(issueId) {
+  const idx = DATA.issues.findIndex(i => i.id === issueId);
+  if (idx === -1) return;
+  const issue = DATA.issues[idx];
+  DATA.issues.splice(idx, 1);
+  DATA.workspace.issueCount = DATA.issues.length;
+  if (state.selection && state.selection.kind === 'issue' && state.selection.id === issueId) {
+    closeInspector();
+  }
+  commit();
+  toast('Repaired: ' + issue.title + ' · backup saved', 'ok');
+}
+
+function toggleChecklistItem(id) {
+  const item = DATA.taxChecklist.find(c => c.id === id);
+  if (!item) return;
+  item.done = !item.done;
+  commit();
+}
+
+function exportBusinessPL(entityId) {
+  const entity = entityById()[entityId];
+  const txs = DATA.transactions.filter(t => t.entityId === entityId);
+  const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const md = [
+    '# ' + (entity ? entity.display : entityId) + ' — P&L (May 2026)',
+    '',
+    '| Line | Amount |',
+    '| --- | --- |',
+    '| Revenue | ' + fmtUSD(revenue) + ' |',
+    '| Expenses | ' + fmtUSD(expenses) + ' |',
+    '| **Net income** | **' + fmtUSD(revenue - expenses) + '** |',
+    '',
+    '## Transactions',
+    '',
+    '| Date | Merchant | Category | Amount | Deductible |',
+    '| --- | --- | --- | --- | --- |',
+    ...txs.map(t => `| ${t.date} | ${t.merchant} | ${t.category} | ${t.amount} | ${t.deductible ? 'yes' : 'no'} |`),
+  ].join('\n');
+  exportMarkdown((entityId || 'business') + '-pl.md', md);
+}
+
+function exportTaxPacket() {
+  const md = [
+    '# 2026 Tax Prep Packet',
+    '',
+    '## Prep checklist',
+    ...DATA.taxChecklist.map(c => `- [${c.done ? 'x' : ' '}] ${c.label}${c.due ? ' (due ' + c.due + ')' : ''}`),
+    '',
+    '## Estimated payments',
+    '| Quarter | Jurisdiction | Due | Amount | Paid | Status |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...DATA.estimatedPayments.map(p => `| Q${p.quarter} ${p.year} | ${p.jurisdiction} | ${p.due} | ${p.amount} | ${p.paid} | ${p.status} |`),
+    '',
+    '## Deductions',
+    '| Deduction | Type | Estimated | Status |',
+    '| --- | --- | --- | --- |',
+    ...DATA.deductions.map(d => `| ${d.name} | ${d.type} | ${d.estimatedAmount} | ${d.status} |`),
+  ].join('\n');
+  exportMarkdown('2026-tax-prep-packet.md', md);
 }
 
 // =====================================================================
@@ -383,9 +1186,18 @@ function donutChart(slices, opts = {}) {
 
 function renderCenter() {
   const content = $('#content');
+  destroyCharts();
   content.innerHTML = '';
+  routeView();
+  flushCharts();
+}
+
+function routeView() {
   // route
   const v = state.view;
+  if (v.startsWith('accounts-account-')) {
+    return viewAccount(v.replace('accounts-account-', ''));
+  }
   if (v.startsWith('accounts-entity-')) {
     const entityId = v.replace('accounts-entity-', '');
     return viewAccountEntity(entityId);
@@ -421,8 +1233,18 @@ function viewOverviewDashboard() {
     title: 'Overview',
     breadcrumb: ['Finance', 'Overview', 'Dashboard'],
     actions: [
-      { label: 'Export', variant: 'btn-ghost' },
-      { label: 'Reindex', variant: 'btn-ghost' },
+      { label: 'Apply repairable fixes', variant: '', onClick: () => {
+        const repairable = DATA.issues.filter(i => i.repairable);
+        if (!repairable.length) { toast('No repairable issues remaining', 'info'); return; }
+        repairable.forEach(i => { const idx = DATA.issues.findIndex(x => x.id === i.id); if (idx > -1) DATA.issues.splice(idx, 1); });
+        DATA.workspace.issueCount = DATA.issues.length;
+        commit();
+        toast(repairable.length + ' issues repaired · backups saved', 'ok');
+      } },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('overview-issues.csv',
+        [{ label: 'severity', value: 'severity' }, { label: 'group', value: 'group' }, { label: 'title', value: 'title' }, { label: 'file', value: i => i.filePath || i.file }, { label: 'repairable', value: 'repairable' }],
+        DATA.issues) },
+      { label: 'Reindex', variant: 'btn-ghost', onClick: runReindex },
     ],
   });
   renderFilterBar([]);
@@ -550,8 +1372,10 @@ function viewBudgetOverview() {
     title: 'Budget · May 2026',
     breadcrumb: ['Finance', 'Budget', 'Overview'],
     actions: [
-      { label: 'Import CSV', variant: '' },
-      { label: 'Export', variant: 'btn-ghost' },
+      { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId: 'personal' }) },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('transactions-2026-05.csv',
+        [{ label: 'date', value: 'date' }, { label: 'merchant', value: 'merchant' }, { label: 'description', value: 'description' }, { label: 'account', value: 'account' }, { label: 'category', value: 'category' }, { label: 'amount', value: 'amount' }],
+        DATA.transactions.filter(t => t.category !== 'income' && !/^BX-/.test(t.id))) },
     ],
   });
   renderFilterBar([]);
@@ -655,18 +1479,18 @@ function viewBudgetOverview() {
     ]),
   ]);
 
-  c.appendChild(el('div', { class: 'row-2-1' }, [donutPanel, catPanel]));
+  c.appendChild(el('div', { class: 'row2' }, [donutPanel, catPanel]));
 
   // Transaction ledger
   const f = state.filters['budget-overview'];
-  let txs = DATA.transactions.filter(t => t.category !== 'income');
+  let txs = DATA.transactions.filter(t => t.category !== 'income' && !/^BX-/.test(t.id));
   const txPanel = el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
       el('h3', { text: 'Transaction Ledger' }),
       el('span', { class: 'panel-sub', text: `${txs.length} transactions` }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('button', { class: 'btn btn-ghost', text: 'Open file' }),
+        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Personal/transactions/2026-05.csv') }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [
@@ -720,7 +1544,13 @@ function viewBudgetHistory() {
   setHeader({
     title: 'Budget History',
     breadcrumb: ['Finance', 'Budget', 'Budget History'],
-    actions: [{ label: 'Export', variant: 'btn-ghost' }],
+    actions: [{ label: 'Export', variant: 'btn-ghost', onClick: () => {
+      const labels = ['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'];
+      const actualSeries = [8420, 8910, 9120, 8590, 9650, 8820, 9350, 9120, 8480, 8240, 9080, 9090];
+      exportCSV('budget-history.csv',
+        [{ label: 'month', value: 'm' }, { label: 'planned', value: 'planned' }, { label: 'actual', value: 'actual' }, { label: 'variance', value: r => r.actual - r.planned }],
+        labels.map((m, i) => ({ m, planned: 8770, actual: actualSeries[i] })));
+    } }],
   });
   renderFilterBar([
     { label: 'Period', value: 'Trailing 12 months', active: true },
@@ -776,7 +1606,12 @@ function viewBudgetCategories() {
   setHeader({
     title: 'Categories',
     breadcrumb: ['Finance', 'Budget', 'Categories'],
-    actions: [{ label: 'New category', variant: '' }, { label: 'Export', variant: 'btn-ghost' }],
+    actions: [
+      { label: 'New category', variant: '', onClick: addCategoryFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('categories.csv',
+        [{ label: 'id', value: 'id' }, { label: 'name', value: 'name' }, { label: 'group', value: 'group' }, { label: 'planned', value: 'planned' }],
+        DATA.categories) },
+    ],
   });
   renderFilterBar([{ label: 'Group', value: 'All' }, { label: 'Status', value: 'Active' }]);
   const c = $('#content');
@@ -861,12 +1696,22 @@ function viewSavingsGoals() {
   setHeader({
     title: 'Savings Goals',
     breadcrumb: ['Finance', 'Savings & Investments', 'Goals'],
-    actions: [{ label: 'New goal', variant: '' }, { label: 'Export', variant: 'btn-ghost' }],
+    actions: [
+      { label: 'New goal', variant: '', onClick: addGoalFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('savings-goals.csv',
+        [{ label: 'name', value: 'name' }, { label: 'target', value: 'target' }, { label: 'balance', value: 'balance' }, { label: 'monthly_target', value: 'monthlyTarget' }, { label: 'target_date', value: 'targetDate' }],
+        DATA.goals) },
+    ],
   });
   renderFilterBar([
     { label: 'Target year', value: 'All' },
     { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search goals', onChange: () => {} },
+    { kind: 'search', placeholder: 'Search goals', onChange: (q) => {
+      const ql = q.trim().toLowerCase();
+      document.querySelectorAll('#content .goal-card').forEach(card => {
+        card.style.display = !ql || card.textContent.toLowerCase().includes(ql) ? '' : 'none';
+      });
+    } },
   ]);
 
   const c = $('#content');
@@ -952,9 +1797,11 @@ function viewInvestments() {
     title: 'Portfolio Overview',
     breadcrumb: ['Finance', 'Savings & Investments', 'Portfolio Overview'],
     actions: [
-      { label: 'Import prices', variant: '' },
-      { label: 'Rebalance plan', variant: 'btn-ghost' },
-      { label: 'Export', variant: 'btn-ghost' },
+      { label: 'Import prices', variant: '', onClick: updatePriceFlow },
+      { label: 'Rebalance plan', variant: 'btn-ghost', onClick: rebalancePlanFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('holdings.csv',
+        [{ label: 'ticker', value: 'ticker' }, { label: 'name', value: 'name' }, { label: 'account', value: 'account' }, { label: 'sleeve', value: 'sleeve' }, { label: 'qty', value: 'qty' }, { label: 'price', value: 'price' }, { label: 'basis', value: 'basis' }, { label: 'market_value', value: h => Math.round(h.qty * h.price) }],
+        DATA.holdings) },
     ],
   });
   renderFilterBar([
@@ -1124,8 +1971,10 @@ function viewInvestmentsHoldings() {
     title: 'Holdings',
     breadcrumb: ['Finance', 'Savings & Investments', 'Holdings'],
     actions: [
-      { label: 'Import prices', variant: '' },
-      { label: 'Export', variant: 'btn-ghost' },
+      { label: 'Import prices', variant: '', onClick: updatePriceFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('holdings.csv',
+        [{ label: 'ticker', value: 'ticker' }, { label: 'name', value: 'name' }, { label: 'account', value: 'account' }, { label: 'sleeve', value: 'sleeve' }, { label: 'qty', value: 'qty' }, { label: 'price', value: 'price' }, { label: 'basis', value: 'basis' }],
+        DATA.holdings) },
     ],
   });
   renderFilterBar([
@@ -1133,7 +1982,12 @@ function viewInvestmentsHoldings() {
     { label: 'Sleeve', value: 'All' },
     { label: 'As of', value: 'May 11, 2026', active: true },
     { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search holdings', onChange: () => {} },
+    { kind: 'search', placeholder: 'Search holdings', onChange: (q) => {
+      const ql = q.trim().toLowerCase();
+      document.querySelectorAll('#content table tbody tr').forEach(tr => {
+        tr.style.display = !ql || tr.textContent.toLowerCase().includes(ql) ? '' : 'none';
+      });
+    } },
   ]);
 
   const c = $('#content');
@@ -1248,9 +2102,9 @@ function viewBusiness() {
     title: 'Business · ' + entity.display,
     breadcrumb: ['Finance', 'Business', entity.display],
     actions: [
-      { label: 'Import CSV', variant: '' },
-      { label: 'New entity', variant: 'btn-ghost' },
-      { label: 'Export P&L', variant: 'btn-ghost' },
+      { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId, business: true }) },
+      { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
+      { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(entityId) },
     ],
   });
   renderFilterBar([
@@ -1258,7 +2112,12 @@ function viewBusiness() {
     { label: 'Period', value: 'May 2026', active: true },
     { label: 'Account', value: 'All' },
     { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search transactions', onChange: () => {} },
+    { kind: 'search', placeholder: 'Search transactions', onChange: (q) => {
+      const ql = q.trim().toLowerCase();
+      document.querySelectorAll('#content table tbody tr').forEach(tr => {
+        tr.style.display = !ql || tr.textContent.toLowerCase().includes(ql) ? '' : 'none';
+      });
+    } },
   ]);
 
   const c = $('#content');
@@ -1348,7 +2207,7 @@ function viewBusiness() {
       el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('button', { class: 'btn btn-ghost', text: 'Open file' }),
+        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Business/transactions/' + entityId + '-2026-05.csv') }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [(() => {
@@ -1377,7 +2236,19 @@ function viewBusiness() {
 }
 
 function viewBusinessCategories() {
-  setHeader({ title: 'Business Categories', breadcrumb: ['Finance', 'Business', 'Categories'], actions: [{ label: 'New', variant: '' }] });
+  setHeader({ title: 'Business Categories', breadcrumb: ['Finance', 'Business', 'Categories'], actions: [{ label: 'New', variant: '', onClick: () => openModal({
+    title: 'New business category',
+    fields: [
+      { key: 'name', label: 'Category name', required: true },
+      { key: 'taxGroup', label: 'Tax group', value: 'Other' },
+    ],
+    submitLabel: 'Create',
+    onSubmit: (v) => {
+      DATA.businessCategories.push({ id: 'b-' + Date.now(), name: v.name, taxGroup: v.taxGroup || 'Other' });
+      commit();
+      toast('Business category added', 'ok');
+    },
+  }) }] });
   renderFilterBar([{ label: 'Tax group', value: 'All' }]);
   const c = $('#content');
   c.appendChild(el('div', { class: 'panel' }, [
@@ -1411,8 +2282,8 @@ function viewTaxes() {
     title: 'Taxes · 2026',
     breadcrumb: ['Finance', 'Taxes', 'Current Tax Year'],
     actions: [
-      { label: 'Export prep packet', variant: '' },
-      { label: 'New payment', variant: 'btn-ghost' },
+      { label: 'Export prep packet', variant: '', onClick: exportTaxPacket },
+      { label: 'New payment', variant: 'btn-ghost', onClick: addPaymentFlow },
     ],
   });
   renderFilterBar([
@@ -1792,7 +2663,18 @@ function viewSettingsWorkspace() {
         } }, ['Cycle sync state']),
         // T025: Show indexing state button (appended, does not replace T019 or T023)
         el('button', { class: 'btn btn-ghost', onclick: () => navigate('indexing-progress') }, ['Show indexing state']),
+        // r5: reset persisted prototype edits back to the seed dataset
+        el('button', { class: 'btn btn-danger', onclick: () => openModal({
+          title: 'Reset prototype data?',
+          subtitle: 'Discards every add, import, repair, and checklist change you made and reloads the seed dataset.',
+          submitLabel: 'Reset workspace',
+          danger: true,
+          onSubmit: () => Store.reset(),
+        }) }, ['Reset prototype data']),
       ]),
+      el('p', { style: { fontSize: '11.5px', color: 'var(--muted)', marginTop: '12px' }, text: Store.isDirty()
+        ? 'Local edits are saved to this browser (localStorage). They persist across refreshes until reset.'
+        : 'No local edits yet — showing the seed dataset. Adds, imports, and repairs will be saved to this browser.' }),
     ]),
   ]));
 }
@@ -1835,7 +2717,10 @@ function viewOnboarding() {
           el('div', { class: 'state-label', text: ws.label }),
           el('div', { class: 'state-desc', text: ws.description }),
           ws.recoveryAction
-            ? el('button', { class: 'btn state-action', text: ws.recoveryAction })
+            ? el('button', { class: 'btn state-action', text: ws.recoveryAction, onclick: () => {
+                if (ws.id === 'workspace-created') { navigate('accounts-overview'); return; }
+                toast(ws.recoveryAction + ' — ' + ws.label, 'info');
+              } })
             : null,
           ws.id === 'workspace-created'
             ? el('div', { style: { marginTop: '8px', fontSize: '11.5px', color: 'var(--muted)' } }, [
@@ -1880,7 +2765,8 @@ function viewIndexingProgress() {
         const tr = tbody.insertRow();
         const td1 = tr.insertCell(); td1.innerHTML = '<span class="path-chip">Investments/benchmarks/sp500.csv<span class="sync-badge sync-badge--missing"></span></span>';
         const td2 = tr.insertCell(); td2.textContent = 'File exists in iCloud but not downloaded locally';
-        const td3 = tr.insertCell(); td3.innerHTML = '<button class="btn btn-ghost" style="font-size:11.5px">Download</button>';
+        const td3 = tr.insertCell();
+        td3.appendChild(el('button', { class: 'btn btn-ghost', style: { fontSize: '11.5px' }, text: 'Download', onclick: () => osAction('Download from iCloud', 'Investments/benchmarks/sp500.csv') }));
         return table;
       })(),
     ]),
@@ -1901,167 +2787,121 @@ function viewAccountEntity(entityId) {
       title: 'Business · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Import CSV', variant: '' },
-        { label: 'Export P&L', variant: 'btn-ghost' },
+        { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId, business: true }) },
+        { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
+        { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(entityId) },
       ],
     });
-    renderFilterBar([
-      { label: 'Entity', value: entity.display, active: true },
-      { label: 'Period', value: 'May 2026', active: true },
-      { label: 'Account', value: 'All' },
-      { kind: 'spacer' },
-      { kind: 'search', placeholder: 'Search transactions', onChange: () => {} },
-    ]);
+    renderFilterBar([]);
 
     const c = $('#content');
 
-    // Tab bar navigation
-    const tabs = [
-      { id: 'dashboard', label: 'Dashboard' },
-      { id: 'transactions', label: 'Transactions' },
-      { id: 'budgets', label: 'Budgets' },
-      { id: 'categories', label: 'Categories' }
-    ];
-    const tabContainer = el('div', { class: 'entity-strip' });
-    for (const t of tabs) {
-      tabContainer.appendChild(el('div', {
-        class: 'entity-pill' + (t.id === activeTab ? ' active' : ''),
-        onclick: () => {
-          state.entityTabs[entityId] = t.id;
-          renderCenter();
-        }
-      }, [
-        el('span', { text: t.label })
-      ]));
-    }
-    c.appendChild(tabContainer);
-
     const txs = DATA.transactions.filter(t => t.entityId === entityId);
 
-    if (activeTab === 'dashboard') {
-      // KPIs
-      const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-      const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-      const ni = revenue - expenses;
-      const deductible = txs.filter(t => t.amount < 0 && t.deductible).reduce((s, t) => s + Math.abs(t.amount), 0);
+    // KPIs
+    const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+    const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+    const ni = revenue - expenses;
+    const deductible = txs.filter(t => t.amount < 0 && t.deductible).reduce((s, t) => s + Math.abs(t.amount), 0);
 
-      const kpis = [
-        { id: 'rev',  label: 'Revenue · May', value: fmtUSD(revenue), delta: '+22% MoM', deltaCls: 'pos', foot: '2 invoices billed' },
-        { id: 'exp',  label: 'Expenses',      value: fmtUSD(expenses), delta: 'Within plan', deltaCls: 'flat', foot: txs.filter(t => t.amount < 0).length + ' transactions' },
-        { id: 'ni',   label: 'Net income',    value: fmtUSD(ni, { sign: true }), delta: fmtPctSigned(ni / Math.max(revenue,1)), deltaCls: 'pos', foot: 'Margin ' + fmtPct(ni / Math.max(revenue,1), 0) },
-        { id: 'ded',  label: 'Deductible',    value: fmtUSD(deductible), delta: fmtPct(deductible / Math.max(expenses,1), 0) + ' of expenses', deltaCls: 'flat', foot: 'Feeds Taxes › Prep' },
-      ];
-      const kpiGrid = el('div', { class: 'kpi-grid' });
-      for (const k of kpis) {
-        kpiGrid.appendChild(el('div', { class: 'kpi-card', onclick: () => select({ kind: 'biz-kpi', id: k.id }) }, [
-          el('div', { class: 'kpi-label', text: k.label }),
-          el('div', { class: 'kpi-value', text: k.value }),
-          el('div', { class: 'kpi-delta ' + k.deltaCls, text: k.delta }),
-          el('div', { class: 'kpi-foot', text: k.foot }),
-        ]));
-      }
-      c.appendChild(kpiGrid);
-
-      // P&L Chart
-      const labels = DATA.bizSeries.labels;
-      const niSeries = labels.map((_, i) => DATA.bizSeries.revenue[i] - DATA.bizSeries.expenses[i]);
-
-      c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
-        el('div', { class: 'panel-head' }, [
-          el('h3', { text: 'Monthly Net Income · Trailing 12 months' }),
-          el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
-        ]),
-        el('div', { class: 'panel-body' }, [
-          el('div', { class: 'chart-wrap', html: barChart(niSeries, { labels }) }),
-        ]),
-      ]));
-    } else if (activeTab === 'transactions') {
-      // Transactions table
-      c.appendChild(el('div', { class: 'panel' }, [
-        el('div', { class: 'panel-head' }, [
-          el('h3', { text: 'Transaction Ledger · ' + entity.display }),
-          el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
-          el('div', { class: 'panel-actions' }, [
-            el('span', { class: 'imported-tag', text: 'Imported' }),
-          ]),
-        ]),
-        el('div', { class: 'panel-body flush' }, [(() => {
-          const BC = bizCatById();
-          const table = el('table', { class: 'tbl' });
-          table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Merchant</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Tax</th></tr></thead><tbody></tbody>`;
-          const tbody = table.querySelector('tbody');
-          for (const t of txs) {
-            const tr = el('tr', {
-              class: state.selection?.kind === 'biz-tx' && state.selection?.id === t.id ? 'selected' : '',
-              onclick: () => openInspector('biz-tx', t.id),
-            });
-            tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
-            tr.appendChild(el('td', { text: t.merchant }));
-            tr.appendChild(el('td', { class: 'muted', text: t.description }));
-            tr.appendChild(el('td', { text: t.category === 'income' ? 'Income' : (BC[t.category]?.name || t.category) }));
-            tr.appendChild(el('td', { class: 'num ' + (t.amount < 0 ? '' : 'pos'), text: fmtUSD2(t.amount) }));
-            tr.appendChild(el('td', {}, [
-              t.deductible ? el('span', { class: 'tag tag-info', text: 'deductible' }) : el('span', { class: 'tag tag-muted', text: '—' }),
-            ]));
-            tbody.appendChild(tr);
-          }
-          return table;
-        })()]),
-      ]));
-    } else if (activeTab === 'budgets') {
-      // Budgets table
-      c.appendChild(el('div', { class: 'panel' }, [
-        el('div', { class: 'panel-head' }, [
-          el('h3', { text: 'Category Budget · ' + entity.display }),
-          el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
-        ]),
-        el('div', { class: 'panel-body' }, [(() => {
-          const BC = bizCatById();
-          const wrap = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px' } });
-          for (const b of DATA.businessBudgets) {
-            const spend = txs.filter(t => t.category === b.category && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-            const pct = spend / Math.max(b.planned, 1);
-            wrap.appendChild(el('div', { onclick: () => select({ kind: 'biz-cat', id: b.category }), style: { cursor: 'pointer' } }, [
-              el('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' } }, [
-                el('span', { text: BC[b.category]?.name }),
-                el('span', { style: { color: 'var(--muted)' }, text: fmtUSD(spend) + ' / ' + fmtUSD(b.planned) }),
-              ]),
-              el('div', { class: 'bar-inline ' + (pct > 1.05 ? 'err' : pct > 0.95 ? 'warn' : 'ok') }, [
-                el('span', { style: { width: Math.min(pct, 1) * 100 + '%' } }),
-              ]),
-            ]));
-          }
-          return wrap;
-        })()]),
-      ]));
-    } else if (activeTab === 'categories') {
-      // Categories table
-      c.appendChild(el('div', { class: 'panel' }, [
-        el('div', { class: 'panel-head' }, [
-          el('h3', { text: 'Business Categories' }),
-          el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
-        ]),
-        el('div', { class: 'panel-body flush' }, [(() => {
-          const table = el('table', { class: 'tbl' });
-          table.innerHTML = `<thead><tr><th>Category</th><th>Tax group</th><th>Default behavior</th></tr></thead><tbody></tbody>`;
-          const tbody = table.querySelector('tbody');
-          for (const cat of DATA.businessCategories) {
-            const tr = el('tr');
-            tr.appendChild(el('td', { text: cat.name }));
-            tr.appendChild(el('td', { class: 'muted', text: cat.taxGroup }));
-            tr.appendChild(el('td', { class: 'muted', text: 'Variable' }));
-            tbody.appendChild(tr);
-          }
-          return table;
-        })()]),
+    const kpis = [
+      { id: 'rev',  label: 'Revenue · May', value: fmtUSD(revenue), delta: '+22% MoM', deltaCls: 'pos', foot: '2 invoices billed' },
+      { id: 'exp',  label: 'Expenses',      value: fmtUSD(expenses), delta: 'Within plan', deltaCls: 'flat', foot: txs.filter(t => t.amount < 0).length + ' transactions' },
+      { id: 'ni',   label: 'Net income',    value: fmtUSD(ni, { sign: true }), delta: fmtPctSigned(ni / Math.max(revenue,1)), deltaCls: 'pos', foot: 'Margin ' + fmtPct(ni / Math.max(revenue,1), 0) },
+      { id: 'ded',  label: 'Deductible',    value: fmtUSD(deductible), delta: fmtPct(deductible / Math.max(expenses,1), 0) + ' of expenses', deltaCls: 'flat', foot: 'Feeds Taxes › Prep' },
+    ];
+    const kpiGrid = el('div', { class: 'kpi-grid' });
+    for (const k of kpis) {
+      kpiGrid.appendChild(el('div', { class: 'kpi-card', onclick: () => select({ kind: 'biz-kpi', id: k.id }) }, [
+        el('div', { class: 'kpi-label', text: k.label }),
+        el('div', { class: 'kpi-value', text: k.value }),
+        el('div', { class: 'kpi-delta ' + k.deltaCls, text: k.delta }),
+        el('div', { class: 'kpi-foot', text: k.foot }),
       ]));
     }
+    c.appendChild(kpiGrid);
+
+    // Monthly net income chart
+    const labels = DATA.bizSeries.labels;
+    const niSeries = labels.map((_, i) => DATA.bizSeries.revenue[i] - DATA.bizSeries.expenses[i]);
+    c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Monthly Net Income · Trailing 12 months' }),
+        el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+      ]),
+      el('div', { class: 'panel-body' }, [
+        el('div', { class: 'chart-wrap', html: barChart(niSeries, { labels }) }),
+      ]),
+    ]));
+
+    // Individual accounts in this group (Round 5 #4)
+    const acctSection = accountsCardSection(entityId, 'Accounts');
+    if (acctSection) c.appendChild(acctSection);
+
+    // Transaction ledger — inline below the net-income chart (Round 5 #2)
+    c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Transaction Ledger · ' + entity.display }),
+        el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
+        el('div', { class: 'panel-actions' }, [
+          el('span', { class: 'imported-tag', text: 'Imported' }),
+        ]),
+      ]),
+      el('div', { class: 'panel-body flush' }, [(() => {
+        const BC = bizCatById();
+        const table = el('table', { class: 'tbl' });
+        table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Merchant</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Tax</th></tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        for (const t of txs) {
+          const tr = el('tr', {
+            class: state.selection?.kind === 'biz-tx' && state.selection?.id === t.id ? 'selected' : '',
+            onclick: () => openInspector('biz-tx', t.id),
+          });
+          tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
+          tr.appendChild(el('td', { text: t.merchant }));
+          tr.appendChild(el('td', { class: 'muted', text: t.description }));
+          tr.appendChild(el('td', { text: t.category === 'income' ? 'Income' : (BC[t.category]?.name || t.category) }));
+          tr.appendChild(el('td', { class: 'num ' + (t.amount < 0 ? '' : 'pos'), text: fmtUSD2(t.amount) }));
+          tr.appendChild(el('td', {}, [
+            t.deductible ? el('span', { class: 'tag tag-info', text: 'deductible' }) : el('span', { class: 'tag tag-muted', text: '—' }),
+          ]));
+          tbody.appendChild(tr);
+        }
+        return table;
+      })()]),
+    ]));
+
+    // Category budgets
+    c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+      el('div', { class: 'panel-head' }, [
+        el('h3', { text: 'Category Budget · ' + entity.display }),
+        el('div', { class: 'panel-actions' }, [el('span', { class: 'derived-tag', text: 'Derived' })]),
+      ]),
+      el('div', { class: 'panel-body' }, [(() => {
+        const BC = bizCatById();
+        const wrap = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px' } });
+        for (const b of DATA.businessBudgets) {
+          const spend = txs.filter(t => t.category === b.category && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+          const pct = spend / Math.max(b.planned, 1);
+          wrap.appendChild(el('div', { onclick: () => select({ kind: 'biz-cat', id: b.category }), style: { cursor: 'pointer' } }, [
+            el('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' } }, [
+              el('span', { text: BC[b.category]?.name }),
+              el('span', { style: { color: 'var(--muted)' }, text: fmtUSD(spend) + ' / ' + fmtUSD(b.planned) }),
+            ]),
+            el('div', { class: 'bar-inline ' + (pct > 1.05 ? 'err' : pct > 0.95 ? 'warn' : 'ok') }, [
+              el('span', { style: { width: Math.min(pct, 1) * 100 + '%' } }),
+            ]),
+          ]));
+        }
+        return wrap;
+      })()]),
+    ]));
   } else if (entity.type === 'employment') {
     setHeader({
       title: 'Employment · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Import Paystub', variant: '' },
+        { label: 'Import Paystub', variant: '', onClick: () => addPaystubFlow(entityId) },
       ],
     });
     renderFilterBar([
@@ -2097,6 +2937,10 @@ function viewAccountEntity(entityId) {
     }
     c.appendChild(kpiGrid);
 
+    // Individual accounts in this group (Round 5 #4)
+    const empAcctSection = accountsCardSection(entityId, 'Accounts');
+    if (empAcctSection) c.appendChild(empAcctSection);
+
     // Paycheck deposits ledger
     const txs = DATA.transactions.filter(t => t.entityId === entityId);
     c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
@@ -2128,7 +2972,7 @@ function viewAccountEntity(entityId) {
       title: 'Personal · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Add Asset', variant: '' },
+        { label: 'Add Account', variant: '', onClick: () => addAccountFlow(entityId) },
       ],
     });
     renderFilterBar([
@@ -2171,6 +3015,10 @@ function viewAccountEntity(entityId) {
       ]),
     ]));
 
+    // Individual accounts in this group (Round 5 #4)
+    const persAcctSection = accountsCardSection(entityId, 'Accounts');
+    if (persAcctSection) c.appendChild(persAcctSection);
+
     // Personal transactions ledger
     const txs = DATA.transactions.filter(t => t.entityId === entityId);
     c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
@@ -2202,11 +3050,126 @@ function viewAccountEntity(entityId) {
 
 // ---------- Accounts (T041) --------------------------------------------------
 
+// Reusable account card. Cards link to the dedicated individual-account screen
+// (Round 5 #5); used on the all-accounts overview and on group screens (#4).
+function accountCard(a) {
+  return el('div', {
+    class: 'account-card' + (state.view === 'accounts-account-' + a.id ? ' selected' : ''),
+    onclick: () => navigate('accounts-account-' + a.id),
+  }, [
+    el('div', { class: 'ac-name', text: a.name }),
+    el('div', { class: 'ac-inst', text: a.institution }),
+    el('div', { class: 'ac-group', text: a.group }),
+    el('div', { class: 'ac-metrics' }, [
+      el('div', {}, [
+        el('div', { class: 'ac-metric-label', text: 'Monthly inflow' }),
+        el('div', { class: 'ac-metric-value', text: fmtUSD(a.monthlyInflow) }),
+      ]),
+      el('div', { style: { textAlign: 'right' } }, [
+        el('div', { class: 'ac-metric-label', text: 'YTD net' }),
+        el('div', { class: 'ac-metric-value', text: fmtUSD(a.ytdNetIncome) }),
+      ]),
+    ]),
+  ]);
+}
+
+// Individual-account card section for a group screen (Round 5 #4).
+function accountsCardSection(entityId, heading = 'Accounts') {
+  const accts = DATA.accounts.filter(a => a.entityId === entityId);
+  if (!accts.length) return null;
+  const wrap = el('div', { style: { marginTop: '16px' } });
+  wrap.appendChild(el('h3', { class: 'accounts-group-title', text: heading }));
+  const grid = el('div', { class: 'accounts-grid' });
+  for (const a of accts) grid.appendChild(accountCard(a));
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+// Reusable transaction ledger table for an account's transactions.
+function accountLedgerTable(txs) {
+  const C = cats();
+  const table = el('table', { class: 'tbl' });
+  table.innerHTML = `<thead><tr><th style="width:90px">Date</th><th>Merchant</th><th>Description</th><th>Category</th><th class="num">Amount</th></tr></thead><tbody></tbody>`;
+  const tbody = table.querySelector('tbody');
+  for (const t of txs) {
+    const tr = el('tr', {
+      class: state.selection?.kind === 'transaction' && state.selection?.id === t.id ? 'selected' : '',
+      onclick: () => openInspector('transaction', t.id),
+    });
+    tr.appendChild(el('td', { class: 'muted mono', text: fmtDate(t.date) }));
+    tr.appendChild(el('td', { text: t.merchant }));
+    tr.appendChild(el('td', { class: 'muted', text: t.description }));
+    tr.appendChild(el('td', { text: C[t.category]?.name || t.category }));
+    tr.appendChild(el('td', { class: 'num ' + (t.amount < 0 ? '' : 'pos'), text: fmtUSD2(t.amount) }));
+    tbody.appendChild(tr);
+  }
+  return table;
+}
+
+// Individual account screen (Round 5 #5). Edit lives in the local actions;
+// delete is offered inside the edit flow.
+function viewAccount(accountId) {
+  const a = DATA.accounts.find(x => x.id === accountId);
+  if (!a) {
+    setHeader({ title: 'Account', breadcrumb: ['Finance', 'Accounts'], actions: [] });
+    $('#content').appendChild(el('p', { style: { color: 'var(--muted)', padding: '24px' }, text: 'Account not found.' }));
+    return;
+  }
+  const entity = DATA.entities.find(e => e.id === a.entityId);
+  setHeader({
+    title: a.name,
+    breadcrumb: ['Finance', 'Accounts', entity ? entity.display : 'Account', a.name],
+    actions: [
+      { label: 'Edit', variant: '', onClick: () => editAccountFlow(a.id) },
+    ],
+  });
+  renderFilterBar([]);
+  const c = $('#content');
+
+  // Aggregate header for the account
+  c.appendChild(el('div', { class: 'accounts-aggregate' }, [
+    el('div', { class: 'agg-item' }, [
+      el('div', { class: 'agg-label', text: 'Monthly inflow' }),
+      el('div', { class: 'agg-value', text: fmtUSD(a.monthlyInflow) }),
+    ]),
+    el('div', { class: 'agg-item' }, [
+      el('div', { class: 'agg-label', text: 'YTD net income' }),
+      el('div', { class: 'agg-value', text: fmtUSD(a.ytdNetIncome) }),
+    ]),
+    el('div', { class: 'agg-item' }, [
+      el('div', { class: 'agg-label', text: 'Type' }),
+      el('div', { class: 'agg-value', text: a.group + ' · ' + a.type }),
+    ]),
+  ]));
+
+  const txs = DATA.transactions.filter(t => t.account === a.name);
+  c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Transactions · ' + a.name }),
+      el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
+      el('div', { class: 'panel-actions' }, [
+        el('button', { class: 'btn btn-ghost', text: 'Add transaction', onclick: () => addAccountTransactionFlow(a.name, a.entityId) }),
+      ]),
+    ]),
+    el('div', { class: 'panel-body flush' }, [
+      txs.length
+        ? accountLedgerTable(txs)
+        : el('div', { style: { textAlign: 'center', color: 'var(--muted)', padding: '24px' }, text: 'No transactions reference this account yet.' }),
+    ]),
+  ]));
+}
+
 function viewAccounts() {
   setHeader({
     title: 'Accounts',
     breadcrumb: ['Finance', 'Accounts', 'All Accounts'],
-    actions: [{ label: 'Export', variant: 'btn-ghost' }],
+    actions: [
+      { label: 'New account', variant: '', onClick: () => addAccountFlow() },
+      { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('accounts.csv',
+        [{ label: 'name', value: 'name' }, { label: 'institution', value: 'institution' }, { label: 'group', value: 'group' }, { label: 'type', value: 'type' }, { label: 'entity', value: 'entityId' }, { label: 'monthly_inflow', value: 'monthlyInflow' }, { label: 'ytd_net_income', value: 'ytdNetIncome' }],
+        DATA.accounts) },
+    ],
   });
   renderFilterBar([]);
   const c = $('#content');
@@ -2217,7 +3180,7 @@ function viewAccounts() {
       el('div', { style: { fontSize: '32px', marginBottom: '12px' }, text: '🏦' }),
       el('h3', { style: { color: 'var(--ink-2)', marginBottom: '8px' }, text: 'No accounts added' }),
       el('p', { style: { fontSize: '12px', marginBottom: '16px' }, text: 'Accounts will appear here once you add them to your workspace.' }),
-      el('button', { class: 'btn', text: 'Add account (coming soon)' }),
+      el('button', { class: 'btn', text: 'Add account', onclick: () => addAccountFlow() }),
     ]));
     return;
   }
@@ -2241,9 +3204,9 @@ function viewAccounts() {
   ]));
 
   const themes = [
-    { type: 'personal',   heading: 'Personal Assets' },
+    { type: 'personal',   heading: 'Personal Accounts' },
     { type: 'employment', heading: 'Place of Employment' },
-    { type: 'business',   heading: 'Business Entities' },
+    { type: 'business',   heading: 'Business Groups' },
   ];
 
   for (const theme of themes) {
@@ -2253,26 +3216,7 @@ function viewAccounts() {
 
     c.appendChild(el('h3', { class: 'accounts-group-title', text: theme.heading }));
     const grid = el('div', { class: 'accounts-grid' });
-    for (const a of themeAccounts) {
-      grid.appendChild(el('div', {
-        class: 'account-card' + (state.selection?.kind === 'account' && state.selection?.id === a.id ? ' selected' : ''),
-        onclick: () => openInspector('account', a.id),
-      }, [
-        el('div', { class: 'ac-name', text: a.name }),
-        el('div', { class: 'ac-inst', text: a.institution }),
-        el('div', { class: 'ac-group', text: a.group }),
-        el('div', { class: 'ac-metrics' }, [
-          el('div', {}, [
-            el('div', { class: 'ac-metric-label', text: 'Monthly inflow' }),
-            el('div', { class: 'ac-metric-value', text: fmtUSD(a.monthlyInflow) }),
-          ]),
-          el('div', { style: { textAlign: 'right' } }, [
-            el('div', { class: 'ac-metric-label', text: 'YTD net' }),
-            el('div', { class: 'ac-metric-value', text: fmtUSD(a.ytdNetIncome) }),
-          ]),
-        ]),
-      ]));
-    }
+    for (const a of themeAccounts) grid.appendChild(accountCard(a));
     c.appendChild(grid);
   }
 }
@@ -2364,7 +3308,7 @@ function viewTaxesChecklist() {
   setHeader({
     title: 'Prep Checklist · 2026',
     breadcrumb: ['Finance', 'Taxes', 'Prep Checklist'],
-    actions: [{ label: 'Export prep packet', variant: '' }],
+    actions: [{ label: 'Export prep packet', variant: '', onClick: exportTaxPacket }],
   });
   renderFilterBar([
     { label: 'Tax year', value: '2026', active: true },
@@ -2386,8 +3330,8 @@ function viewTaxesChecklist() {
       (() => {
         const ul = el('ul', { class: 'checklist checklist-edu' });
         for (const ci of DATA.taxChecklist) {
-          ul.appendChild(el('li', { onclick: () => select({ kind: 'tax-check', id: ci.id }) }, [
-            el('span', { class: 'checkbox' + (ci.done ? ' done' : '') }),
+          ul.appendChild(el('li', {}, [
+            el('span', { class: 'checkbox' + (ci.done ? ' done' : ''), title: 'Toggle done', onclick: (e) => { e.stopPropagation(); toggleChecklistItem(ci.id); } }),
             el('div', { class: 'ci-body' }, [
               el('div', { class: 'ci-label', text: ci.label }),
               ci.note ? el('div', { class: 'ci-note', text: ci.note }) : null,
@@ -2444,6 +3388,26 @@ function select(sel) {
 }
 
 function renderInspector() {
+  renderInspectorBody();
+  appendInspectorActions();
+}
+
+// Edit/Delete actions pinned to the bottom of the inspector (Round 5 #6).
+function appendInspectorActions() {
+  if (!state.inspectorOpen || !state.selection) return;
+  const { kind, id } = state.selection;
+  const canEdit = EDITABLE_KINDS.has(kind);
+  const canDelete = DELETABLE_KINDS.has(kind);
+  if (!canEdit && !canDelete) return;
+  const body = $('#inspector-body');
+  if (!body) return;
+  body.appendChild(el('div', { class: 'insp-actions' }, [
+    canEdit ? el('button', { class: 'btn', text: 'Edit', onclick: () => editSelection(kind, id) }) : null,
+    canDelete ? el('button', { class: 'btn btn-danger', text: 'Delete', onclick: () => deleteSelection(kind, id) }) : null,
+  ]));
+}
+
+function renderInspectorBody() {
   if (!state.inspectorOpen) return;
 
   const head = $('#inspector-title');
@@ -2656,8 +3620,8 @@ function renderInspector() {
         ]),
         el('div', { style: { marginBottom: '8px', fontSize: '11px', color: 'var(--muted)', background: 'var(--surface-sunken)', padding: '6px 10px', borderRadius: '6px' }, text: '🔒 A timestamped backup will be created before applying this change.' }),
         el('div', { style: { display: 'flex', gap: '6px' } }, [
-          el('button', { class: 'btn btn-primary', text: 'Apply repair' }),
-          el('button', { class: 'btn btn-ghost', text: 'Cancel' }),
+          el('button', { class: 'btn btn-primary', text: 'Apply repair', onclick: () => applyRepair(i.id) }),
+          el('button', { class: 'btn btn-ghost', text: 'Cancel', onclick: closeInspector }),
         ]),
       ]));
     } else {
@@ -2665,8 +3629,8 @@ function renderInspector() {
         el('div', { class: 'insp-label', text: 'Manual review required' }),
         el('p', { style: { fontSize: '12px', color: 'var(--ink-3)', lineHeight: '1.5' }, text: 'This issue cannot be repaired automatically. Open the source file and apply the change manually in your editor.' }),
         el('div', { style: { display: 'flex', gap: '6px', marginTop: '10px' } }, [
-          el('button', { class: 'btn btn-ghost', text: 'Reveal in Finder' }),
-          el('button', { class: 'btn btn-ghost', text: 'Open in editor' }),
+          el('button', { class: 'btn btn-ghost', text: 'Reveal in Finder', onclick: () => osAction('Reveal in Finder', i.filePath || i.file) }),
+          el('button', { class: 'btn btn-ghost', text: 'Open in editor', onclick: () => osAction('Open in editor', i.filePath || i.file) }),
         ]),
       ]));
     }
@@ -2842,8 +3806,8 @@ function insSourceBlock({ file, row, importedFrom }) {
       ]),
     ]),
     el('div', { style: { marginTop: '8px', display: 'flex', gap: '6px' } }, [
-      el('button', { class: 'btn btn-ghost', text: 'Reveal in Finder' }),
-      el('button', { class: 'btn btn-ghost', text: 'Open in editor' }),
+      el('button', { class: 'btn btn-ghost', text: 'Reveal in Finder', onclick: () => osAction('Reveal in Finder', file) }),
+      el('button', { class: 'btn btn-ghost', text: 'Open in editor', onclick: () => osAction('Open in editor', file) }),
     ]),
   ]);
 }
@@ -2856,9 +3820,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const backdrop = document.getElementById('inspector-backdrop');
   if (backdrop) backdrop.addEventListener('click', closeInspector);
 
+  // The sidebar header is the entry point to the default dashboard (Round 5).
+  const head = document.getElementById('sidebar-head');
+  if (head) {
+    head.style.cursor = 'pointer';
+    head.addEventListener('click', () => navigate('overview-dashboard'));
+  }
+
   window.addEventListener('popstate', () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const viewId = urlParams.get('view') || 'accounts-overview';
+    const viewId = urlParams.get('view') || 'overview-dashboard';
     state.view = viewId;
     closeInspector();
     renderSidebar();
