@@ -2788,6 +2788,7 @@ function viewAccountEntity(entityId) {
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
         { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId, business: true }) },
+        { label: 'Edit Group', variant: 'btn-ghost', onClick: () => editEntityFlow(entityId) },
         { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
         { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(entityId) },
       ],
@@ -2902,6 +2903,7 @@ function viewAccountEntity(entityId) {
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
         { label: 'Import Paystub', variant: '', onClick: () => addPaystubFlow(entityId) },
+        { label: 'Edit Group', variant: 'btn-ghost', onClick: () => editEntityFlow(entityId) },
       ],
     });
     renderFilterBar([
@@ -2973,6 +2975,7 @@ function viewAccountEntity(entityId) {
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
         { label: 'Add Account', variant: '', onClick: () => addAccountFlow(entityId) },
+        { label: 'Edit Group', variant: 'btn-ghost', onClick: () => editEntityFlow(entityId) },
       ],
     });
     renderFilterBar([
