@@ -5,19 +5,42 @@ type: prototype-review
 summary: Fourth prototype review — data structuring and information architecture
 status: in-progress
 ---
+## Document overview
+
+1. **User stories** to provide context to the workflows objects and features facilitate.
+2. **Object definitions** to define the structure of the app and how objects connect.
+3. Rulesets
+4. **Object references** are diagrams for how Objects, Features and Rulesets work together.
+5. **Flat File Storage Strategy** details how data is stored and managed within the app using a filing system structure and iCloud.
+6. **Architectural Recommendations** are additional considerations to potentially add as part of this review.
+
+## User stories
+These user stories are meant to provide context as to the overall functionality of the app and intended use.
+* As a user I want to take full control over my financial planning personal, business and retirement. I want the tools to enable me acting as my own accountant, financial advisor and retirement planner.
+- As a user I want to be review all my financial accounts across in one place. I have multiple accounts associated with different parts my life and different parts of my life have multiple accounts so its difficult to keep track of it all. I want to be able to review individual accounts and group them in a way that relates to my life. For example, for work I have a W2 based paycheck which is broken up into an HSA contribution, Insurance payment, 401k contributions, tax payments and take home pay. I also side business income, a brokerage account, credit cards, multiple savings and checking accounts and so on. I want to be able to organize these accounts in one place by downloading transaction and making manual adjustments to get a full picture of my financial history and current state. 
+- As a user I want to be able to create budgets monitor specific accounts compared to those budgets, to set goals for spending and review how my spending habits compare to the goals I set. As part of those budgets I also want to set goals for savings contributions and investments, to make sure I consistently build my wealth on a monthly basis.
+- As a user I want to be able to review my financial portfolio for wealth management based on specific accounts, assets and liabilities. I want to be able to view different portfolios and portfolio sleeves. For example, my investment accounts would be form a core investment portfolio with multiple sleeves and smaller satellite portfolios might represent specific short term goals and be comprised of both an investment and savings account. Realestate investments might make up a different portfolio.
+- As a user I want to understand how my various income sources are taxed so I can prepare on a yearly basis to prep for taxes. I also want to keep track of important files for this tax year as well as previous years. I want to understand what I pay on a yearly basis as well as what I’ve already paid this year and still need to pay.
+- As a user I want full control of my financial information in one place. I want to review my full financial history in order to plan for the future. I want a file system I can interact with like an app, as well as run analysis with different AI tools. To best work with AI, I want to manage data through markdown, CSV, yaml, json, python and other standardized file formats.
 
 ## Object definitions
 
-### Overview of Object Definitions
+### Overview of Property Definitions
 To ensure consistency and clarity across the architecture, every object is defined using a standard set of attributes. This uniform structure helps in understanding the role, data composition, and relationships of each object within the system. If a specific attribute does not apply to an object, its bullet is left blank.
 
 The standard property groupings are:
 - **description**: A brief, high-level summary of what the object represents.
 - **purpose**: The "why"—the specific role this object plays in the overall system and the value it provides to the user.
 - **properties**: The core data fields, metadata, or state variables stored within the object.
-- **aggregates**: A list of child objects or lower-level entities that this object contains or groups together.
-- **connections**: Other related objects that this object interacts with or references, outside of direct parent-child aggregation.
+- **inherits-from**: Used when an object is a specialized subtype of a master object, sharing its core registry but adding specific fields.
+- **belongs-to**: The inverse of "composes" or "references". Useful for defining the relationship from the perspective of the child object looking up.
+- **composes**: A list of child objects or lower-level entities that this object contains or groups together.
+- **references**: Other related objects that this object interacts with or references, outside of direct parent-child aggregation.
 - **actions**: The operations, state changes, or user interactions that can be performed on or by this object.
+
+~ NOTE:
+- standard properties have been updated to better describe relationships 
+~ END NOTE:
 
 ### Core Objects
 These are objects that are used throughout the system and act as primary stores of value and means of organization. Core objects represent the raw financial data that everything else in the system is built upon.
@@ -33,33 +56,25 @@ These are objects that are used throughout the system and act as primary stores 
 	- Current-balance (number)
 	- Available-balance (number)
 	- Status (string/enum: draft, active, frozen, closed)
-- aggregates:
-	- Transaction
-	- Asset
-	- Debt
-- connections:
+	- Type (string/enum: cash, savings, brokerage, crypto, credit card, loan, mortgage, ira, 401k, etc.)
+- inherits-from:
+	- account-group
+- belongs-to:
+	- 
+- composes:
+	- Assets
+	- Liabilities
+	- Transactions 
+- references:
 	- Account-group
 	- Budget
-	- Account-type
+	- Portfolio
+	- Tax-report
 - actions:
 	- Add, Edit, Delete
 	- Manage transactions (add, edit, delete)
 	- Manage assets (add, edit, delete)
 	- Manage debts (add, edit, delete)
-
-##### Account-type
-- description: A classification label for accounts (e.g., checking, savings, brokerage, credit card). Defines how an account behaves within the system.
-- purpose: Categorizes accounts to enable standardized rulesets, UI treatments, and aggregated reporting by account type.
-- properties:
-	- Account-type-ID (string, primary key)
-	- Name (string)
-	- Order-index (number)
-- aggregates:
-	- Account
-- connections:
-	- Account
-- actions:
-	- Add, Edit, Delete, Reorder
 
 ##### Transaction
 - description: A purchase, sale, or transfer of money to obtain a service or good. Defines values for all financial items and keeps a record of how values change over time. Transactions are the backbone of the entire system because the full list of transactions gives a clear view of current and past financial states.
@@ -76,9 +91,15 @@ These are objects that are used throughout the system and act as primary stores 
 	- Source-ID (reference, optional)
 	- Tags (array of references, optional)
 	- Notes (string, optional)
-- aggregates:
+- inherits-from:
+	- Account
+- belongs-to:
+	- Asset
+	- Liability
+	- Account
+- composes:
 	- 
-- connections:
+- references:
 	- Account
 	- Transaction-category
 	- Transaction-source
@@ -88,6 +109,110 @@ These are objects that are used throughout the system and act as primary stores 
 	- Add, Edit, Delete
 	- Categorize
 	- Split transaction
+
+##### Asset
+- description: A holding of wealth like cash, stocks, crypto, real estate, etc. It can be associated with transactions but can also be edited directly.
+- purpose: Represents positive value on the user's balance sheet, tracked over time to measure net worth.
+- properties:
+	- Asset-ID (string, primary key)
+	- Name (string)
+	- Type (string/enum: cash, equity, crypto, real-estate)
+	- Current-value (number)
+	- Cost-basis (number)
+	- Account-ID (reference)
+	- Ticker-symbol (string, optional)
+	- Quantity (number, optional)
+- inherits-from:
+	- Account
+- belongs-to:
+	- Account
+- composes:
+	- Transactions
+- references:
+	- Portfolio
+	- Portfolio-sleeve
+	- Tax-adjustment
+- actions:
+	- Add, Edit, Delete
+	- Update valuation
+	- Link to transactions (buy/sell)
+
+##### Liability
+- description: A debt position that needs to be repaid, like a line of credit or loan.
+- purpose: Represents negative value on the user's balance sheet. Tracking debts is critical for net worth calculations and payoff planning.
+- properties:
+	- Liability-ID (string, primary key)
+	- Name (string)
+	- Type (string/enum: credit-card, loan, mortgage)
+	- Principal-balance (number)
+	- Interest-rate (number)
+	- Account-ID (reference)
+	- Minimum-payment (number, optional)
+	- Due-date (date, optional)
+- inherits-from:
+	- Account
+- belongs-to:
+	- Account
+- composes:
+	- Transactions
+- references:
+	- Account
+- actions:
+	- Add, Edit, Delete
+	- Record payment (creates Transaction)
+	- Update interest rate
+
+~ CORE OBJECT NOTES:
+* Transactions should tie more closely to assets and liabilities since they directly contribute to their creation and management.
+* All accounts should contain at least one asset, liability or both. For example, a brokerage account would contain multiple assets (stocks & ETFs) and a mortgage account would contain both an asset snd liability (house and loan).
+* Transactions entries within an account should relate to either and asset or liability. 
+* When uploading transactions directly to an account, transactions can create an asset or liability but need manual review.
+* Add “sending asset” as a property.
+* Add “ receiving asset” as a property
+* Example one: when purchasing Apple stock, the sending asset will be USD (US currency) while the receiving asset will be APPL. The value would be added to the asset’s balance (cost basis).
+* Example two: when purchasing food from a restaurant the sending asset is USD but the receiving asset is blank or null, because it’s simply an expense.
+* transaction types should also be updated to account for investing. Add “trade” as a transaction type.
+* The “trade” transaction type should be used for all transactions involving both a sending and receiving asset.
+* Assets may be dynamically added as part of a transactions import or manually created. Dynamically created assets need manual approval.
+* In the case of credit card transactions where the sending asset is blank or null, it’s treated as an expense and adds to a liability balance.
+* In the case of a loan the “credit” type would be used while the sending asset would be blank or null and the receiving asset would be currency (most likely USD).
+* Credit card payments, loan payments and other payments towards liabilities should be treated as “Transfers”.
+* All transfers should follow a multi-entry transaction structure where multiple entries across accounts may be added and connected by a single transaction ID.
+* multi-entry example 1: 
+	* id-1, checking account, transfer, -100
+	* id-1, credit account, transfer, +100
+* multi-entry example 2: 
+	* id-1, checking account, transfer, -100
+	* id-1, mortgage account (principal payment), transfer, +75
+	* id-1, mortgage account (interest payment), expense, +25
+* Multi-entry transactions should always equal 0
+~ END NOTES:
+
+### Aggregators
+Aggregators act as containers or organizers that pull together multiple core objects for targeted analysis or review.
+
+##### Account-group
+- description: Connects multiple accounts into themes or entities like a place of employment or grouping of personal credit cards.
+- purpose: The Account-group acts as the primary connecting object in the system. It composes lower objects and connects larger ones.
+- properties:
+	- Group-ID (string, primary key)
+	- Name (string)
+	- Description (string, optional)
+	- Type (string/enum: personal, employment, business)
+- inherits-from:
+	- 
+- belongs-to:
+	- 
+- composes:
+	- 
+- references:
+	- Account
+	- Budget
+	- Portfolio
+	- Tax-report
+- actions:
+	- Add, Edit, Delete
+	- Link/un-link account
 
 ##### Transaction-category
 - description: A grouping mechanism to classify transactions for budgeting and reporting purposes (e.g., Groceries, Rent, Salary).
@@ -99,12 +224,16 @@ These are objects that are used throughout the system and act as primary stores 
 	- Parent-category-ID (reference, optional for sub-categories)
 	- Icon (string/url, optional)
 	- Color (string/hex, optional)
-- aggregates:
+- inherits-from:
 	- 
-- connections:
+- belongs-to:
+	- 
+- composes:
+	- 
+- references:
 	- Transaction
 	- Transaction-source
-	- Budget-category
+	- Budget-allocation
 	- Tax-adjustment
 - actions:
 	- Add, Edit, Delete
@@ -118,9 +247,13 @@ These are objects that are used throughout the system and act as primary stores 
 	- Tag-ID (string, primary key)
 	- Name (string)
 	- Color (string/hex, optional)
-- aggregates:
+- inherits-from:
 	- 
-- connections:
+- belongs-to:
+	- 
+- composes:
+	- 
+- references:
 	- Transaction
 - actions:
 	- Add, Edit, Delete
@@ -134,79 +267,20 @@ These are objects that are used throughout the system and act as primary stores 
 	- Name (string)
 	- Default-category-ID (reference, optional)
 	- Logo (string/url, optional)
-- aggregates:
+- inherits-from:
 	- 
-- connections:
+- belongs-to:
+	- 
+- composes:
 	- Transaction
+- references:
 	- Transaction-category
 - actions:
 	- Add, Edit, Delete
 	- Map raw string to Source (ruleset)
 
-##### Asset
-- description: A holding of wealth like cash, stocks, crypto, real estate, etc. It can be associated with transactions but can also be edited directly.
-- purpose: Represents positive value on the user's balance sheet, tracked over time to measure net worth.
-- properties:
-	- Asset-ID (string, primary key)
-	- Name (string)
-	- Type (string/enum: cash, equity, crypto, real-estate)
-	- Current-value (number)
-	- Account-ID (reference)
-	- Ticker-symbol (string, optional)
-	- Quantity (number, optional)
-- aggregates:
-	- 
-- connections:
-	- Account
-	- Portfolio
-	- Portfolio-sleeve
-	- Tax-adjustment
-- actions:
-	- Add, Edit, Delete
-	- Update valuation
-	- Link to transactions (buy/sell)
-
-##### Debt
-> **Pending resolution:** The naming plan (§7) folds Debt into Account as an account subtype carrying debt-specific optional columns. It is retained here as a standalone object until that resolution is applied to the object definitions.
-- description: A debt position that needs to be repaid, like a credit card, a mortgage, or a student loan.
-- purpose: Represents negative value on the user's balance sheet. Tracking debts is critical for net worth calculations and payoff planning.
-- properties:
-	- Debt-ID (string, primary key)
-	- Name (string)
-	- Type (string/enum: credit-card, loan, mortgage)
-	- Principal-balance (number)
-	- Interest-rate (number)
-	- Account-ID (reference)
-	- Minimum-payment (number, optional)
-	- Due-date (date, optional)
-- aggregates:
-	- 
-- connections:
-	- Account
-- actions:
-	- Add, Edit, Delete
-	- Record payment (creates Transaction)
-	- Update interest rate
-
-### Containers
-Containers act as connectors for objects within the app. These objects aggregate and connect lower-level objects. At the same time, they act as components for larger objects.
-
-##### Account-group
-- description: Connects multiple accounts into themes or entities like a place of employment or grouping of personal credit cards.
-- purpose: The Account-group acts as the primary connecting object in the system. It aggregates lower objects and connects larger ones.
-- properties:
-	- Group-ID (string, primary key)
-	- Name (string)
-	- Description (string, optional)
-	- Type (string/enum: personal, employment, business)
-- aggregates:
-	- Account
-- connections:
-	- Budget
-	- Portfolio
-- actions:
-	- Add, Edit, Delete
-	- Link/un-link account
+### Budgeting feature
+Budgeting feature objects extend core objects and aggregators with features for spending and saving. They allow users to set financial goals and track progress toward achieving them. This feature acts as a review layer on top of core objects and aggregators, and is not meant to be used for day-to-day expense tracking. Instead, it is meant to be used for long-term financial planning. This feature also acts as the primary interface for the review process.
 
 ##### Budget
 - description: A grouping of account-groups and accounts used to monitor transactions against a predefined spending plan over a specific time period.
@@ -219,10 +293,13 @@ Containers act as connectors for objects within the app. These objects aggregate
 	- End-date (date, optional)
 	- Account-group-IDs (array of references, optional)
 	- Account-IDs (array of references, optional)
-- aggregates:
-	- Budget-category
+- inherits-from:
+	- 
+- belongs-to:
+	- 
+- composes:
 	- Budget-allocation
-- connections:
+- references:
 	- Account-group
 	- Account
 - actions:
@@ -231,40 +308,32 @@ Containers act as connectors for objects within the app. These objects aggregate
 	- Compare actuals vs. planned
 
 ##### Budget-allocation
-- description: A means of organizing monthly transactions as they relate to a goal. Specific funding assigned to a Budget-category for a given timeframe.
-- purpose: Sets the target threshold for spending or saving within a specific budget category to guide user behavior.
+- description: A means of organizing monthly transactions as they relate to a goal. Specific funding assigned to a transaction category for a given timeframe.
+- purpose: Sets the target threshold for spending or saving within a specific transaction category to guide user behavior.
 - properties:
 	- Allocation-ID (string, primary key)
-	- Budget-category-ID (reference)
+	- Budget-ID (reference)
+	- Transaction-category-ID (reference)
+	- Type (string/enum: spending, savings)
 	- Amount (number)
 	- Rollover-amount (number, optional)
 	- Period (string/date)
-- aggregates:
+- inherits-from:
 	- 
-- connections:
-	- Budget-category
-- actions:
-	- Add, Edit, Delete
-	- Adjust allocation amount
-
-##### Budget-category
-- description: The intersection of a transaction category and a budget, defining the specific rules and thresholds for a group of transactions.
-- purpose: Maps the abstract transaction categorization structure to actionable budget limits.
-- properties:
-	- Budget-category-ID (string, primary key)
-	- Budget-ID (reference)
-	- Transaction-category-ID (reference)
-	- Name (string)
-	- Target-amount (number)
-	- Target-type (string/enum: spending, savings)
-- aggregates:
-	- Budget-allocation
-- connections:
+- belongs-to:
+	- 
+- composes:
+	- 
+- references:
 	- Transaction-category
 	- Budget
 - actions:
 	- Add, Edit, Delete
+	- Adjust allocation amount
 	- Map to transaction category
+
+### Portfolio feature
+Portfolio feature objects extend core objects and aggregators with features for wealth building. They allow users to set financial goals and track progress toward achieving them. This feature acts as a review layer on top of core objects and aggregators, and is not meant to be used for day-to-day transactional tracking. Instead, it is meant to be used for long-term wealth building. This feature also acts as the primary interface for the review process.
 
 ##### Portfolio
 - description: A high-level container for tracking long-term assets, investments, and savings goals outside of day-to-day transactional budgets.
@@ -276,9 +345,13 @@ Containers act as connectors for objects within the app. These objects aggregate
 	- Goal (string, optional)
 	- Timeframe (string, optional)
 	- Type (string/enum: retirement, brokerage, crypto, savings)
-- aggregates:
+- inherits-from:
+	- 
+- belongs-to:
+	- 
+- composes:
 	- Portfolio-sleeve
-- connections:
+- references:
 	- Asset
 	- Account-group
 - actions:
@@ -295,55 +368,138 @@ Containers act as connectors for objects within the app. These objects aggregate
 	- Name (string)
 	- Goal (string, optional)
 	- Target-allocation-percentage (number)
-- aggregates:
+- inherits-from:
 	- 
-- connections:
+- belongs-to:
+	- 
+- composes:
+	- 
+- references:
 	- Portfolio
 	- Asset
 - actions:
 	- Add, Edit, Delete
 	- Adjust target allocation
 
-### Rulesets
-Rulesets are like standard operating procedures for the system. They act as templates for how certain types of transactions or assets should be handled.
+~ NOTE:
+- the next review will need to outline public endpoints for live data related to assets.
+- ideally current-value of an asset is pulled from live data rather than something stored in files. The value in that number comes from always being up to date.
+~ END NOTE:
+
+### Tax records feature
+Tax records feature objects extend core objects and aggregators with features for tax records. They educate users about tax liabilities, deductions and credits and help them plan for tax season. They also allow users to generate tax reports for a given fiscal year and archive past years as well as store tax related documents. This feature also acts as the primary interface for the review process.
+
+##### Tax-report
+- description: A generated summary that composes transactions and adjustments for tax filing purposes.
+- purpose: Provides a streamlined, exportable view of taxable events and deductible expenses for a given fiscal year.
+- properties:
+	- Report-ID (string, primary key)
+	- Fiscal-year (number)
+	- Generation-date (date)
+	- Status (string/enum: draft, filed, archived)
+	- Notes (string, optional)
+- inherits-from:
+	- 
+- belongs-to:
+	- 
+- composes:
+	- Tax-document
+	- Tax-adjustment
+- references:
+	- Transaction
+- actions:
+	- Generate
+	- Export (PDF/CSV)
+	- Archive
+	- Delete
 
 ##### Tax-adjustment
-- description: A rule or modifier that accounts for tax liabilities or benefits related to specific transactions or assets.
+- description: A rule or modifier that accounts for tax liabilities, deductions, and credits related to specific transactions.
 - purpose: Ensures the net worth and cash flow calculations accurately reflect tax implications (e.g., pre-tax vs. post-tax).
 - properties:
 	- Adjustment-ID (string, primary key)
 	- Name (string)
 	- Rate-percentage (number)
 	- Type (string/enum: deduction, liability, credit)
-- aggregates:
+- inherits-from:
+	- tax-report
+- belongs-to:
+	- tax-report
+- composes:
 	- 
-- connections:
+- references:
+	- Transaction 
 	- Transaction-category
 	- Asset
+	- liability
+	- Account
+	- Account-group
 	- Tax-report
 - actions:
 	- Add, Edit, Delete
 	- Apply adjustment
-
-##### Tax-report
-- description: A generated summary that aggregates transactions and adjustments for tax filing purposes.
-- purpose: Provides a streamlined, exportable view of taxable events and deductible expenses for a given fiscal year.
+##### Tax-estimate
+- description: A projection of tax liabilities for the current fiscal year based on year-to-date transactions and anticipated income/deductions.
+- purpose: Helps users plan for tax season by predicting tax owed or refunds due before the fiscal year ends, avoiding underpayment penalties.
 - properties:
-	- Report-ID (string, primary key)
+	- Estimate-ID (string, primary key)
 	- Fiscal-year (number)
-	- Generation-date (date)
-- aggregates:
+	- Estimated-income (number)
+	- Estimated-deductions (number)
+	- Projected-liability (number)
+	- Target-safe-harbor (number, optional)
+- inherits-from:
 	- 
-- connections:
+- belongs-to:
+	- 
+- composes:
+	- 
+- references:
+	- Tax-report
+	- Account
+	- Account-group 
+- actions:
+	- Add, Edit, Delete
+	- Recalculate based on YTD actuals
+	- Log estimated payment
+##### Tax-document
+- description: A digital record of a tax-related document (e.g., W-2, 1099, 1098, donation receipt) needed for filing or audit defense.
+- purpose: Stores physical or digital evidence to substantiate tax adjustments or reports, organizing them by fiscal year.
+- properties:
+	- Document-ID (string, primary key)
+	- Name (string)
+	- File-path (string/url)
+	- Tax-year (number)
+	- Type (string/enum: income-form, deduction-receipt, prior-return, other)
+- inherits-from:
+	- 
+- belongs-to:
+	- Tax-report
+- composes:
+	- 
+- references:
 	- Transaction
 	- Tax-adjustment
 - actions:
-	- Generate
-	- Export (PDF/CSV)
-	- Delete
+	- Add, Edit, Delete
+	- Link to transaction/adjustment
+	- View document
+
+~ NOTE:
+- tax adjustments should be recorded as a stand alone transaction that references
+- For example a paycheck may be recorded in multiple transactions (gross income, insurance expense, state taxes, federal taxes)
+- These transactions should reference each other but may or may not be a multi-line transaction since they don’t add up to 0 the same way a transfer would. They instead have a gross and net value.
+- multi-entry transaction rules need to be further defined to account for complex entries in different ways.
+- TODO: under rulesets create rules for multi-entry transactions that accommodates object and feature functionality.
+~ END NOTE:
+
+## Rulesets
+Rulesets acts as standard operating procedures for managing objects, features and connections.
+
 
 ---
-## Object connections
+---
+## Object references
 
 ### 1. Core Objects Architecture
 This diagram focuses on the primary financial entities and how they relate to the ledger.
@@ -363,26 +519,29 @@ erDiagram
 This diagram focuses on how user-defined groups organize core objects for tracking and goals.
 ```mermaid
 erDiagram
-    Account-group ||--o{ Account : "aggregates"
+    Account-group ||--o{ Account : "composes"
     Budget }o--o{ Account-group : "monitors"
-    Budget ||--o{ Budget-category : "contains"
     Budget ||--o{ Budget-allocation : "allocates"
-    Budget-category ||--o{ Budget-allocation : "funded by"
-    Budget-category |o--|| Transaction-category : "maps to"
+    Budget-allocation |o--|| Transaction-category : "maps to"
     Portfolio ||--o{ Portfolio-sleeve : "contains"
     Portfolio }o--o{ Account-group : "tracks via"
     Portfolio ||--o{ Asset : "tracks"
     Portfolio-sleeve ||--o{ Asset : "allocates"
 ```
 
-### 3. Rulesets Architecture
-This diagram focuses on how standard operating procedures interact with raw financial data.
+### 3. Tax Records Architecture
+This diagram focuses on how tax-related rules, records, and plans interact with raw financial data.
 ```mermaid
 erDiagram
-    Tax-report ||--o{ Transaction : "aggregates"
+    Tax-report ||--o{ Transaction : "composes"
     Tax-report ||--o{ Tax-adjustment : "includes"
+    Tax-report ||--o{ Tax-document : "composes"
     Tax-adjustment }o--o{ Transaction-category : "applies to"
     Tax-adjustment }o--o{ Asset : "applies to"
+    Tax-estimate }o--o| Tax-report : "projects"
+    Tax-estimate }o--o| Account : "funds from"
+    Tax-document }o--o{ Transaction : "substantiates"
+    Tax-document }o--o{ Tax-adjustment : "substantiates"
 ```
 
 ### 4. Overall Architecture
@@ -399,18 +558,21 @@ erDiagram
     Transaction }o--o{ Transaction-tag : "tagged with"
     Transaction-category ||--o{ Transaction-source : "default for"
     Budget }o--o{ Account-group : "monitors"
-    Budget ||--o{ Budget-category : "defines limits for"
     Budget ||--o{ Budget-allocation : "allocates"
-    Budget-category |o--|| Transaction-category : "maps to"
-    Budget-category ||--o{ Budget-allocation : "funded by"
+    Budget-allocation |o--|| Transaction-category : "maps to"
     Portfolio }o--o{ Account-group : "tracks via"
     Portfolio ||--o{ Portfolio-sleeve : "contains"
     Portfolio ||--o{ Asset : "tracks"
     Portfolio-sleeve ||--o{ Asset : "allocates"
     Tax-report ||--o{ Transaction : "analyzes"
     Tax-report ||--o{ Tax-adjustment : "includes"
+    Tax-report ||--o{ Tax-document : "composes"
     Tax-adjustment }o--o{ Transaction-category : "applies to"
     Tax-adjustment }o--o{ Asset : "applies to"
+    Tax-estimate }o--o| Tax-report : "projects"
+    Tax-estimate }o--o| Account : "funds from"
+    Tax-document }o--o{ Transaction : "substantiates"
+    Tax-document }o--o{ Tax-adjustment : "substantiates"
 ```
 
 ### 5. State Machine Diagrams
@@ -439,19 +601,6 @@ stateDiagram-v2
     active --> closed : Account terminated
     closed --> [*]
 ```
-
----
-## Architectural Recommendations
-
-As a principal database architect, I recommend the following next steps as we move from this review prototype into formal system design documentation:
-
-1. **Data Flow / Pipeline Diagrams**: Given this is a financial app, we should map how external data is ingested. A sequence diagram showing the flow from an external API (like Plaid) → raw JSON → normalization into `Transaction` → auto-categorization via `Transaction-source` → and updating `Account` balances would be invaluable.
-2. **Implement File Organization Proposal**: As this architectural documentation grows, this monolithic `r6-review.md` file will become a bottleneck. We should establish a scalable directory structure under `/docs/architecture/` to house distinct domain concerns:
-    - **`/docs/architecture/index.md`**: The executive summary, system vision, and high-level ER diagrams.
-    - **`/docs/architecture/core-domain.md`**: Detailed schemas, property constraints, and state machines for primary ledger entities (`Account`, `Transaction`, `Asset`, etc.).
-    - **`/docs/architecture/containers-and-budgets.md`**: The logic for aggregation, including `Portfolio` management, `Budget` limits, and `Account-group` rules.
-    - **`/docs/architecture/rulesets-and-taxes.md`**: Documentation on standard operating procedures, tax adjustments, and report generation engines.
-    - **`/docs/architecture/data-pipelines.md`**: Integration diagrams, external API webhook handling (e.g. Plaid), and data normalization processes.
 
 ---
 ## Flat File Storage Strategy
@@ -485,12 +634,13 @@ The existing architecture uses **unified master CSV registries** rather than fol
 | **Asset** | Holding | `.csv` | `Investments/holdings.csv` | Current positions. Linked to accounts via `account_id`. |
 | **Debt** | — | `.csv` | `Accounts/accounts.csv` + metadata | Debt accounts stored in the unified accounts registry. Debt-specific fields (interest rate, minimum payment) as optional columns. |
 | **Budget** | Budget | `.csv` | `Budget/budgets.csv` | Budget targets per category per period. |
-| **Budget-category** | — | `.csv` | `Budget/categories.csv` | Shared with Transaction-category. Budget targets reference category IDs. |
-| **Budget-allocation** | — | rows | `Budget/budgets.csv` | Each row is effectively an allocation (category + period + amount). |
+| **Budget-allocation** | — | rows | `Budget/budgets.csv` | Each row is effectively an allocation (category + period + amount + type). |
 | **Portfolio** | Sleeve group | `.csv` | `Investments/sleeves.csv` | Portfolio-level grouping. |
 | **Portfolio-sleeve** | Sleeve | `.csv` | `Investments/sleeves.csv` + `sleeve-targets.csv` | Sleeve definitions and target allocation weights. |
 | **Tax-adjustment** | Deduction | `.csv` | `Taxes/deductions.csv` | All deduction types via `deduction_type` enum column. |
 | **Tax-report** | Tax report | `.md` | `Taxes/yearly/YYYY-tax-notes.md` | YAML frontmatter for metadata, markdown body for report content. |
+| **Tax-document** | — | `.csv` | `Taxes/documents.csv` | Unified registry of tax documents pointing to file paths. |
+| **Tax-estimate** | — | `.csv` | `Taxes/estimates.csv` | Projection of tax liabilities for planning. |
 
 ### Vault Directory Structure
 This tree aligns with the existing domain-based folder organization:
@@ -536,6 +686,8 @@ Finance/
 │   ├── estimated-payments.csv
 │   ├── settings.csv                      # Key-value tax settings
 │   ├── deductions.csv                    # All deduction types (= Tax-adjustment)
+│   ├── documents.csv                     # Registry of tax documents
+│   ├── estimates.csv                     # Projections of tax liabilities
 │   ├── archive/                          # Read-only prior-year snapshots
 │   └── yearly/
 │       ├── 2026-tax-notes.md
@@ -612,7 +764,7 @@ flowchart TD
 ```
 
 ---
-## Required Additions for Flat File Database System
+### Required Additions for Flat File Database System
 
 Beyond the object definitions and storage strategy above, the following system-level concerns must be addressed to build a production-ready flat file database:
 
@@ -694,7 +846,7 @@ Based on the resolutions above, the following changes should be applied to the o
 5. **Add Portfolio as a new object** in the Containers section with a formal schema:
     - `portfolio_id` (string, primary key)
     - `name`, `description`, `strategy`, `goal`, `timeframe`
-    - Aggregates: Sleeves
+    - Composes: Sleeves
     - New file: `Investments/portfolios.csv`
     - Add `portfolio_id` FK to `sleeves.csv`
 6. **Remove Debt as standalone object**. Instead, document debt-specific optional columns on Account:
@@ -725,3 +877,13 @@ To prevent future divergence, all new objects must follow these conventions:
 3. **CSV filenames**: Lowercase, plural, hyphenated (e.g., `holdings.csv`, `sleeve-targets.csv`).
 4. **Code identifiers**: camelCase matching the CSV column name (e.g., `entityId`, `holdingId`).
 5. **No synonyms**: Each concept gets exactly one name. If "asset" means `Holding`, never use "asset" as a formal object name — only as informal prose.
+
+## Architectural recommendations
+
+1. **Data Flow / Pipeline Diagrams**: Given this is a financial app, we should map how external data is ingested. A sequence diagram showing the flow from an external API (like Plaid) → raw JSON → normalization into `Transaction` → auto-categorization via `Transaction-source` → and updating `Account` balances would be invaluable.
+2. **Implement File Organization Proposal**: As this architectural documentation grows, this monolithic `r6-review.md` file will become a bottleneck. We should establish a scalable directory structure under `/docs/architecture/` to house distinct domain concerns:
+    - **`/docs/architecture/index.md`**: The executive summary, system vision, and high-level ER diagrams.
+    - **`/docs/architecture/core-domain.md`**: Detailed schemas, property constraints, and state machines for primary ledger entities (`Account`, `Transaction`, `Asset`, etc.).
+    - **`/docs/architecture/containers-and-budgets.md`**: The logic for aggregation, including `Portfolio` management, `Budget` limits, and `Account-group` rules.
+    - **`/docs/architecture/rulesets-and-taxes.md`**: Documentation on standard operating procedures, tax adjustments, and report generation engines.
+    - **`/docs/architecture/data-pipelines.md`**: Integration diagrams, external API webhook handling (e.g. Plaid), and data normalization processes.
