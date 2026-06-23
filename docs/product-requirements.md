@@ -251,12 +251,15 @@ Requirements:
 - For `personal` type groups:
   - Show net worth and cash flow trends.
 - Support import, add, and edit of transactions per account.
+- Represent each account's holdings of value as **assets** and its debts as **liabilities**: a brokerage account holds multiple assets; a mortgage account holds both an asset (the property) and a liability (the loan). Every account resolves to at least one asset, one liability, or both.
+- Support **multi-entry transactions**: transfers and liability payments are linked entries that net to zero, while a paycheck is a gross/net split (gross income → HSA, insurance, 401k, federal/state withholdings → net take-home) that does not net to zero. Support the `trade` (asset swap, e.g. USD → AAPL, updating cost basis) and `credit` (loan / line-of-credit draw-down) transaction types. Investment buys/sells live in this single unified transaction history.
 - Support add, edit, and delete of account groups and individual accounts (see Object management).
 - Support account-level rules and estimates.
 
 ### 6. Budget module
 
 Requirements:
+- Treat a budget as a **named, scoped plan** that declares the account-groups and accounts it monitors and contains category allocations — supporting multiple budgets (e.g. a household budget vs. a per-business budget), rather than a single implicit "all personal transactions" budget.
 - Show a budget overview with a pie chart of fixed expenses, discretionary spend, savings, and investments as a percentage of monthly net income.
 - Show monthly totals for income, fixed expenses, discretionary expenses, transfers, savings, and investments.
 - Show budget targets and variance by category with a 3-month trailing average per category.
@@ -281,7 +284,8 @@ Requirements:
 - Support trade history, lots, dividends, and cash.
 - Show gain/loss summaries and allocation views.
 - Support security-level drill-down with source records.
-- Support portfolio sleeves with strategy notes, monthly contribution targets, and target weights per holding. The sleeve table is presented at the bottom of the Portfolio overview; there is no dedicated sleeve screen in v1.
+- Organize investments under a **Portfolio** container: a portfolio groups sleeves and can track specific account-groups, with assets rolling up Portfolio → Sleeve → Asset. The portfolio carries the strategy description (moved off the individual sleeve).
+- Support portfolio sleeves with monthly contribution targets and target weights per holding. The sleeve table is presented at the bottom of the Portfolio overview; there is no dedicated sleeve screen in v1.
 - Compare portfolio and sleeve performance to the S&P 500, presented as a view toggle on the holdings table (standard holdings table ⇄ heat map table) rather than a dedicated benchmark screen:
   - Totals vs S&P 500 (% growth) per account: Brokerage, Savings, IRA.
   - Performance table/heat map across periods: D, W, M, 3M, 6M, 1Y, 3Y, 5Y.
@@ -292,6 +296,9 @@ Requirements:
 The tax module presents three screens in v1: Current Tax Year, Prep Checklist, and Tax Archive. Estimated payments, gains & income, and deductions have no dedicated screens — their content surfaces within the Current Tax Year view.
 
 Requirements:
+- Model tax items as **tax-adjustments** (deductions, credits, and liabilities are kinds of adjustment), keeping user-facing "deduction" language where it reads naturally. An adjustment can link to the transaction, category, asset, liability, account, or account-group it applies to.
+- Maintain a **tax-estimate** for the year — projected income, projected deductions, projected liability, and a safe-harbor target — distinct from logged estimated payments.
+- Maintain a **tax-document** registry (W-2, 1099, receipts) linked to adjustments and a fiscal year; adjustments can be sourced from paycheck withholding entries.
 - Show YTD taxable income, taxes paid vs taxes owed, and effective rate per account.
 - Summarize realized gains and losses.
 - Track dividend and interest income.
@@ -341,7 +348,8 @@ Requirements:
 Object management is cross-cutting across all modules.
 
 Requirements:
-- Any object the user can add — manually or via import — can also be edited and deleted: account groups, individual accounts, transactions, categories, savings goals, holdings/assets, deductions, account rules, and similar.
+- Any object the user can add — manually or via import — can also be edited and deleted: account groups, individual accounts, transactions, categories, savings goals, assets, liabilities, portfolios, sleeves, tax-adjustments, account rules, and similar.
+- A multi-entry transaction group (a transfer or a paycheck gross/net split) is added, edited, and deleted as a single unit — its entries are not edited as disconnected rows.
 - UI placement convention:
   - Objects whose detail opens in the right panel: edit and delete actions appear at the bottom of that panel.
   - Objects with their own dedicated screen (e.g. an individual account): edit is in the local screen navigation/actions, and delete is an option within the edit flow.
@@ -401,7 +409,7 @@ The Overview dashboard is the default screen shown on launch; it is reached via 
 
 Within modules, screens are kept few and dense. Accounts presents an all-accounts overview, per-group screens (each listing its individual-account cards above the transaction ledger), and a dedicated per-account screen reached by selecting an account card. Savings & Investments presents Overview, Goals, and Portfolio (holdings and the sleeve table live inside the Portfolio view — no separate Accounts, Sleeves, or Benchmark screens). Taxes presents Current Tax Year, Prep Checklist, and Tax Archive (estimated payments, gains & income, and deductions surface within Current Tax Year). Removed screens fold their content into these parents; nothing is dropped from v1 except goal lifecycle states.
 
-The account-facing organizing term is "account group" / "group" (not "entity"). Module screens have no general filter bar in v1.
+The account-facing organizing term is "account group" / "group" (not "entity"). Account screens surface both **assets and liabilities** for an account (net-worth view), and Savings & Investments is organized by **Portfolio**. Module screens have no general filter bar in v1.
 
 Recommended shell:
 - Left sidebar for primary navigation.
@@ -414,14 +422,14 @@ Recommended shell:
 
 | Domain | Entities |
 |---|---|
-| Accounts | Theme/Entity[^group], Account, AccountType, AccountRule, AccountEstimate, OwnerDistribution |
-| Budget | Transaction, Category, BudgetPlan, BudgetContribution, Merchant |
-| Savings & Investments | SavingsGoal, GoalContribution, GoalProgressSnapshot, Security, Trade, Lot, Position, Dividend, PricePoint, PortfolioSleeve, SleeveTarget, BenchmarkSeries, BenchmarkPeriod |
-| Taxes | TaxSetting, RealizedGain, IncomeEvent, EstimatedPayment, TaxPrepIssue, DeductionRecord, TaxArchiveYear |
+| Accounts | Account-group[^group], Account, AccountType, Liability, AccountRule, AccountEstimate, OwnerDistribution |
+| Budget | Transaction, Category, Budget, BudgetAllocation, BudgetContribution, Merchant |
+| Savings & Investments | Portfolio, PortfolioSleeve, SleeveTarget, Asset, SavingsGoal, GoalContribution, GoalProgressSnapshot, Trade, Lot, Position, Dividend, PricePoint, BenchmarkSeries, BenchmarkPeriod |
+| Taxes | TaxSetting, RealizedGain, IncomeEvent, EstimatedPayment, TaxPrepIssue, Tax-adjustment, Tax-estimate, Tax-document, TaxArchiveYear |
 | Notes | NoteDocument, MonthlyReview, StrategyNote |
 | Platform | Workspace, FileRecord, ImportIssue, RepairAction, SchemaVersion, SyncStatus |
 
-[^group]: User-facing label is "Account Group". A model-level rename (`entity_id` → `group_id`) and the related Budget/Strategy object work are queued for a future object-model round — see `docs/_notes/object-model-audit.md`.
+[^group]: The model-level rename is applied in Round 6: `entity_id` → `account_group_id` (with `holding_id` → `asset_id` and `deduction_id` → `tax_adjustment_id`). The investment container is **Portfolio** (not "Strategy"); group nesting is not adopted. See `docs/_refinement/r6-update-technical-design.md`.
 
 ### Internal architecture model
 
@@ -487,6 +495,17 @@ Presentation Layer
 ```
 
 ## Changelog
+
+### Round 6 — 2026-06-23
+Source: `docs/_refinement/r6-review.md` (fourth prototype review — data structuring & IA); update plan `docs/_refinement/r6-update-product-requirements.md`
+
+- Data model: renamed Theme/Entity→Account-group, Holding→Asset, Deduction→Tax-adjustment; added Liability and Portfolio as first-class objects; retired the "rename queued" footnote (applied this round as `entity_id`→`account_group_id`, `holding_id`→`asset_id`, `deduction_id`→`tax_adjustment_id`)
+- §5 Accounts: accounts contain assets and liabilities; added multi-entry transactions (transfers and gross/net paycheck splits) and the `trade`/`credit` transaction types; investment buys/sells live in one unified transaction history
+- §6 Budget: a budget is a named, scoped plan with category allocations (supports multiple budgets)
+- §7 Savings & Investments: Portfolio is the formal container above sleeves (Portfolio → Sleeve → Asset); strategy description moved off the sleeve
+- §8 Taxes: deductions → tax-adjustments; added tax-estimate (projection) and tax-document (registry)
+- §12: multi-entry transaction groups are added/edited/deleted as a single unit
+- Overrides the r5 object-model audit where they differ (Portfolio not Strategy, `account_group_id` not `group_id`, no group nesting) — r6-review takes priority
 
 ### Round 5 — 2026-06-15
 Source: `docs/_refinement/r5-review.md` (third prototype review — functional details); update plan `docs/_refinement/r5-update-product-requirements.md`

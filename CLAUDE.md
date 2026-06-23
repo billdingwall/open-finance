@@ -17,7 +17,7 @@ A native macOS personal finance workspace (SwiftUI, iCloud-backed) that uses CSV
 | Document | Purpose |
 |---|---|
 | `docs/product-requirements.md` | What & why: primary product direction — modules, user scenarios, data model, IA. Has a Changelog section at bottom. |
-| `docs/technical-design.md` | How & where: architecture, layered system model, workspace folder structure, all 24 CSV file specs, service responsibilities, validation rules. |
+| `docs/technical-design.md` | How & where: architecture, layered system model, workspace folder structure, all CSV file specs, service responsibilities, validation rules. |
 | `docs/product-roadmap.md` | When: phased implementation roadmap with Product/Design/Dev tasks per phase and milestone gates. |
 | `docs/project-management.md` | Tasks: remaining work needed before the Phase 1 build begins. |
 | `.specify/memory/constitution.md` | 7 non-negotiable principles governing all implementation decisions. Read this before proposing any architectural change. |
@@ -34,10 +34,10 @@ The app uses a strict five-layer architecture. Each layer only depends on layers
 File layer        WorkspaceManager, ICloudContainerService, FileIndexService, FileWatcherService
 Parsing layer     CSVParserService, CSVSchemaRegistry, MarkdownParserService, ValidationEngine
 Domain layer      AccountEngine, BudgetEngine, SavingsGoalEngine, PortfolioEngine,
-                  BenchmarkEngine, BusinessEngine, TaxEngine, TaxPrepEngine, DeductionEngine,
+                  BenchmarkEngine, BusinessEngine, TaxEngine, TaxPrepEngine, TaxAdjustmentEngine,
                   LinkingEngine, OverviewEngine
 Projection layer  Cross-domain projections: OverviewSummaryCard, AccountSummaryCard,
-                  TaxDeductionSummary, BenchmarkPeriod heat map, etc.
+                  TaxAdjustmentSummary, BenchmarkPeriod heat map, etc.
 Presentation      SwiftUI views in UI/ — one folder per module
 ```
 
@@ -64,19 +64,20 @@ The Finance folder in iCloud Drive is the source of truth:
 
 ```
 Finance/
-  Accounts/         accounts.csv, account-rules.csv
-  Personal/         transactions/YYYY-MM.csv, categories.csv, budgets.csv
+  Accounts/         accounts.csv, account-groups.csv, liabilities.csv, account-rules.csv,
+                    transactions/YYYY-MM.csv  (unified ledger; business rows prefixed BX-)
+  Budget/           categories.csv, budgets.csv, budget-allocations.csv,
+                    savings-goal-contributions.csv
   Savings/          goals.csv, progress.csv
-  Investments/      holdings.csv, transactions.csv, prices.csv, sleeves.csv,
-                    sleeve-targets.csv, benchmarks/sp500.csv
-  Business/         entities.csv, transactions/{entity-slug}-YYYY-MM.csv,
-                    categories.csv, budgets.csv
-  Taxes/            deductions.csv, estimated-payments.csv, settings.csv, archive/
+  Investments/      assets.csv, prices.csv, dividends.csv, tax-lots.csv, portfolios.csv,
+                    sleeves.csv, sleeve-targets.csv, benchmarks/sp500.csv
+  Taxes/            tax-adjustments.csv, estimates.csv, documents.csv,
+                    estimated-payments.csv, settings.csv, archive/
   Notes/            monthly/, strategy/
   .finance-meta/    manifest.json, schemas/, backups/, logs/
 ```
 
-Full column-level specs for all 24 CSV file types are in `docs/technical-design.md §8`.
+There is no separate `Personal/` or `Business/` folder — personal and business activity share the unified `Accounts/transactions/` ledger, distinguished by `account_group_id` and a `BX-` ID prefix. Full column-level specs for all CSV file types are in `docs/technical-design.md §8`.
 
 ## Constitution principles (non-negotiable)
 
@@ -128,8 +129,10 @@ record is in `docs/technical-design.md §21`; remaining pre-build work is tracke
 `docs/project-management.md`. Key locked decisions:
 
 - Master accounts registry: unified file — `Accounts/accounts.csv` covers all account types (investment metadata as optional columns); `Investments/accounts.csv` removed
-- Deductions file structure: one `Taxes/deductions.csv` with all types via `deduction_type` column
+- Tax adjustments file (Round 6, supersedes the old deductions decision): one `Taxes/tax-adjustments.csv` with all types via the `adjustment_type` column; Tax-adjustment is a first-class object
 - Tax year-close: explicit in-app "Close Tax Year" action, no automatic rollover
 - Right detail pane: globally closed by default, no section-specific exceptions
+
+Round 6 (2026-06-23) object-model decisions (see `docs/technical-design.md §21`): storage names aligned to object names (`entities.csv`→`account-groups.csv` / `entity_id`→`account_group_id`, `holdings.csv`→`assets.csv` / `holding_id`→`asset_id`, `deductions.csv`→`tax-adjustments.csv`); Liability is a first-class object (`Accounts/liabilities.csv`); Portfolio is the investment container (`Investments/portfolios.csv`); multi-entry transactions use a shared `group_id`; investment trades fold into the unified ledger.
 
 Do not reopen locked decisions without updating `docs/technical-design.md §21` and the affected docs together.

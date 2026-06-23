@@ -75,7 +75,7 @@ and local-fallback modes.
 - [x] Lock the Phase 1 architectural decisions documented in `docs/technical-design.md §21` ✓ 2026-06-10
   - Unified `Accounts/accounts.csv` — no separate `Investments/accounts.csv`
   - Savings/ and Investments/ stay as separate folders at the file level
-  - One `Taxes/deductions.csv` with `deduction_type` column
+  - One `Taxes/tax-adjustments.csv` with an `adjustment_type` column (Round 6 rename of `deductions.csv` / `deduction_type`)
   - Tax year-close is an explicit in-app action only
   - Right detail pane is closed by default globally, no per-section exceptions
   - iCloud container identifier: `OpenFinance`
@@ -137,18 +137,21 @@ and local-fallback modes.
 - [ ] Define `Workspace`, `FileRecord`, `SyncStatus` models in `Platform/`
 - [ ] Define `ValidationIssue`, `RepairAction` models in `Validation/`
 - [ ] Define canonical entity models for all domains in `Domain/`:
-  `Account`, `AccountRule`, `AccountEstimate`, `UnifiedTransaction`, `Category`,
-  `BudgetPlan`, `SavingsGoal`, `SavingsProgress`, `InvestmentAccount`, `Holding`, `Trade`,
-  `PricePoint`, `BenchmarkPeriod`, `PortfolioSleeve`, `SleeveTarget`, `OwnerDistribution`,
-  `EstimatedPayment`, `DeductionRecord`, `TaxArchiveYear`, `NoteDocument`
+  `Account`, `Liability`, `AccountRule`, `AccountEstimate`, `UnifiedTransaction`, `Category`,
+  `Budget`, `BudgetAllocation`, `SavingsGoal`, `SavingsProgress`, `Asset`, `Trade`,
+  `PricePoint`, `BenchmarkPeriod`, `Portfolio`, `PortfolioSleeve`, `SleeveTarget`, `OwnerDistribution`,
+  `EstimatedPayment`, `TaxAdjustment`, `TaxEstimate`, `TaxDocument`, `TaxArchiveYear`, `NoteDocument`
+  (Round 6: `UnifiedTransaction` carries multi-entry `group_id`/`group_role`, `sending_asset_id`/`receiving_asset_id`/`liability_id`, and `type = trade` rows that absorb the former investment ledger)
 - [ ] Define cross-domain projection models:
   `AccountSummaryCard`, `OverviewSummaryCard`, `MonthlySnapshot`, `GoalFundingLink`,
   `SleeveFundingLink`, `TaxPrepSummary`, `TaxDeductionSummary`
 
 #### Developer Script
-- [ ] `bootstrap-workspace.swift` — create standard folder tree, write seed CSV/Markdown
-  templates with correct headers and `schema_version: 1`, seed standard deduction row in
-  `Taxes/deductions.csv` from filing status, create manifest, write default categories in
+- [ ] `bootstrap-workspace.swift` — create standard folder tree (including `Accounts/account-groups.csv`,
+  `Accounts/liabilities.csv`, `Investments/assets.csv`, `Investments/portfolios.csv`,
+  `Taxes/tax-adjustments.csv`, `Taxes/estimates.csv`, `Taxes/documents.csv`), write seed CSV/Markdown
+  templates with correct headers and `schema_version: 1`, seed the standard tax-adjustment row in
+  `Taxes/tax-adjustments.csv` from filing status, create manifest, write default categories in
   `Budget/categories.csv`
 
 ### Milestone 1
@@ -230,6 +233,11 @@ typed domain records. This is the prerequisite for every domain engine in Phase 
 - [ ] `repair-workspace.swift` — apply known auto-repairable fixes with `--dry-run` and
   `--apply` modes, write backup log
 
+#### Round 6 — schema migration & multi-entry validation
+- [ ] `SchemaRegistry` + JSON schemas updated for the renamed files (`account-groups.csv`, `assets.csv`, `tax-adjustments.csv`) and the new files (`liabilities.csv`, `portfolios.csv`, `budget-allocations.csv`, `Taxes/estimates.csv`, `Taxes/documents.csv`); the `UnifiedTransaction` schema gains the multi-entry and trade columns
+- [ ] `migrate-r6.swift` — one-time, deterministic, preview-able migration: rename the three files/columns atomically, move `Investments/transactions.csv` rows into the unified ledger as `type = trade` rows, seed the new files, bump `schema_version`, update `manifest.json`
+- [ ] ValidationEngine: multi-entry group rules — balanced groups net to zero; gross/net groups reconcile `net = gross − Σ(withholding)`; `group_id` is a shared non-unique connector
+
 ### Milestone 2
 > **Parsing complete.** Every supported CSV and Markdown file type can be parsed into typed
 > domain records. The validation engine detects and classifies all defined issue types.
@@ -246,8 +254,9 @@ typed domain records. This is the prerequisite for every domain engine in Phase 
 dashboard projection.
 
 **⚠️ Critical dependency**: `AccountEngine` must be complete before Phase 4 begins.
-`Investments/accounts.csv`, `Business/entities.csv`, and all transaction files reference
-`account_id` from the master registry — downstream engines validate these references.
+All transaction, asset, liability, and tax files reference `account_id` from the master
+registry `Accounts/accounts.csv` (and `account_group_id` from `Accounts/account-groups.csv`) —
+downstream engines validate these references.
 
 ### Product Tasks
 
@@ -312,6 +321,10 @@ dashboard projection.
 - [ ] `OverviewEngine` — compose `OverviewSummaryCard` set from AccountEngine, BudgetEngine,
   PortfolioEngine (stub), TaxEngine (stub); produce month-over-month
   panel data; aggregate validation issues for Overview issue table
+
+#### Round 6 — Accounts & Budget
+- [ ] `AccountEngine` derives `Liability.principal_balance` from the ledger; account screens resolve assets and liabilities per account
+- [ ] `BudgetEngine` resolves each Budget's scope (account-groups/accounts) over its `budget-allocations.csv` lines
 
 ### Milestone 3
 > **Core domain engines functional.** Accounts module projects aggregate and per-account views
@@ -387,7 +400,7 @@ income, and deductions inline), Prep Checklist, and Tax Archive.
   per goal; no goal lifecycle states — every goal in `goals.csv` is active, no status branching
 
 #### PortfolioEngine + BenchmarkEngine (`Domain/Investments/`)
-- [ ] `PortfolioEngine` — compute position values from `Holding` × `PricePoint` (latest
+- [ ] `PortfolioEngine` — compute position values from `Asset` × `PricePoint` (latest
   available price); compute cost basis, unrealized gain/loss, allocation per sleeve; build
   aggregate and account-level holdings views; resolve tax lots from `Trade` history; compute
   dividend income totals from `Dividend` records; compare actual sleeve weights to `SleeveTarget`
@@ -398,14 +411,14 @@ income, and deductions inline), Prep Checklist, and Tax Archive.
   (`BenchmarkPeriod` × account); compute sector performance weights from holdings and compare to
   benchmark sector weights
 
-#### TaxEngine + TaxPrepEngine + DeductionEngine
+#### TaxEngine + TaxPrepEngine + TaxAdjustmentEngine
 - [ ] `TaxEngine` — compute YTD taxable income per account from income transaction records;
   compute taxes paid from `EstimatedPayment` records; derive effective tax rate per account
   (taxes paid / gross income); compute realized gain/loss from `Trade` + lot records; aggregate
   dividend and interest income from `Dividend` and transaction records
-- [ ] `DeductionEngine` — manage `DeductionRecord` CRUD; seed standard deduction row on first
+- [ ] `TaxAdjustmentEngine` (was `DeductionEngine`) — manage `TaxAdjustment` CRUD (`tax-adjustments.csv`) plus `TaxEstimate` and `TaxDocument`; seed the standard adjustment row on first
   access using `WorkspaceSettings.filingStatus` and `taxYear`; compute taxable income minus
-  deductibles; cross-reference Schedule C deductions with `AccountEngine` for entity-level
+  adjustments; cross-reference business-expense adjustments with `AccountEngine` for account-group-level
   expense totals; produce `TaxDeductionSummary` with all deduction categories
 - [ ] `TaxPrepEngine` — evaluate tax prep checklist items against available data; classify each
   item as complete, incomplete, or missing; detect unresolved issues from `ValidationIssue` records
@@ -416,6 +429,10 @@ income, and deductions inline), Prep Checklist, and Tax Archive.
 - [ ] Complete `LinkingEngine` — add portfolio-to-tax links (realized gains → tax engine),
   business entity tax links (Schedule C categories → deduction engine); update `OverviewEngine`
   to consume real projections from all engines (remove stubs from Phase 3)
+
+#### Round 6 — Savings, Investments & Tax
+- [ ] `PortfolioEngine` gains the Portfolio container above sleeves; reads investment trades as `type = trade` rows from the unified ledger (former `Investments/transactions.csv` deprecated) — larger refactor of the investment ingestion path
+- [ ] `TaxAdjustmentEngine` (was `DeductionEngine`) manages tax-adjustments, tax-estimates, and the tax-document registry
 
 ### Milestone 4
 > **All domain engines functional.** Every module can produce complete projections from fixture
@@ -557,6 +574,11 @@ is connected. Module views are blocked on their respective domain engines from P
   source links, and educational content per step
 - [ ] `TaxArchiveView` — prior-year read-only archive selector, archived deductions and payments
 
+#### Round 6 — module surfaces
+- [ ] Account-group and per-account screens surface both assets and liabilities (net-worth view)
+- [ ] Savings & Investments organized by Portfolio; add Portfolio views above the sleeve table
+- [ ] Multi-entry transaction editor: a paycheck (gross → withholdings → net) or split mortgage payment (principal/interest) is entered as one grouped unit, not flat rows
+
 ### Milestone 5
 > **Fully navigable app.** All v1 module views are built and connected to real domain engine
 > projections. The right detail pane works across all contexts. Traceability links are live
@@ -613,13 +635,13 @@ backed up, and previewable.
 
 #### Structured Write Flows (per entity)
 Every user-addable object supports **add / edit / delete** (review functionality #6).
-- [ ] Add/edit/delete `Account` and `AccountGroup` → writes to `Accounts/accounts.csv` / `Accounts/entities.csv`
+- [ ] Add/edit/delete `Account` and `AccountGroup` → writes to `Accounts/accounts.csv` / `Accounts/account-groups.csv`
 - [ ] Import CSV transactions → column mapper → appends to `Accounts/transactions/YYYY-MM.csv`
-- [ ] Add/edit/delete `Transaction` inline → writes to correct monthly file
-- [ ] Add/edit/delete `Category` / `BudgetPlan` rows
+- [ ] Add/edit/delete `Transaction` inline → writes to correct monthly file (multi-entry groups written atomically)
+- [ ] Add/edit/delete `Category` / `Budget` / `BudgetAllocation` rows
 - [ ] Add/edit/delete `SavingsGoal`
-- [ ] Add/edit/delete holdings/assets → writes to `Investments/holdings.csv`
-- [ ] Add/edit/delete `DeductionRecord` → writes to `Taxes/deductions.csv`
+- [ ] Add/edit/delete `Asset` / `Liability` → writes to `Investments/assets.csv` / `Accounts/liabilities.csv`
+- [ ] Add/edit/delete `TaxAdjustment` → writes to `Taxes/tax-adjustments.csv`
 - [ ] Add/edit/delete `AccountRule` → writes to `Accounts/account-rules.csv`
 - [ ] Delete-with-reference-check: write preview lists referencing rows and blocks/warns per the
   chosen default before applying (TDD §15)
@@ -642,8 +664,11 @@ Every user-addable object supports **add / edit / delete** (review functionality
 - [ ] `import-csv.swift` — CLI tool to ingest an external CSV, map to canonical schema,
   split by month into canonical files
 
+#### Round 6 — multi-entry writes
+- [ ] Multi-entry transaction groups are written/edited/deleted atomically (all rows sharing a `group_id` move together; the group must pass its balance/reconciliation check before write)
+
 ### Milestone 6
-> **App is writable.** Users can add accounts, import transactions, manage goals and deductions,
+> **App is writable.** Users can add accounts, import transactions, manage goals and tax-adjustments,
 > and trigger guided repairs. All writes are atomic, backed up, and confirmed by preview.
 > Export works for CSV tables and Markdown summaries. Import CSV flow handles real bank/brokerage
 > export formats.
@@ -755,7 +780,8 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 | `CloudStorageProvider` protocol surface | Minimum surface confirmed: `resolveWorkspaceURL()`, `syncState`, `isAvailable`. Conflict resolution stays iCloud-specific. |
 | Master registry vs investment accounts | Unified `Accounts/accounts.csv` with optional investment columns. No separate `Investments/accounts.csv`. |
 | Savings/ and Investments/ folder separation | Keep separate at the file level. |
-| Deductions file structure | One `Taxes/deductions.csv` with `deduction_type` column. |
+| Deductions file structure | **Reopened & resolved (Round 6):** renamed to `Taxes/tax-adjustments.csv` with an `adjustment_type` union enum; Tax-adjustment is a first-class object. |
+| Round 6 object-model reconciliations | **Resolved (2026-06-23):** kept two-tier `account_group`+`account_type`; `status` canonical (`is_active` derived); categories add `parent_category_id`+`category_group_id`; assets add `security_class`; trades fold into the unified ledger; `adjustment_type` = union enum. |
 | Tax year-close trigger | Explicit in-app "Close Tax Year" action only. |
 | Right pane default-closed scope | Global — closed by default, opens on main-panel interaction, no section exceptions. |
 | iCloud container identifier | `OpenFinance` |
@@ -769,6 +795,18 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Round 6 — 2026-06-23
+Source: `docs/_refinement/r6-review.md` (fourth prototype review — data structuring & IA); update plan `docs/_refinement/r6-update-product-roadmap.md`
+
+- Phase 1: Core Data Models and bootstrap updated for the renamed + new files (account-groups, liabilities, assets, portfolios, budget-allocations, tax-adjustments, tax estimates/documents) and the multi-entry transaction columns
+- Phase 2: added multi-entry group validation; added `migrate-r6.swift` (preview-able schema migration that also folds `Investments/transactions.csv` into the unified ledger)
+- Phase 3: AccountEngine derives liability balances; BudgetEngine resolves a Budget's scope over its allocations
+- Phase 4: PortfolioEngine gains the Portfolio container; investment trades fold into the unified ledger; `TaxAdjustmentEngine` replaces `DeductionEngine` (adds tax-estimates + tax-documents)
+- Phase 5: account screens surface assets and liabilities; Portfolio views; new multi-entry transaction editor
+- Phase 6: multi-entry groups written atomically
+- Open Decisions: reopened+resolved the deductions-file decision; recorded the Round 6 reconciliation resolutions; delete-on-reference behavior still open
+- Overrides the r5 object-model audit where they differ (Portfolio not Strategy, `account_group_id` not `group_id`, no group nesting) — r6-review takes priority
 
 ### Round 5 — 2026-06-15
 Source: `docs/_refinement/r5-review.md` (third prototype review — functional details); update plan `docs/_refinement/r5-update-product-roadmap.md`

@@ -68,7 +68,7 @@ const fmtDateLong = (iso) => {
 const cats = () => Object.fromEntries(DATA.categories.map(c => [c.id, c]));
 const acctById = () => Object.fromEntries(DATA.investmentAccounts.map(a => [a.id, a]));
 const sleeveById = () => Object.fromEntries(DATA.sleeves.map(s => [s.id, s]));
-const entityById = () => Object.fromEntries(DATA.entities.map(e => [e.id, e]));
+const entityById = () => Object.fromEntries(DATA.accountGroups.map(e => [e.id, e]));
 const bizCatById = () => Object.fromEntries(DATA.businessCategories.map(c => [c.id, c]));
 const goalById = () => Object.fromEntries(DATA.goals.map(g => [g.id, g]));
 
@@ -153,7 +153,7 @@ function renderSidebar() {
       ]),
       el('div', { class: 'nav-items' }, (group.id === 'accounts' ? [
         { id: 'accounts-overview', label: 'All Accounts' },
-        ...DATA.entities.filter(e => e.active).map(e => ({ id: `accounts-entity-${e.id}`, label: e.display }))
+        ...DATA.accountGroups.filter(e => e.active).map(e => ({ id: `accounts-entity-${e.id}`, label: e.display }))
       ] : group.items).map(item => {
         const active = state.view === item.id;
         const badge = item.id === 'savings-goals' ? (DATA.goals.length ? String(DATA.goals.length) : null) : item.badge;
@@ -555,19 +555,19 @@ function addTransaction(v) {
     amount,
     direction: amount < 0 ? 'debit' : 'credit',
     recurring: false,
-    source: (business ? 'Business/transactions/' + (v.entityId || 'entity') + '-' : 'Personal/transactions/') + (v.date ? v.date.slice(0, 7) : '2026-05') + '.csv',
+    source: (business ? 'Business/transactions/' + (v.accountGroupId || 'entity') + '-' : 'Personal/transactions/') + (v.date ? v.date.slice(0, 7) : '2026-05') + '.csv',
     row: DATA.transactions.length + 2,
     importedFrom: v.importedFrom || 'manual-entry',
-    entityId: v.entityId || 'personal',
+    accountGroupId: v.accountGroupId || 'personal',
     deductible: business ? amount < 0 : false,
   };
-  if (business) tx.entity = v.entityId;
+  if (business) tx.entity = v.accountGroupId;
   DATA.transactions.push(tx);
   return tx;
 }
 
 // Parse a simple CSV: date,merchant,description,category,amount (header optional).
-function ingestTransactionCSV(text, { entityId, business }) {
+function ingestTransactionCSV(text, { accountGroupId, business }) {
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (!lines.length) return 0;
   const looksLikeHeader = /date/i.test(lines[0]) && /amount/i.test(lines[0]);
@@ -586,14 +586,14 @@ function ingestTransactionCSV(text, { entityId, business }) {
       description: cells.length >= 5 ? cells[2] : '',
       category: cells.length >= 5 ? (cells[3] || 'groceries') : 'groceries',
       amount: amt,
-      entityId, business, importedFrom: 'import.csv',
+      accountGroupId, business, importedFrom: 'import.csv',
     });
     n++;
   }
   return n;
 }
 
-function importTransactionsFlow({ entityId = 'personal', business = false } = {}) {
+function importTransactionsFlow({ accountGroupId = 'personal', business = false } = {}) {
   const catSource = business ? DATA.businessCategories : DATA.categories.filter(c => c.id !== 'income');
   const catOptions = [{ value: 'income', label: 'Income' }, ...catSource.map(c => ({ value: c.id, label: c.name }))];
   const fileInput = el('input', { type: 'file', accept: '.csv,text/csv', class: 'modal-file' });
@@ -621,7 +621,7 @@ function importTransactionsFlow({ entityId = 'personal', business = false } = {}
       if (file) {
         const reader = new FileReader();
         reader.onload = () => {
-          const n = ingestTransactionCSV(String(reader.result), { entityId, business });
+          const n = ingestTransactionCSV(String(reader.result), { accountGroupId, business });
           if (n) { commit(); toast(n + ' transaction' + (n === 1 ? '' : 's') + ' imported from ' + file.name, 'ok'); }
           else toast('No valid rows found in ' + file.name, 'warn');
         };
@@ -630,7 +630,7 @@ function importTransactionsFlow({ entityId = 'personal', business = false } = {}
         return true;
       }
       if (v.merchant && v.amount != null && v.amount !== '') {
-        addTransaction({ ...v, entityId, business });
+        addTransaction({ ...v, accountGroupId, business });
         commit();
         toast('Transaction added to the ledger', 'ok');
         return true;
@@ -719,7 +719,7 @@ function addEntityFlow() {
     ],
     submitLabel: 'Create group',
     onSubmit: (v) => {
-      DATA.entities.push({
+      DATA.accountGroups.push({
         id: v.display.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'group-' + Date.now(),
         display: v.display,
         type: v.type,
@@ -732,8 +732,8 @@ function addEntityFlow() {
   });
 }
 
-function addAccountFlow(entityId) {
-  const entityOptions = DATA.entities.map(e => ({ value: e.id, label: e.display }));
+function addAccountFlow(accountGroupId) {
+  const entityOptions = DATA.accountGroups.map(e => ({ value: e.id, label: e.display }));
   openModal({
     title: 'Add account',
     subtitle: 'Accounts register in the master Accounts/accounts.csv registry.',
@@ -750,7 +750,7 @@ function addAccountFlow(entityId) {
         { value: 'Loans & Debt', label: 'Loans & Debt' },
       ] },
       { key: 'type', label: 'Type', value: 'checking' },
-      { key: 'entityId', label: 'Theme / entity', type: 'select', value: entityId || 'personal', options: entityOptions },
+      { key: 'accountGroupId', label: 'Theme / entity', type: 'select', value: accountGroupId || 'personal', options: entityOptions },
       { key: 'monthlyInflow', label: 'Monthly inflow', type: 'number', step: '50', value: 0 },
       { key: 'ytdNetIncome', label: 'YTD net income', type: 'number', step: '100', value: 0 },
     ],
@@ -764,7 +764,7 @@ function addAccountFlow(entityId) {
         type: v.type || 'checking',
         monthlyInflow: Number(v.monthlyInflow) || 0,
         ytdNetIncome: Number(v.ytdNetIncome) || 0,
-        entityId: v.entityId,
+        accountGroupId: v.accountGroupId,
       });
       commit();
       toast('Account “' + v.name + '” added', 'ok');
@@ -802,13 +802,13 @@ function editSelection(kind, id) {
 function deleteSelection(kind, id) {
   const map = {
     account:     { coll: 'accounts',  label: 'account',     name: o => o.name,             refs: o => DATA.transactions.filter(t => t.account === o.name).length, refLabel: 'transactions' },
-    entity:      { coll: 'entities',  label: 'group',       name: o => o.display,          refs: o => DATA.accounts.filter(a => a.entityId === o.id).length,      refLabel: 'accounts' },
+    entity:      { coll: 'accountGroups',  label: 'group',       name: o => o.display,          refs: o => DATA.accounts.filter(a => a.accountGroupId === o.id).length,      refLabel: 'accounts' },
     transaction: { coll: 'transactions', label: 'transaction', name: o => o.merchant },
     'biz-tx':    { coll: 'transactions', label: 'transaction', name: o => o.merchant },
     goal:        { coll: 'goals',     label: 'goal',        name: o => o.name },
     category:    { coll: 'categories', label: 'category',   name: o => o.name,             refs: o => DATA.transactions.filter(t => t.category === o.id).length,   refLabel: 'transactions' },
-    deduction:   { coll: 'deductions', label: 'deduction',  name: o => o.name },
-    holding:     { coll: 'holdings',  label: 'holding',     name: o => o.name || o.ticker },
+    deduction:   { coll: 'taxAdjustments', label: 'deduction',  name: o => o.name },
+    holding:     { coll: 'assets',  label: 'holding',     name: o => o.name || o.ticker },
     payment:     { coll: 'estimatedPayments', label: 'payment', name: o => o.jurisdiction + ' Q' + o.quarter },
   };
   const cfg = map[kind];
@@ -849,7 +849,7 @@ function editAccountFlow(accountId) {
       { key: 'institution', label: 'Institution', value: a.institution },
       { key: 'group', label: 'Banking group', type: 'select', value: a.group, options: ACCOUNT_GROUP_OPTS },
       { key: 'type', label: 'Type', value: a.type },
-      { key: 'entityId', label: 'Account group', type: 'select', value: a.entityId, options: DATA.entities.map(e => ({ value: e.id, label: e.display })) },
+      { key: 'accountGroupId', label: 'Account group', type: 'select', value: a.accountGroupId, options: DATA.accountGroups.map(e => ({ value: e.id, label: e.display })) },
       { key: 'monthlyInflow', label: 'Monthly inflow', type: 'number', step: '50', value: a.monthlyInflow },
       { key: 'ytdNetIncome', label: 'YTD net income', type: 'number', step: '100', value: a.ytdNetIncome },
     ],
@@ -857,7 +857,7 @@ function editAccountFlow(accountId) {
     secondary: { label: 'Delete account', danger: true, onClick: () => { closeModal(); deleteSelection('account', a.id); } },
     onSubmit: (v) => {
       a.name = v.name; a.institution = v.institution || '—'; a.group = v.group; a.type = v.type || 'checking';
-      a.entityId = v.entityId; a.monthlyInflow = Number(v.monthlyInflow) || 0; a.ytdNetIncome = Number(v.ytdNetIncome) || 0;
+      a.accountGroupId = v.accountGroupId; a.monthlyInflow = Number(v.monthlyInflow) || 0; a.ytdNetIncome = Number(v.ytdNetIncome) || 0;
       commit(); toast('Account updated · backup saved', 'ok');
     },
   });
@@ -929,7 +929,7 @@ function editCategoryFlow(id) {
 }
 
 function editDeductionFlow(id) {
-  const d = DATA.deductions.find(x => x.id === id);
+  const d = DATA.taxAdjustments.find(x => x.id === id);
   if (!d) return;
   openModal({
     title: 'Edit deduction', subtitle: d.name,
@@ -948,7 +948,7 @@ function editDeductionFlow(id) {
 }
 
 function editHoldingFlow(id) {
-  const h = DATA.holdings.find(x => x.id === id);
+  const h = DATA.assets.find(x => x.id === id);
   if (!h) return;
   openModal({
     title: 'Edit holding', subtitle: h.name || h.ticker,
@@ -969,7 +969,7 @@ function editHoldingFlow(id) {
 }
 
 function editEntityFlow(id) {
-  const e = DATA.entities.find(x => x.id === id);
+  const e = DATA.accountGroups.find(x => x.id === id);
   if (!e) return;
   openModal({
     title: 'Edit group', subtitle: e.display,
@@ -992,7 +992,7 @@ function editEntityFlow(id) {
 }
 
 // Add a transaction scoped to a specific account (individual account screen).
-function addAccountTransactionFlow(account, entityId) {
+function addAccountTransactionFlow(account, accountGroupId) {
   const catOpts = [{ value: 'income', label: 'Income' },
     ...DATA.categories.filter(c => c.id !== 'income').map(c => ({ value: c.id, label: c.name }))];
   openModal({
@@ -1007,7 +1007,7 @@ function addAccountTransactionFlow(account, entityId) {
     ],
     submitLabel: 'Add',
     onSubmit: (v) => {
-      addTransaction({ ...v, account, entityId });
+      addTransaction({ ...v, account, accountGroupId });
       commit(); toast('Transaction added · backup saved', 'ok');
     },
   });
@@ -1047,7 +1047,7 @@ function addPaymentFlow() {
   });
 }
 
-function addPaystubFlow(entityId) {
+function addPaystubFlow(accountGroupId) {
   openModal({
     title: 'Import paystub',
     subtitle: 'Records a paycheck deposit against this employer.',
@@ -1059,7 +1059,7 @@ function addPaystubFlow(entityId) {
     ],
     submitLabel: 'Import',
     onSubmit: (v) => {
-      addTransaction({ ...v, amount: Math.abs(Number(v.amount)), category: 'income', entityId, account: 'Chase Checking', importedFrom: 'paystub' });
+      addTransaction({ ...v, amount: Math.abs(Number(v.amount)), category: 'income', accountGroupId, account: 'Chase Checking', importedFrom: 'paystub' });
       commit();
       toast('Paycheck imported', 'ok');
     },
@@ -1067,7 +1067,7 @@ function addPaystubFlow(entityId) {
 }
 
 function updatePriceFlow() {
-  const holdingOptions = DATA.holdings.map(h => ({ value: h.id, label: h.ticker + ' · ' + fmtUSD2(h.price) }));
+  const holdingOptions = DATA.assets.map(h => ({ value: h.id, label: h.ticker + ' · ' + fmtUSD2(h.price) }));
   openModal({
     title: 'Update prices',
     subtitle: 'Set the latest close for a holding (stands in for a price-file import).',
@@ -1077,14 +1077,14 @@ function updatePriceFlow() {
     ],
     submitLabel: 'Update',
     onSubmit: (v) => {
-      const h = DATA.holdings.find(x => x.id === v.holding);
+      const h = DATA.assets.find(x => x.id === v.holding);
       if (h) { h.price = Number(v.price); commit(); toast(h.ticker + ' repriced to ' + fmtUSD2(h.price), 'ok'); }
     },
   });
 }
 
 function rebalancePlanFlow() {
-  const total = DATA.holdings.reduce((s, h) => s + h.qty * h.price, 0);
+  const total = DATA.assets.reduce((s, h) => s + h.qty * h.price, 0);
   const rows = DATA.sleeveTargets.map(t => {
     const drift = t.actual - t.target;
     const dollar = -drift * total;
@@ -1137,13 +1137,13 @@ function toggleChecklistItem(id) {
   commit();
 }
 
-function exportBusinessPL(entityId) {
-  const entity = entityById()[entityId];
-  const txs = DATA.transactions.filter(t => t.entityId === entityId);
+function exportBusinessPL(accountGroupId) {
+  const entity = entityById()[accountGroupId];
+  const txs = DATA.transactions.filter(t => t.accountGroupId === accountGroupId);
   const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const md = [
-    '# ' + (entity ? entity.display : entityId) + ' — P&L (May 2026)',
+    '# ' + (entity ? entity.display : accountGroupId) + ' — P&L (May 2026)',
     '',
     '| Line | Amount |',
     '| --- | --- |',
@@ -1157,7 +1157,7 @@ function exportBusinessPL(entityId) {
     '| --- | --- | --- | --- | --- |',
     ...txs.map(t => `| ${t.date} | ${t.merchant} | ${t.category} | ${t.amount} | ${t.deductible ? 'yes' : 'no'} |`),
   ].join('\n');
-  exportMarkdown((entityId || 'business') + '-pl.md', md);
+  exportMarkdown((accountGroupId || 'business') + '-pl.md', md);
 }
 
 function exportTaxPacket() {
@@ -1175,7 +1175,7 @@ function exportTaxPacket() {
     '## Deductions',
     '| Deduction | Type | Estimated | Status |',
     '| --- | --- | --- | --- |',
-    ...DATA.deductions.map(d => `| ${d.name} | ${d.type} | ${d.estimatedAmount} | ${d.status} |`),
+    ...DATA.taxAdjustments.map(d => `| ${d.name} | ${d.type} | ${d.estimatedAmount} | ${d.status} |`),
   ].join('\n');
   exportMarkdown('2026-tax-prep-packet.md', md);
 }
@@ -1199,8 +1199,8 @@ function routeView() {
     return viewAccount(v.replace('accounts-account-', ''));
   }
   if (v.startsWith('accounts-entity-')) {
-    const entityId = v.replace('accounts-entity-', '');
-    return viewAccountEntity(entityId);
+    const accountGroupId = v.replace('accounts-entity-', '');
+    return viewAccountEntity(accountGroupId);
   }
   if (v === 'overview-dashboard')                                                        return viewOverviewDashboard();
   if (v === 'accounts-overview')                                                         return viewAccounts();
@@ -1372,7 +1372,7 @@ function viewBudgetOverview() {
     title: 'Budget · May 2026',
     breadcrumb: ['Finance', 'Budget', 'Overview'],
     actions: [
-      { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId: 'personal' }) },
+      { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ accountGroupId: 'personal' }) },
       { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('transactions-2026-05.csv',
         [{ label: 'date', value: 'date' }, { label: 'merchant', value: 'merchant' }, { label: 'description', value: 'description' }, { label: 'account', value: 'account' }, { label: 'category', value: 'category' }, { label: 'amount', value: 'amount' }],
         DATA.transactions.filter(t => t.category !== 'income' && !/^BX-/.test(t.id))) },
@@ -1799,9 +1799,9 @@ function viewInvestments() {
     actions: [
       { label: 'Import prices', variant: '', onClick: updatePriceFlow },
       { label: 'Rebalance plan', variant: 'btn-ghost', onClick: rebalancePlanFlow },
-      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('holdings.csv',
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('assets.csv',
         [{ label: 'ticker', value: 'ticker' }, { label: 'name', value: 'name' }, { label: 'account', value: 'account' }, { label: 'sleeve', value: 'sleeve' }, { label: 'qty', value: 'qty' }, { label: 'price', value: 'price' }, { label: 'basis', value: 'basis' }, { label: 'market_value', value: h => Math.round(h.qty * h.price) }],
-        DATA.holdings) },
+        DATA.assets) },
     ],
   });
   renderFilterBar([
@@ -1812,8 +1812,8 @@ function viewInvestments() {
 
   const c = $('#content');
 
-  const total = DATA.holdings.reduce((s, h) => s + h.qty * h.price, 0);
-  const totalBasis = DATA.holdings.reduce((s, h) => s + h.basis, 0);
+  const total = DATA.assets.reduce((s, h) => s + h.qty * h.price, 0);
+  const totalBasis = DATA.assets.reduce((s, h) => s + h.basis, 0);
   const unrealized = total - totalBasis;
   const daily = total * 0.0042;
   const dividendYtd = 1700;
@@ -1840,7 +1840,7 @@ function viewInvestments() {
 
   // Donut + benchmark chart
   const sleeveTotals = {};
-  for (const h of DATA.holdings) {
+  for (const h of DATA.assets) {
     const sid = h.sleeve;
     sleeveTotals[sid] = (sleeveTotals[sid] || 0) + h.qty * h.price;
   }
@@ -1899,7 +1899,7 @@ function viewInvestments() {
   const holdingsPanel = el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
       el('h3', { text: 'Holdings' }),
-      el('span', { class: 'panel-sub', text: DATA.holdings.length + ' positions' }),
+      el('span', { class: 'panel-sub', text: DATA.assets.length + ' positions' }),
       el('div', { class: 'panel-actions' }, [el('span', { class: 'imported-tag', text: 'Imported' })]),
     ]),
     el('div', { class: 'panel-body flush' }, [(() => {
@@ -1908,7 +1908,7 @@ function viewInvestments() {
       const tbody = table.querySelector('tbody');
       const AB = acctById();
       const SB = sleeveById();
-      for (const h of DATA.holdings) {
+      for (const h of DATA.assets) {
         const mv = h.qty * h.price;
         const ug = mv - h.basis;
         const tr = el('tr', {
@@ -1972,9 +1972,9 @@ function viewInvestmentsHoldings() {
     breadcrumb: ['Finance', 'Savings & Investments', 'Holdings'],
     actions: [
       { label: 'Import prices', variant: '', onClick: updatePriceFlow },
-      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('holdings.csv',
+      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('assets.csv',
         [{ label: 'ticker', value: 'ticker' }, { label: 'name', value: 'name' }, { label: 'account', value: 'account' }, { label: 'sleeve', value: 'sleeve' }, { label: 'qty', value: 'qty' }, { label: 'price', value: 'price' }, { label: 'basis', value: 'basis' }],
-        DATA.holdings) },
+        DATA.assets) },
     ],
   });
   renderFilterBar([
@@ -2025,7 +2025,7 @@ function viewInvestmentsHoldings() {
   c.appendChild(el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
       el('h3', { text: 'Holdings' }),
-      el('span', { class: 'panel-sub', text: DATA.holdings.length + ' positions' }),
+      el('span', { class: 'panel-sub', text: DATA.assets.length + ' positions' }),
       el('div', { class: 'panel-actions' }, [
         toggle,
         el('span', { class: 'imported-tag', text: 'Imported' }),
@@ -2037,7 +2037,7 @@ function viewInvestmentsHoldings() {
       const tbody = table.querySelector('tbody');
       const AB = acctById();
       const SB = sleeveById();
-      for (const h of DATA.holdings) {
+      for (const h of DATA.assets) {
         const mv = h.qty * h.price;
         const ug = mv - h.basis;
         const tr = el('tr', {
@@ -2096,15 +2096,15 @@ function heatMapTable(rows, periods) {
 // ---------- Business --------------------------------------------------------
 
 function viewBusiness() {
-  const entityId = state.filters['business-entity'].entity;
-  const entity = entityById()[entityId];
+  const accountGroupId = state.filters['business-entity'].entity;
+  const entity = entityById()[accountGroupId];
   setHeader({
     title: 'Business · ' + entity.display,
     breadcrumb: ['Finance', 'Business', entity.display],
     actions: [
-      { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId, business: true }) },
+      { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ accountGroupId, business: true }) },
       { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
-      { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(entityId) },
+      { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(accountGroupId) },
     ],
   });
   renderFilterBar([
@@ -2124,9 +2124,9 @@ function viewBusiness() {
 
   // Entity strip
   const strip = el('div', { class: 'entity-strip' });
-  for (const e of DATA.entities) {
+  for (const e of DATA.accountGroups) {
     strip.appendChild(el('div', {
-      class: 'entity-pill' + (e.id === entityId ? ' active' : ''),
+      class: 'entity-pill' + (e.id === accountGroupId ? ' active' : ''),
       onclick: () => { state.filters['business-entity'].entity = e.id; renderCenter(); },
     }, [
       el('span', { class: 'dot ' + (e.active ? 'dot-ok' : 'dot-muted') }),
@@ -2137,7 +2137,7 @@ function viewBusiness() {
   c.appendChild(strip);
 
   // KPIs
-  const txs = DATA.businessTransactions.filter(t => t.entity === entityId);
+  const txs = DATA.businessTransactions.filter(t => t.entity === accountGroupId);
   const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const expenses = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const ni = revenue - expenses;
@@ -2207,7 +2207,7 @@ function viewBusiness() {
       el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Business/transactions/' + entityId + '-2026-05.csv') }),
+        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Business/transactions/' + accountGroupId + '-2026-05.csv') }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [(() => {
@@ -2775,28 +2775,29 @@ function viewIndexingProgress() {
 
 // ---------- Account Entities (Dynamic Themes) ---------------------------------
 
-function viewAccountEntity(entityId) {
-  const entity = DATA.entities.find(e => e.id === entityId);
+function viewAccountEntity(accountGroupId) {
+  const entity = DATA.accountGroups.find(e => e.id === accountGroupId);
   if (!entity) return;
 
   state.entityTabs = state.entityTabs || {};
-  const activeTab = state.entityTabs[entityId] || 'dashboard';
+  const activeTab = state.entityTabs[accountGroupId] || 'dashboard';
 
   if (entity.type === 'business') {
     setHeader({
       title: 'Business · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ entityId, business: true }) },
+        { label: 'Import CSV', variant: '', onClick: () => importTransactionsFlow({ accountGroupId, business: true }) },
+        { label: 'Edit Group', variant: 'btn-ghost', onClick: () => editEntityFlow(accountGroupId) },
         { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
-        { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(entityId) },
+        { label: 'Export P&L', variant: 'btn-ghost', onClick: () => exportBusinessPL(accountGroupId) },
       ],
     });
     renderFilterBar([]);
 
     const c = $('#content');
 
-    const txs = DATA.transactions.filter(t => t.entityId === entityId);
+    const txs = DATA.transactions.filter(t => t.accountGroupId === accountGroupId);
 
     // KPIs
     const revenue = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
@@ -2835,7 +2836,7 @@ function viewAccountEntity(entityId) {
     ]));
 
     // Individual accounts in this group (Round 5 #4)
-    const acctSection = accountsCardSection(entityId, 'Accounts');
+    const acctSection = accountsCardSection(accountGroupId, 'Accounts');
     if (acctSection) c.appendChild(acctSection);
 
     // Transaction ledger — inline below the net-income chart (Round 5 #2)
@@ -2901,7 +2902,8 @@ function viewAccountEntity(entityId) {
       title: 'Employment · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Import Paystub', variant: '', onClick: () => addPaystubFlow(entityId) },
+        { label: 'Import Paystub', variant: '', onClick: () => addPaystubFlow(accountGroupId) },
+        { label: 'Edit Group', variant: 'btn-ghost', onClick: () => editEntityFlow(accountGroupId) },
       ],
     });
     renderFilterBar([
@@ -2911,7 +2913,7 @@ function viewAccountEntity(entityId) {
     const c = $('#content');
     
     // Group of accounts for Employment
-    const empAccounts = DATA.accounts.filter(a => a.entityId === entityId);
+    const empAccounts = DATA.accounts.filter(a => a.accountGroupId === accountGroupId);
     
     // Calculate metrics
     const payrollAccount = empAccounts.find(a => a.type === 'payroll');
@@ -2938,11 +2940,11 @@ function viewAccountEntity(entityId) {
     c.appendChild(kpiGrid);
 
     // Individual accounts in this group (Round 5 #4)
-    const empAcctSection = accountsCardSection(entityId, 'Accounts');
+    const empAcctSection = accountsCardSection(accountGroupId, 'Accounts');
     if (empAcctSection) c.appendChild(empAcctSection);
 
     // Paycheck deposits ledger
-    const txs = DATA.transactions.filter(t => t.entityId === entityId);
+    const txs = DATA.transactions.filter(t => t.accountGroupId === accountGroupId);
     c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
       el('div', { class: 'panel-head' }, [
         el('h3', { text: 'Paycheck Deposits & Benefits' }),
@@ -2972,7 +2974,8 @@ function viewAccountEntity(entityId) {
       title: 'Personal · ' + entity.display,
       breadcrumb: ['Finance', 'Accounts', entity.display],
       actions: [
-        { label: 'Add Account', variant: '', onClick: () => addAccountFlow(entityId) },
+        { label: 'Add Account', variant: '', onClick: () => addAccountFlow(accountGroupId) },
+        { label: 'Edit Group', variant: 'btn-ghost', onClick: () => editEntityFlow(accountGroupId) },
       ],
     });
     renderFilterBar([
@@ -2982,7 +2985,7 @@ function viewAccountEntity(entityId) {
     const c = $('#content');
     
     // Accounts and metrics
-    const persAccounts = DATA.accounts.filter(a => a.entityId === entityId);
+    const persAccounts = DATA.accounts.filter(a => a.accountGroupId === accountGroupId);
     const totalInflow = persAccounts.reduce((s, a) => s + a.monthlyInflow, 0);
     const totalYtd = persAccounts.reduce((s, a) => s + a.ytdNetIncome, 0);
 
@@ -3016,11 +3019,11 @@ function viewAccountEntity(entityId) {
     ]));
 
     // Individual accounts in this group (Round 5 #4)
-    const persAcctSection = accountsCardSection(entityId, 'Accounts');
+    const persAcctSection = accountsCardSection(accountGroupId, 'Accounts');
     if (persAcctSection) c.appendChild(persAcctSection);
 
     // Personal transactions ledger
-    const txs = DATA.transactions.filter(t => t.entityId === entityId);
+    const txs = DATA.transactions.filter(t => t.accountGroupId === accountGroupId);
     c.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } }, [
       el('div', { class: 'panel-head' }, [
         el('h3', { text: 'Recent Personal Ledger' }),
@@ -3074,8 +3077,8 @@ function accountCard(a) {
 }
 
 // Individual-account card section for a group screen (Round 5 #4).
-function accountsCardSection(entityId, heading = 'Accounts') {
-  const accts = DATA.accounts.filter(a => a.entityId === entityId);
+function accountsCardSection(accountGroupId, heading = 'Accounts') {
+  const accts = DATA.accounts.filter(a => a.accountGroupId === accountGroupId);
   if (!accts.length) return null;
   const wrap = el('div', { style: { marginTop: '16px' } });
   wrap.appendChild(el('h3', { class: 'accounts-group-title', text: heading }));
@@ -3115,7 +3118,7 @@ function viewAccount(accountId) {
     $('#content').appendChild(el('p', { style: { color: 'var(--muted)', padding: '24px' }, text: 'Account not found.' }));
     return;
   }
-  const entity = DATA.entities.find(e => e.id === a.entityId);
+  const entity = DATA.accountGroups.find(e => e.id === a.accountGroupId);
   setHeader({
     title: a.name,
     breadcrumb: ['Finance', 'Accounts', entity ? entity.display : 'Account', a.name],
@@ -3148,7 +3151,7 @@ function viewAccount(accountId) {
       el('h3', { text: 'Transactions · ' + a.name }),
       el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
       el('div', { class: 'panel-actions' }, [
-        el('button', { class: 'btn btn-ghost', text: 'Add transaction', onclick: () => addAccountTransactionFlow(a.name, a.entityId) }),
+        el('button', { class: 'btn btn-ghost', text: 'Add transaction', onclick: () => addAccountTransactionFlow(a.name, a.accountGroupId) }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [
@@ -3167,7 +3170,7 @@ function viewAccounts() {
       { label: 'New account', variant: '', onClick: () => addAccountFlow() },
       { label: 'New group', variant: 'btn-ghost', onClick: addEntityFlow },
       { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('accounts.csv',
-        [{ label: 'name', value: 'name' }, { label: 'institution', value: 'institution' }, { label: 'group', value: 'group' }, { label: 'type', value: 'type' }, { label: 'entity', value: 'entityId' }, { label: 'monthly_inflow', value: 'monthlyInflow' }, { label: 'ytd_net_income', value: 'ytdNetIncome' }],
+        [{ label: 'name', value: 'name' }, { label: 'institution', value: 'institution' }, { label: 'group', value: 'group' }, { label: 'type', value: 'type' }, { label: 'entity', value: 'accountGroupId' }, { label: 'monthly_inflow', value: 'monthlyInflow' }, { label: 'ytd_net_income', value: 'ytdNetIncome' }],
         DATA.accounts) },
     ],
   });
@@ -3210,8 +3213,8 @@ function viewAccounts() {
   ];
 
   for (const theme of themes) {
-    const themeEntities = DATA.entities.filter(e => e.type === theme.type);
-    const themeAccounts = DATA.accounts.filter(a => themeEntities.some(e => e.id === a.entityId));
+    const themeEntities = DATA.accountGroups.filter(e => e.type === theme.type);
+    const themeAccounts = DATA.accounts.filter(a => themeEntities.some(e => e.id === a.accountGroupId));
     if (themeAccounts.length === 0) continue;
 
     c.appendChild(el('h3', { class: 'accounts-group-title', text: theme.heading }));
@@ -3233,7 +3236,7 @@ function appendDeductionGroups(c) {
   ];
 
   for (const group of groups) {
-    const items = DATA.deductions.filter(d => d.type === group.key);
+    const items = DATA.taxAdjustments.filter(d => d.type === group.key);
     const total = items.reduce((s, d) => s + d.estimatedAmount, 0);
 
     const groupEl = el('div', { class: 'deduction-group' });
@@ -3516,7 +3519,7 @@ function renderInspectorBody() {
   }
 
   if (k === 'holding') {
-    const h = DATA.holdings.find(x => x.id === sel.id);
+    const h = DATA.assets.find(x => x.id === sel.id);
     if (!h) return setEmpty();
     const mv = h.qty * h.price;
     const ug = mv - h.basis;
@@ -3551,7 +3554,7 @@ function renderInspectorBody() {
       ]);
       body.appendChild(taxBlock);
     }
-    body.appendChild(insSourceBlock({ file: 'Investments/holdings.csv', row: DATA.holdings.indexOf(h) + 2, importedFrom: 'fidelity-holdings.csv' }));
+    body.appendChild(insSourceBlock({ file: 'Investments/holdings.csv', row: DATA.assets.indexOf(h) + 2, importedFrom: 'fidelity-holdings.csv' }));
     return;
   }
 

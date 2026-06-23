@@ -83,7 +83,7 @@ The left sidebar is static and should only support expandable groups under the r
 Examples:
 - **Accounts**
   - Overview
-  - Account groups (user-customizable, loaded from `Accounts/entities.csv`):
+  - Account groups (user-customizable, loaded from `Accounts/account-groups.csv`):
     - Personal Accounts (Personal)
     - Place of Employment (Employment)
     - Consulting LLC (Business)
@@ -111,7 +111,7 @@ Examples:
   - Repairable
   - Manual review
 
-The Account groups group under Accounts is the primary example of data-driven nested links — items are populated from `Accounts/entities.csv` rather than hardcoded. (The account-facing term is "group", not "entity"; the file name is unchanged this round — a model-level rename is queued for a future object-model round, see `docs/_notes/object-model-audit.md`.) The local "New group" action creates a new account group. Other sections may add group- or item-specific links under their parent section using the same pattern. These data-driven links are part of the fixed sidebar structure, not view-specific filters.
+The Account groups group under Accounts is the primary example of data-driven nested links — items are populated from `Accounts/account-groups.csv` rather than hardcoded. (The account-facing term is "group", not "entity"; the model-level rename `entities.csv`→`account-groups.csv` / `entity_id`→`account_group_id` was applied in Round 6 — see `docs/_refinement/r6-update-technical-design.md`.) The local "New group" action creates a new account group. Other sections may add group- or item-specific links under their parent section using the same pattern. These data-driven links are part of the fixed sidebar structure, not view-specific filters.
 
 ### App shell
 
@@ -242,9 +242,14 @@ Finance/
     manifest.json
     schemas/
       account.schema.json
+      account-group.schema.json
       transaction.schema.json
-      holdings.schema.json
-      tax-deductions.schema.json
+      assets.schema.json
+      liabilities.schema.json
+      portfolios.schema.json
+      tax-adjustments.schema.json
+      tax-estimates.schema.json
+      tax-documents.schema.json
       markdown-note.schema.json
     backups/
     logs/
@@ -252,7 +257,8 @@ Finance/
       import-log.csv
   Accounts/
     accounts.csv
-    entities.csv
+    account-groups.csv
+    liabilities.csv
     account-rules.csv
     transactions/
       2026-01.csv
@@ -260,16 +266,17 @@ Finance/
   Budget/
     categories.csv
     budgets.csv
+    budget-allocations.csv
     savings-goal-contributions.csv
   Savings/
     goals.csv
     progress.csv
   Investments/
-    holdings.csv
-    transactions.csv
+    assets.csv
     prices.csv
     dividends.csv
     tax-lots.csv
+    portfolios.csv
     sleeves.csv
     sleeve-targets.csv
     benchmarks/
@@ -277,9 +284,11 @@ Finance/
   Taxes/
     estimated-payments.csv
     settings.csv
-    deductions.csv
+    tax-adjustments.csv
+    estimates.csv
+    documents.csv
     archive/
-      2025-deductions.csv
+      2025-tax-adjustments.csv
       2025-estimated-payments.csv
     yearly/
       2026-tax-notes.md
@@ -319,7 +328,7 @@ CSV files are classified by:
 Markdown files are classified by:
 1. Folder path.
 2. Front matter `type`.
-3. Front matter `period`, `entity_id`, `account_ids`, `sleeve_id`, `tax_year`, or tags.
+3. Front matter `period`, `account_group_id`, `account_ids`, `sleeve_id`, `tax_year`, or tags.
 
 ### Supported file types
 
@@ -362,27 +371,43 @@ Required columns:
 
 | Column | Type | Notes |
 |---|---|---|
-| transaction_id | string | Stable unique ID |
+| transaction_id | string | Stable unique ID (unique per row) |
+| group_id | string | Optional — shared across the entries of a multi-entry transaction (transfers, paycheck splits). A connector, **not** a primary key. Generalizes the former `transfer_group`. |
+| group_role | enum | Optional — `leg`, `gross`, `net`, `withholding` |
 | date | date | ISO 8601 date |
 | account_id | string | Links to account |
-| merchant | string | Raw merchant |
+| type | enum | `income`, `expense`, `transfer`, `trade`, `credit` |
+| merchant | string | Raw merchant / payer (pre-normalization) |
+| source_id | string | Optional — normalized issuer (Transaction-source) |
 | description | string | User-facing text |
 | amount | decimal | Signed: negative = debit (money out), positive = credit (money in) |
 | direction | enum | debit, credit — redundant with sign but kept for readability and import mapping |
 | category_id | string | Normalized category |
 | subcategory_id | string | Optional |
-| transfer_group | string | Optional |
+| sending_asset_id | string | Optional — the asset value is drawn from |
+| receiving_asset_id | string | Optional — the asset value is added to |
+| liability_id | string | Optional — the liability this entry settles or draws on |
 | savings_goal_id | string | Optional |
-| deductible | boolean | Flag for tax module inclusion (Schedule C) |
+| deductible | boolean | Flag for tax module inclusion (Schedule C / business-expense) |
+| tags | string | Optional — pipe-delimited tag list |
 | notes | string | Optional |
 | source_file | string | Optional provenance |
 | source_row | integer | Optional provenance |
+| trade_type | enum | Optional — populated only when `type = trade` (`buy`, `sell`) |
+| quantity | decimal | Optional — trade rows |
+| price | decimal | Optional — trade rows |
+| fees | decimal | Optional — trade rows |
+| lot_id | string | Optional — trade rows |
+| ticker | string | Optional — trade rows |
+| sleeve_id | string | Optional — trade rows |
 
 Behavior:
 - Must support import from external CSV then normalization into canonical monthly files.
 - Amount sign convention (locked): negative = debit (money out of account), positive = credit (money into account). This applies to all transaction file types. The `direction` column is redundant with the sign but retained to simplify import column mapping from external sources.
 - During import normalization, if a source file uses the opposite convention, the `CSVNormalizer` must flip the sign before writing to the canonical file.
 - `transaction_id` must remain stable across recategorizations.
+- **Multi-entry transactions** share a `group_id` while each row keeps a unique `transaction_id`. Transfers and liability payments must net to zero across the group; paycheck gross/net splits carry exactly one `gross` and one `net` row and reconcile `net = gross − Σ(withholding)` (see §15). The `credit` type records a loan / line-of-credit draw-down (cash received, a liability increased).
+- **Investment buys/sells are recorded here** as `type = trade` rows (with `sending_asset_id`/`receiving_asset_id` and the optional trade columns), absorbing the former `Investments/transactions.csv` (§8.9).
 
 ### 8.3 Unified categories CSV
 
@@ -394,33 +419,52 @@ Required columns:
 | Column | Type | Notes |
 |---|---|---|
 | category_id | string | |
-| group_id | string | |
+| category_group_id | string | Flat grouping label (was `group_id`) |
+| parent_category_id | string | Optional — self-reference for sub-categories |
 | name | string | |
 | type | enum | |
 | default_budget_behavior | enum | |
+| sort_order | integer | Optional — display ordering |
 | is_active | boolean | |
 | tax_relevant | boolean | |
-| entity_id | string | Optional — links to a specific theme/entity |
+| account_group_id | string | Optional — links category to an account-group (was `entity_id`) |
 | tax_group | string | Optional — maps category to Schedule C/tax lines |
 
 Notes:
 - Seed with default category groups aligned to common card and personal finance reporting patterns.
 - Support user-editable category naming without changing IDs.
 
-### 8.4 Unified budgets CSV
+### 8.4 Budgets (definition + allocations)
 
-Path:
-`Budget/budgets.csv`
+A budget is a **named, scoped** definition with category **allocations** as its lines.
 
-Required columns:
+**`Budget/budgets.csv`** — budget definitions:
 
-| Column | Type |
-|---|---|
-| period | yyyy-mm |
-| category_id | string |
-| planned_amount | decimal |
-| rollover_policy | enum |
-| priority | enum |
+| Column | Type | Notes |
+|---|---|---|
+| budget_id | string | Stable key |
+| name | string | e.g. "Household", "Consulting LLC" |
+| timeframe | enum | monthly (v1), weekly, annual |
+| start_date | date | |
+| end_date | date | Optional |
+| account_group_ids | string | Pipe-delimited account-groups this budget monitors |
+| account_ids | string | Optional — pipe-delimited individual-account overrides/additions |
+| is_active | boolean | |
+
+**`Budget/budget-allocations.csv`** — the lines of a budget:
+
+| Column | Type | Notes |
+|---|---|---|
+| allocation_id | string | Stable key |
+| budget_id | string | → budgets.csv |
+| category_id | string | → categories.csv |
+| type | enum | spending, savings |
+| amount | decimal | Planned amount (was `planned_amount`) |
+| rollover_amount | decimal | Optional (was `rollover_policy`) |
+| period | yyyy-mm | |
+| priority | enum | Optional |
+
+If only one budget ships in MVP, seed a single default `budget_id` so existing allocation lines stay backward-compatible.
 
 ### 8.5 Savings goals CSV
 
@@ -468,45 +512,31 @@ Required columns:
 
 Investment accounts are stored in `Accounts/accounts.csv` (spec 8.21), the unified master registry. There is no separate `Investments/accounts.csv` file. Investment-specific metadata is carried as optional columns in the master registry (see §8.21). This file type and path are removed from the workspace structure.
 
-### 8.8 Holdings CSV
+### 8.8 Assets CSV  *(was Holdings)*
 
 Path:
-`Investments/holdings.csv`
+`Investments/assets.csv`
 
 Required columns:
 
-| Column | Type |
-|---|---|
-| holding_id | string |
-| account_id | string |
-| ticker | string |
-| quantity | decimal |
-| cost_basis | decimal |
-| market_value | decimal |
-| sleeve_id | string |
-| asset_class | enum |
-| sector | string |
-| as_of_date | date |
+| Column | Type | Notes |
+|---|---|---|
+| asset_id | string | Was `holding_id` |
+| account_id | string | → accounts.csv |
+| name | string | Human label |
+| asset_class | enum | Broad kind: `cash`, `equity`, `crypto`, `real-estate` |
+| security_class | enum | Optional — finer security classification (equity, bond, REIT, ETF…) |
+| ticker | string | Optional when `asset_class ≠ equity` |
+| quantity | decimal | |
+| cost_basis | decimal | |
+| current_value | decimal | Derived from prices × quantity (was `market_value`) |
+| sleeve_id | string | Optional — → sleeves.csv |
+| sector | string | |
+| as_of_date | date | Supports "edited directly" snapshots |
 
-### 8.9 Investment transactions CSV
+### 8.9 Reserved (Absorbed into Unified Transactions)
 
-Path:
-`Investments/transactions.csv`
-
-Required columns:
-
-| Column | Type |
-|---|---|
-| trade_id | string |
-| account_id | string |
-| ticker | string |
-| trade_date | date |
-| trade_type | enum |
-| quantity | decimal |
-| price | decimal |
-| fees | decimal |
-| lot_id | string |
-| sleeve_id | string |
+Investment buys/sells are recorded in the unified transactions ledger (§8.2) as `type = trade` rows, carrying the optional `trade_type`, `quantity`, `price`, `fees`, `lot_id`, `ticker`, and `sleeve_id` columns alongside `sending_asset_id`/`receiving_asset_id`. The former `Investments/transactions.csv` is removed; the schema migration moves its rows into the monthly ledger.
 
 ### 8.10 Prices CSV
 
@@ -543,14 +573,18 @@ Path:
 
 Required columns:
 
-| Column | Type |
-|---|---|
-| sleeve_id | string |
-| name | string |
-| strategy | string |
-| monthly_contribution_target | decimal |
-| benchmark_id | string |
-| linked_note_id | string |
+| Column | Type | Notes |
+|---|---|---|
+| sleeve_id | string | |
+| portfolio_id | string | → portfolios.csv (re-parents the sleeve) |
+| name | string | |
+| goal | string | Optional |
+| target_allocation_percentage | decimal | Sleeve's target share of the portfolio |
+| monthly_contribution_target | decimal | |
+| benchmark_id | string | |
+| linked_note_id | string | |
+
+The free-text `strategy` column moves to `Portfolio.strategy` (§8.26).
 
 ### 8.13 Sleeve targets CSV
 
@@ -567,19 +601,20 @@ Required columns:
 | min_weight | decimal |
 | max_weight | decimal |
 
-### 8.14 Customizable entities/themes CSV
+### 8.14 Account-groups CSV  *(was Customizable entities/themes)*
 
 Path:
-`Accounts/entities.csv`
+`Accounts/account-groups.csv`
 
 Required columns:
 
 | Column | Type | Notes |
 |---|---|---|
-| entity_id | string | Unique entity key |
+| account_group_id | string | Unique key (was `entity_id`) |
 | display_name | string | User-visible name |
+| description | string | Optional |
 | legal_name | string | Legal business name (optional) |
-| entity_type | enum | `personal`, `employment`, `business`, `custom` |
+| group_type | enum | `personal`, `employment`, `business`, `custom` (was `entity_type`) |
 | tax_id_hint | string | Tax ID / EIN (optional) |
 | is_active | boolean | Status flag |
 
@@ -629,7 +664,7 @@ Recommended front matter:
 type: monthly-review
 note_id: note-2026-05-review
 period: 2026-05
-entity_ids: [consulting-llc]
+account_group_ids: [consulting-llc]
 account_ids: [checking-main, brokerage-main]
 goal_ids: [house-down-payment]
 sleeve_ids: [core-growth]
@@ -663,12 +698,15 @@ Required columns:
 | account_id | string | Stable unique ID referenced across all transaction files |
 | display_name | string | User-visible name |
 | institution | string | Bank, brokerage, employer, etc. |
-| account_group | enum | employment, business, credit_card, investment, savings, checking, loan |
+| account_group | enum | employment, business, credit_card, investment, savings, checking, loan (high-level classification; distinct from the Account-group object / `account_group_id`) |
 | account_type | string | Specific type within group (e.g. roth_ira, hysa, mortgage) |
-| is_active | boolean | |
+| status | enum | draft, active, frozen, closed (canonical lifecycle) |
+| is_active | boolean | Derived (`status == active`); retained for backward compatibility |
+| current_balance | decimal | Derived from the transaction ledger; cached for display |
+| available_balance | decimal | Derived from the transaction ledger; cached for display |
 | tax_relevant | boolean | Flag for tax module inclusion |
 | tax_year_opened | integer | Optional |
-| entity_id | string | Required — links account to a theme/entity in Accounts/entities.csv |
+| account_group_id | string | Required — links account to an account-group in Accounts/account-groups.csv (was `entity_id`) |
 | tax_treatment | string | Optional — investment accounts only (e.g. taxable, roth_ira, traditional_ira, hsa) |
 | performance_tracking | boolean | Optional — investment accounts only; enables portfolio projection |
 | notes | string | Optional |
@@ -699,41 +737,115 @@ Required columns:
 | category_id | string | Optional |
 | is_active | boolean | |
 
-### 8.23 Tax deductions CSV
+### 8.23 Tax-adjustments CSV  *(was Tax deductions)*
 
 Path:
-`Taxes/deductions.csv`
+`Taxes/tax-adjustments.csv`
 
-Purpose: Tracks expected and confirmed deductions for the current tax year. Supports all four deduction categories.
+Purpose: Tracks expected and confirmed tax adjustments (deductions, credits, and liabilities) for the current tax year.
 
 Required columns:
 
 | Column | Type | Notes |
 |---|---|---|
-| deduction_id | string | |
+| tax_adjustment_id | string | Was `deduction_id` |
 | tax_year | integer | |
-| deduction_type | enum | standard, above_the_line, itemized, schedule_c |
-| deduction_name | string | e.g. "HSA Contribution", "Home Office", "Mortgage Interest" |
+| adjustment_type | enum | standard, above_the_line, itemized, business-expense, credit, liability (`business-expense` is the rename of `schedule_c`) |
+| name | string | e.g. "HSA Contribution", "Home Office", "Mortgage Interest" (was `deduction_name`) |
 | estimated_amount | decimal | |
 | confirmed_amount | decimal | Optional — updated at filing time |
+| account_group_id | string | Optional — links business items to an account-group (was `entity_id`) |
 | account_id | string | Optional — links to source account |
-| entity_id | string | Optional — links Schedule C items to a BusinessEntity |
+| transaction_id | string | Optional — the transaction it applies to |
+| category_id | string | Optional — the category it applies to |
+| asset_id | string | Optional — the asset it applies to |
+| liability_id | string | Optional — the liability it applies to |
+| receipt_path | string | Optional — path to a supporting document |
 | notes | string | Optional |
 | status | enum | estimated, confirmed, not_applicable |
 
 Notes:
-- The standard deduction row should be seeded by the app on workspace bootstrap using the filing status from `Taxes/settings.csv` and the applicable tax year amount.
-- Schedule C rows for a given `entity_id` are surfaced in the Business module as well as the Tax module.
+- The standard adjustment row should be seeded by the app on workspace bootstrap using the filing status from `Taxes/settings.csv` and the applicable tax year amount.
+- `business-expense` rows for a given `account_group_id` are surfaced in the Business module as well as the Tax module.
 
 ### 8.24 Tax archive files
 
 Path pattern:
-`Taxes/archive/YYYY-deductions.csv`
+`Taxes/archive/YYYY-tax-adjustments.csv`
 `Taxes/archive/YYYY-estimated-payments.csv`
+(Archives written before the Round 6 rename retain their original `YYYY-deductions.csv` name.)
 
 Purpose: Prior-year snapshots written when a tax year is closed. Schema mirrors the active-year files. The presence of an archive file for a given year signals that the year is closed for editing.
 
 Archive files are read-only after creation. The app should warn before any write to an archived year.
+
+### 8.25 Liabilities CSV
+
+Path:
+`Accounts/liabilities.csv`
+
+Purpose: Debt positions (loans, mortgages, credit lines) held within accounts, modeled as a first-class peer of Asset.
+
+| Column | Type | Notes |
+|---|---|---|
+| liability_id | string | Stable key |
+| account_id | string | → accounts.csv |
+| name | string | |
+| liability_type | enum | credit-card, loan, mortgage |
+| principal_balance | decimal | Derived from the transaction ledger |
+| interest_rate | decimal | |
+| credit_limit | decimal | Optional — credit-card / line-of-credit |
+| minimum_payment | decimal | Optional |
+| due_date | date | Optional |
+
+### 8.26 Portfolios CSV
+
+Path:
+`Investments/portfolios.csv`
+
+Purpose: Parent container grouping sleeves; the asset-side scope parallel to a Budget.
+
+| Column | Type | Notes |
+|---|---|---|
+| portfolio_id | string | Stable key |
+| name | string | |
+| description | string | Optional |
+| strategy | string | Optional — the free text formerly on a sleeve |
+| goal | string | Optional |
+| timeframe | string | Optional |
+| type | enum | retirement, brokerage, crypto, savings |
+| account_group_ids | string | Optional — pipe-delimited account-groups this portfolio tracks |
+
+### 8.27 Tax estimates CSV
+
+Path:
+`Taxes/estimates.csv`
+
+Purpose: A year's projected tax liability — distinct from logged estimated payments (§8.19).
+
+| Column | Type | Notes |
+|---|---|---|
+| estimate_id | string | Stable key |
+| fiscal_year | integer | |
+| estimated_income | decimal | |
+| estimated_deductions | decimal | |
+| projected_liability | decimal | |
+| target_safe_harbor | decimal | Optional |
+
+### 8.28 Tax documents CSV
+
+Path:
+`Taxes/documents.csv`
+
+Purpose: Registry of tax documents (W-2, 1099, 1098, receipts) linked to adjustments and a fiscal year.
+
+| Column | Type | Notes |
+|---|---|---|
+| document_id | string | Stable key |
+| name | string | |
+| file_path | string | Path/URL to the stored document |
+| tax_year | integer | |
+| type | enum | income-form, deduction-receipt, prior-return, other |
 
 ## 9. Metadata model
 
@@ -750,7 +862,7 @@ Each file should have machine-readable metadata at one of three levels:
 | domain | All | budget, savings, investments, business, taxes, notes |
 | subtype | All | transactions, goals, note, budget, prices, etc. |
 | period | Monthly files | Time grouping |
-| entity_id | Business files | Entity ownership |
+| account_group_id | Account-group-scoped files | Account-group ownership (was `entity_id`) |
 | account_id | Account-specific files | Source scoping |
 | account_group | Account files, transaction files | Group-level classification for account type routing |
 | created_at | Markdown preferred | Audit trail |
@@ -809,24 +921,29 @@ Canonical entities:
 - ValidationIssue
 - RepairAction
 - Account
+- Liability
 - AccountRule
 - AccountEstimate
 - PersonalTransaction
 - PersonalCategory
 - PersonalBudget
+- BudgetAllocation
 - SavingsGoal
 - SavingsProgress
-- Holding
+- Asset
 - Trade
 - PricePoint
 - BenchmarkPeriod
+- Portfolio
 - PortfolioSleeve
 - SleeveTarget
 - BusinessEntity
 - BusinessTransaction
 - BusinessBudget
 - EstimatedPayment
-- DeductionRecord
+- TaxAdjustment
+- TaxEstimate
+- TaxDocument
 - TaxArchiveYear
 - NoteDocument
 
@@ -896,7 +1013,7 @@ FinanceWorkspaceApp/
     Taxes/
       TaxEngine.swift
       TaxPrepEngine.swift
-      DeductionEngine.swift
+      TaxAdjustmentEngine.swift
     CrossDomain/
       LinkingEngine.swift
       OverviewEngine.swift
@@ -985,14 +1102,14 @@ FinanceWorkspaceApp/
 - create backup before every write
 
 ### Domain engines
-- `AccountEngine`: aggregate account overview (all accounts, monthly inflow, YTD net income, cash inflow vs retained equity); account-group grouping (personal, employment, business, custom); per-group detail screen (individual-account cards, business P&L with inline ledger, paycheck/stock details, personal net worth & cash flow trends); per-account detail screen (monthly gross vs expenses/tax, YTD net income, transactions table); account rule and estimate projections; cross-references all unified transactions and investment records
-- `BudgetEngine`: budget totals, category variance, 3-month trailing averages, contribution planning
+- `AccountEngine`: aggregate account overview (all accounts, monthly inflow, YTD net income, cash inflow vs retained equity); account-group grouping (personal, employment, business, custom); per-group detail screen (individual-account cards, business P&L with inline ledger, paycheck/stock details, personal net worth & cash flow trends); per-account detail screen (monthly gross vs expenses/tax, YTD net income, transactions table); derives account balances and `Liability.principal_balance` from the ledger; account rule and estimate projections; resolves multi-entry transaction groups; cross-references all unified transactions and investment records
+- `BudgetEngine`: budget totals, category variance, 3-month trailing averages, contribution planning; resolves each Budget's scope (account-groups/accounts) over its allocations
 - `SavingsGoalEngine`: goal progress, target gap, funding schedule. No goal lifecycle states in v1 — every goal in `goals.csv` is active; the engine does not branch on status
-- `PortfolioEngine`: holdings, sleeves, allocation, performance
+- `PortfolioEngine`: assets, the Portfolio container and its sleeves, allocation, performance; reads investment trades as `type = trade` rows from the unified ledger
 - `BenchmarkEngine`: S&P comparison windows across D/W/M/3M/6M/1Y/3Y/5Y periods, sector performance weighting
 - `TaxEngine`: realized gains, estimated payments, income summary, per-account effective rate
 - `TaxPrepEngine`: prep checklist, missing input detection, tax archive read/write, year-close flow
-- `DeductionEngine`: deduction record management, standard deduction seeding from filing status and tax year, Schedule C cross-reference with AccountEngine, taxable income minus deductibles projection
+- `TaxAdjustmentEngine` (was `DeductionEngine`): tax-adjustment record management (deductions, credits, liabilities); standard-adjustment seeding from filing status and tax year; business-expense cross-reference with AccountEngine; tax-estimate projections; tax-document registry; taxable income minus adjustments projection
 - `LinkingEngine`: connect budget-to-goal, portfolio-to-tax, account-to-all-modules
 
 ## 13. Read, write, and repair flows
@@ -1009,10 +1126,10 @@ FinanceWorkspaceApp/
 
 ### Structured write flow
 
-The write flow covers **add, edit, and delete** for every user-addable object (account groups, accounts, transactions, categories, goals, holdings/assets, deductions, account rules, etc.).
+The write flow covers **add, edit, and delete** for every user-addable object (account groups, accounts, transactions, categories, goals, assets, liabilities, portfolios, sleeves, tax-adjustments, account rules, etc.).
 
 1. User adds, edits, or deletes a supported object in UI.
-2. App builds a write plan. For a delete, it runs a **reference check** (see §15) and includes referencing rows in the plan.
+2. App builds a write plan. For a delete, it runs a **reference check** (see §15) and includes referencing rows in the plan. A **multi-entry transaction group** (transfer or paycheck split) is written, edited, or deleted as a single atomic unit — all rows sharing a `group_id` move together, and the group must pass its balance/reconciliation check (§15) before write.
 3. App previews target file and affected rows (and referencing rows on delete).
 4. App creates timestamped backup.
 5. App writes changes atomically.
@@ -1110,8 +1227,11 @@ Purpose:
 
 ### Cross-file validation
 - unknown category reference
-- unknown entity reference
+- unknown account-group reference
 - unknown account reference
+- unknown asset reference
+- unknown liability reference
+- unknown portfolio reference
 - unknown sleeve reference
 - unknown goal reference
 - missing benchmark data
@@ -1122,10 +1242,12 @@ Purpose:
 ### Domain validation
 - budget period without budget rows
 - goal contribution without goal
-- holding without account
-- trade without holding or valid ticker
+- asset without account
+- trade without a sending or receiving asset
+- multi-entry transfer group that does not net to zero (`SUM(amount) WHERE group_id = X ≠ 0`)
+- gross/net group that does not reconcile (`net ≠ gross − Σ(withholding)`, or not exactly one `gross` and one `net` row)
 - tax payment outside tax year
-- business transaction with unknown entity
+- business transaction with unknown account-group
 
 ### Repairable issue types
 - missing optional column
@@ -1304,7 +1426,7 @@ These decisions are settled and should not be reopened for v1:
 
 - **Savings/ and Investments/ folder separation** ✓ — Keep as separate folders at the file level. The UI presents them as a unified module; the file layer keeps them separate.
 
-- **Deductions file structure — unified file** ✓ — One `Taxes/deductions.csv` with a `deduction_type` column covering all types (standard, above-the-line, itemized, Schedule C).
+- **Deductions → Tax-adjustments file** ✓ — *(Superseded in Round 6.)* The former single `Taxes/deductions.csv` / `deduction_type` is renamed to `Taxes/tax-adjustments.csv` / `adjustment_type`, with the union enum `standard, above_the_line, itemized, business-expense, credit, liability` (`schedule_c` → `business-expense`). Tax-adjustment is now a first-class object that can link to a transaction, category, asset, liability, account, or account-group. See the Round 6 lock block below.
 
 - **Tax year-close trigger — explicit in-app action** ✓ — Tax archive files are written only when the user explicitly triggers "Close Tax Year" in the app. No automatic rollover in v1.
 
@@ -1319,6 +1441,16 @@ These decisions are settled and should not be reopened for v1:
 - **Amount sign convention** ✓ — Negative = debit (money out), positive = credit (money in). Applies consistently across all transaction file types. The `direction` column is retained alongside the sign for import mapping readability. The `CSVNormalizer` flips signs from source files that use the opposite convention during import.
 
 - **`schema_version` migration policy** ✓ — A breaking change is any modification to a CSV column or Markdown front matter field currently in use (rename, remove, type change, enum change, or new required column). Adding an optional column is not breaking. Breaking changes increment `schema_version` and require a migration script (`Scripts/migrate-{file-type}-v{old}-to-v{new}.swift`) shipped with the release. The `RepairService` detects version mismatches and prompts the user to run the script; it does not auto-migrate breaking changes.
+
+### Locked — 2026-06-23 (Round 6 — object model)
+
+- **Storage names aligned to object names** ✓ — `entities.csv`→`account-groups.csv` (`entity_id`→`account_group_id`, `entity_type`→`group_type`), `holdings.csv`→`assets.csv` (`holding_id`→`asset_id`, `market_value`→`current_value`), `deductions.csv`→`tax-adjustments.csv` (`deduction_id`→`tax_adjustment_id`, `deduction_type`→`adjustment_type`). These are breaking renames; a one-time, preview-able migration script performs them and bumps `schema_version`.
+- **Liability is a first-class object** ✓ — New `Accounts/liabilities.csv` (peer of Asset). An account can hold both an asset and a liability (e.g. a mortgage account holds the property and the loan). Debt fields live on Liability, not as columns on Account. Reverses the earlier "fold debt into account columns" idea.
+- **Portfolio is the investment container** ✓ — New `Investments/portfolios.csv`; sleeves re-parent under `portfolio_id`. Adopted instead of the r5-audit "Strategy" container. Group nesting (`parent_group_id`) is **not** adopted in v1.
+- **Multi-entry transactions** ✓ — A shared `group_id` (with `group_role`) links the rows of a transfer or paycheck split; `group_id` is a connector, not a primary key. Transfers net to zero; gross/net splits reconcile `net = gross − Σ(withholding)`.
+- **Investment trades fold into the unified ledger** ✓ — Recorded as `type = trade` rows in `Accounts/transactions/YYYY-MM.csv`; `Investments/transactions.csv` (§8.9) is removed/absorbed.
+- **Account two-tier classification retained** ✓ — Keep `account_group` (enum) + `account_type`; `status` (draft/active/frozen/closed) is the canonical lifecycle field with `is_active` derived.
+- **Open** — default delete-on-reference behavior (block / cascade-warn / reassign) is still to be picked before Phase 6 delete flows.
 
 ## 22. Recommended implementation stance
 
@@ -1386,6 +1518,21 @@ Left sidebar with collapsible navigation sections that open and close independen
 - `taxes-prep-checklist.svg` — Full-width prep checklist with educational content
 
 ## 24. Changelog
+
+### Round 6 — 2026-06-23
+Source: `docs/_refinement/r6-review.md` (fourth prototype review — data structuring & IA); update plan `docs/_refinement/r6-update-technical-design.md`
+
+- §6/§8: renamed `entities.csv`→`account-groups.csv` (`entity_id`→`account_group_id`, `entity_type`→`group_type`), `holdings.csv`→`assets.csv` (`holding_id`→`asset_id`, `market_value`→`current_value`, `asset_class` redefined + new `security_class`), `deductions.csv`→`tax-adjustments.csv` (`deduction_id`→`tax_adjustment_id`, `deduction_type`→`adjustment_type` union enum)
+- §6/§8: added `Accounts/liabilities.csv` (Liability), `Investments/portfolios.csv` (Portfolio), `Taxes/estimates.csv` (Tax-estimate), `Taxes/documents.csv` (Tax-document)
+- §8.2: transactions gained `type`, `group_id` (generalized from `transfer_group`), `group_role`, `sending_asset_id`/`receiving_asset_id`/`liability_id`, `source_id`, `tags`, and optional trade columns; investment trades fold in as `type = trade` rows
+- §8.4: budgets split into a Budget definition (scope) + Budget-allocation lines
+- §8.9: `Investments/transactions.csv` reserved/absorbed into the unified ledger
+- §8.12: sleeves re-parented under portfolios (`portfolio_id`), +`goal`/+`target_allocation_percentage`
+- §8.21: accounts `entity_id`→`account_group_id`, +`status` lifecycle (`is_active` derived), +derived `current_balance`/`available_balance`; two-tier `account_group`+`account_type` retained
+- §8.3: categories `entity_id`→`account_group_id`, +`parent_category_id`, +`sort_order`, `group_id`→`category_group_id`
+- §9/§10/§12/§13/§15: metadata key renamed; data model + engines updated (liability balances, Portfolio container, `TaxAdjustmentEngine`); multi-entry group write + validation rules added
+- §21: reopened the deductions-file decision; added the Round 6 lock block (storage-name alignment, first-class Liability, Portfolio container, multi-entry, trades-in-unified-ledger, two-tier account classification)
+- Overrides the r5 object-model audit where they differ (`account_group_id` not `group_id`, Portfolio not Strategy, `asset_class` not `asset_kind`, no group nesting) — r6-review takes priority; delete-on-reference behavior remains open
 
 ### Round 5 — 2026-06-15
 Source: `docs/_refinement/r5-review.md` (third prototype review — functional details); update plan `docs/_refinement/r5-update-technical-design.md`
