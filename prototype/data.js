@@ -33,55 +33,55 @@ const DATA = (() => {
   // ----- Personal: transactions for 2026-05 --------------------------------
   // amount: negative = outflow, positive = income/credit
   const transactions = [
-    { id: 'TX-2605-001', date: '2026-05-01', merchant: 'Acme Property Mgmt',  description: 'May rent',           account: 'Chase Checking',       category: 'housing',     amount: -2400.00, direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 2,  importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-002', date: '2026-05-01', merchant: 'Coinbase',            description: 'DCA — VTI',          account: 'Fidelity Brokerage',   category: 'investments', amount: -1500.00, direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 3,  importedFrom: 'fidelity-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-003', date: '2026-05-02', merchant: 'Whole Foods',         description: 'Weekly groceries',    account: 'Chase Checking',       category: 'groceries',   amount: -184.22,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 4,  importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-004', date: '2026-05-02', merchant: 'Xcel Energy',         description: 'Apr electric',        account: 'Chase Checking',       category: 'utilities',   amount: -142.08,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 5,  importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-005', date: '2026-05-03', merchant: 'Bright Horizons',     description: 'Daycare May',         account: 'Chase Checking',       category: 'childcare',   amount: -1450.00, direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 6,  importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-006', date: '2026-05-04', merchant: 'Acme Employer',       description: 'Payroll · 1st half',  account: 'Chase Checking',       category: 'income',      amount:  4825.40, direction: 'credit', recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 7,  importedFrom: 'chase-may.csv', entityId: 'employment', deductible: false },
-    { id: 'TX-2605-007', date: '2026-05-04', merchant: 'Trader Joe’s',        description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount:  -96.43,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 8,  importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-008', date: '2026-05-05', merchant: 'Delta Air Lines',     description: 'DEN → SFO Aug',       account: 'Chase Sapphire',       category: 'travel',      amount: -312.40,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 9,  importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-009', date: '2026-05-06', merchant: 'Sushi Den',           description: 'Dinner w/ Maya',      account: 'Chase Sapphire',       category: 'dining',      amount: -84.65,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 10, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-010', date: '2026-05-07', merchant: 'State Farm',          description: 'Auto + renters',      account: 'Chase Checking',       category: 'insurance',   amount: -408.20,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 11, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-011', date: '2026-05-08', merchant: 'Foothills Golf Club', description: 'Twilight 18',         account: 'Chase Sapphire',       category: 'golf',        amount: -62.00,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 12, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-012', date: '2026-05-09', merchant: 'King Soopers',        description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount: -132.18,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 13, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-013', date: '2026-05-09', merchant: 'Marigold Café',       description: 'Brunch',              account: 'Chase Sapphire',       category: 'dining',      amount: -42.75,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 14, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-014', date: '2026-05-10', merchant: 'Marcus Savings',      description: 'Transfer · emergency',account: 'Marcus Savings',       category: 'savings',     amount: -500.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 15, importedFrom: 'chase-may.csv', goal: 'emergency-fund', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-015', date: '2026-05-10', merchant: 'Marcus House Goal',   description: 'Transfer · house DP', account: 'Marcus Savings',       category: 'savings',     amount: -400.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 16, importedFrom: 'chase-may.csv', goal: 'house-down-payment', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-016', date: '2026-05-11', merchant: 'Comcast Xfinity',     description: 'Internet',            account: 'Chase Checking',       category: 'utilities',   amount:  -89.99,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 17, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-017', date: '2026-05-11', merchant: 'Sweetgreen',          description: 'Lunch',               account: 'Chase Sapphire',       category: 'dining',      amount:  -16.40,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 18, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-018', date: '2026-05-12', merchant: 'King Soopers',        description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount: -108.75,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 19, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-019', date: '2026-05-13', merchant: 'Foothills Golf Club', description: 'Range bucket',        account: 'Chase Sapphire',       category: 'golf',        amount:  -28.00,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 20, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-020', date: '2026-05-14', merchant: 'Airbnb',              description: 'Aspen weekend Jul',   account: 'Chase Sapphire',       category: 'travel',      amount: -284.10,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 21, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-021', date: '2026-05-15', merchant: 'Acme Employer',       description: 'Payroll · 2nd half',  account: 'Chase Checking',       category: 'income',      amount:  4825.40, direction: 'credit', recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 22, importedFrom: 'chase-may.csv', entityId: 'employment', deductible: false },
-    { id: 'TX-2605-022', date: '2026-05-15', merchant: 'Acme Property Mgmt',  description: 'Renters insurance',   account: 'Chase Checking',       category: 'insurance',   amount:   -0.00,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 23, importedFrom: 'chase-may.csv', flagged: 'zero-amount', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-023', date: '2026-05-16', merchant: 'Whole Foods',         description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount: -176.81,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 24, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-024', date: '2026-05-16', merchant: 'Marigold Café',       description: 'Dinner',              account: 'Chase Sapphire',       category: 'dining',      amount: -68.50,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 25, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-025', date: '2026-05-17', merchant: 'REI',                 description: 'Hiking pack',         account: 'Chase Sapphire',       category: 'travel',      amount: -148.00,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 26, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-026', date: '2026-05-18', merchant: 'Foothills Golf Club', description: 'Twilight 18',         account: 'Chase Sapphire',       category: 'golf',        amount: -62.00,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 27, importedFrom: 'chase-may.csv', duplicate: 'TX-2605-011', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-027', date: '2026-05-18', merchant: 'Sweetgreen',          description: 'Lunch',               account: 'Chase Sapphire',       category: 'dining',      amount:  -18.20,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 28, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-028', date: '2026-05-19', merchant: 'Trader Joe’s',        description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount:  -88.42,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 29, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-029', date: '2026-05-20', merchant: 'Xfinity Mobile',      description: 'Cell',                account: 'Chase Checking',       category: 'utilities',   amount:  -85.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 30, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-030', date: '2026-05-20', merchant: 'Marcus MacBook Goal', description: 'Transfer · MacBook',  account: 'Marcus Savings',       category: 'savings',     amount: -150.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 31, importedFrom: 'chase-may.csv', goal: 'new-macbook', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-031', date: '2026-05-21', merchant: 'Foothills Golf Club', description: 'Lesson',              account: 'Chase Sapphire',       category: 'golf',        amount:  -85.00,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 32, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-032', date: '2026-05-22', merchant: 'Marigold Café',       description: 'Dinner',              account: 'Chase Sapphire',       category: 'dining',      amount: -54.60,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 33, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-033', date: '2026-05-23', merchant: 'Whole Foods',         description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount: -142.10,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 34, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-034', date: '2026-05-23', merchant: 'Hyatt Aspen',         description: 'Hotel deposit',       account: 'Chase Sapphire',       category: 'travel',      amount:  -120.00, direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 35, importedFrom: 'chase-may.csv', entityId: 'personal', deductible: false },
-    { id: 'TX-2605-035', date: '2026-05-24', merchant: 'Marcus Travel Goal',  description: 'Transfer · travel',   account: 'Marcus Savings',       category: 'savings',     amount: -200.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 36, importedFrom: 'chase-may.csv', goal: 'family-travel', entityId: 'personal', deductible: false },
+    { id: 'TX-2605-001', date: '2026-05-01', merchant: 'Acme Property Mgmt',  description: 'May rent',           account: 'Chase Checking',       category: 'housing',     amount: -2400.00, direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 2,  importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-002', date: '2026-05-01', merchant: 'Coinbase',            description: 'DCA — VTI',          account: 'Fidelity Brokerage',   category: 'investments', amount: -1500.00, direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 3,  importedFrom: 'fidelity-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-003', date: '2026-05-02', merchant: 'Whole Foods',         description: 'Weekly groceries',    account: 'Chase Checking',       category: 'groceries',   amount: -184.22,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 4,  importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-004', date: '2026-05-02', merchant: 'Xcel Energy',         description: 'Apr electric',        account: 'Chase Checking',       category: 'utilities',   amount: -142.08,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 5,  importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-005', date: '2026-05-03', merchant: 'Bright Horizons',     description: 'Daycare May',         account: 'Chase Checking',       category: 'childcare',   amount: -1450.00, direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 6,  importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-006', date: '2026-05-04', merchant: 'Acme Employer',       description: 'Payroll · 1st half',  account: 'Chase Checking',       category: 'income',      amount:  4825.40, direction: 'credit', recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 7,  importedFrom: 'chase-may.csv', accountGroupId: 'employment', deductible: false },
+    { id: 'TX-2605-007', date: '2026-05-04', merchant: 'Trader Joe’s',        description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount:  -96.43,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 8,  importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-008', date: '2026-05-05', merchant: 'Delta Air Lines',     description: 'DEN → SFO Aug',       account: 'Chase Sapphire',       category: 'travel',      amount: -312.40,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 9,  importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-009', date: '2026-05-06', merchant: 'Sushi Den',           description: 'Dinner w/ Maya',      account: 'Chase Sapphire',       category: 'dining',      amount: -84.65,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 10, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-010', date: '2026-05-07', merchant: 'State Farm',          description: 'Auto + renters',      account: 'Chase Checking',       category: 'insurance',   amount: -408.20,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 11, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-011', date: '2026-05-08', merchant: 'Foothills Golf Club', description: 'Twilight 18',         account: 'Chase Sapphire',       category: 'golf',        amount: -62.00,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 12, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-012', date: '2026-05-09', merchant: 'King Soopers',        description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount: -132.18,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 13, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-013', date: '2026-05-09', merchant: 'Marigold Café',       description: 'Brunch',              account: 'Chase Sapphire',       category: 'dining',      amount: -42.75,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 14, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-014', date: '2026-05-10', merchant: 'Marcus Savings',      description: 'Transfer · emergency',account: 'Marcus Savings',       category: 'savings',     amount: -500.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 15, importedFrom: 'chase-may.csv', goal: 'emergency-fund', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-015', date: '2026-05-10', merchant: 'Marcus House Goal',   description: 'Transfer · house DP', account: 'Marcus Savings',       category: 'savings',     amount: -400.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 16, importedFrom: 'chase-may.csv', goal: 'house-down-payment', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-016', date: '2026-05-11', merchant: 'Comcast Xfinity',     description: 'Internet',            account: 'Chase Checking',       category: 'utilities',   amount:  -89.99,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 17, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-017', date: '2026-05-11', merchant: 'Sweetgreen',          description: 'Lunch',               account: 'Chase Sapphire',       category: 'dining',      amount:  -16.40,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 18, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-018', date: '2026-05-12', merchant: 'King Soopers',        description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount: -108.75,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 19, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-019', date: '2026-05-13', merchant: 'Foothills Golf Club', description: 'Range bucket',        account: 'Chase Sapphire',       category: 'golf',        amount:  -28.00,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 20, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-020', date: '2026-05-14', merchant: 'Airbnb',              description: 'Aspen weekend Jul',   account: 'Chase Sapphire',       category: 'travel',      amount: -284.10,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 21, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-021', date: '2026-05-15', merchant: 'Acme Employer',       description: 'Payroll · 2nd half',  account: 'Chase Checking',       category: 'income',      amount:  4825.40, direction: 'credit', recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 22, importedFrom: 'chase-may.csv', accountGroupId: 'employment', deductible: false },
+    { id: 'TX-2605-022', date: '2026-05-15', merchant: 'Acme Property Mgmt',  description: 'Renters insurance',   account: 'Chase Checking',       category: 'insurance',   amount:   -0.00,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 23, importedFrom: 'chase-may.csv', flagged: 'zero-amount', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-023', date: '2026-05-16', merchant: 'Whole Foods',         description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount: -176.81,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 24, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-024', date: '2026-05-16', merchant: 'Marigold Café',       description: 'Dinner',              account: 'Chase Sapphire',       category: 'dining',      amount: -68.50,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 25, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-025', date: '2026-05-17', merchant: 'REI',                 description: 'Hiking pack',         account: 'Chase Sapphire',       category: 'travel',      amount: -148.00,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 26, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-026', date: '2026-05-18', merchant: 'Foothills Golf Club', description: 'Twilight 18',         account: 'Chase Sapphire',       category: 'golf',        amount: -62.00,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 27, importedFrom: 'chase-may.csv', duplicate: 'TX-2605-011', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-027', date: '2026-05-18', merchant: 'Sweetgreen',          description: 'Lunch',               account: 'Chase Sapphire',       category: 'dining',      amount:  -18.20,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 28, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-028', date: '2026-05-19', merchant: 'Trader Joe’s',        description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount:  -88.42,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 29, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-029', date: '2026-05-20', merchant: 'Xfinity Mobile',      description: 'Cell',                account: 'Chase Checking',       category: 'utilities',   amount:  -85.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 30, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-030', date: '2026-05-20', merchant: 'Marcus MacBook Goal', description: 'Transfer · MacBook',  account: 'Marcus Savings',       category: 'savings',     amount: -150.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 31, importedFrom: 'chase-may.csv', goal: 'new-macbook', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-031', date: '2026-05-21', merchant: 'Foothills Golf Club', description: 'Lesson',              account: 'Chase Sapphire',       category: 'golf',        amount:  -85.00,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 32, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-032', date: '2026-05-22', merchant: 'Marigold Café',       description: 'Dinner',              account: 'Chase Sapphire',       category: 'dining',      amount: -54.60,   direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 33, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-033', date: '2026-05-23', merchant: 'Whole Foods',         description: 'Groceries',           account: 'Chase Checking',       category: 'groceries',   amount: -142.10,  direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 34, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-034', date: '2026-05-23', merchant: 'Hyatt Aspen',         description: 'Hotel deposit',       account: 'Chase Sapphire',       category: 'travel',      amount:  -120.00, direction: 'debit',  recurring: false, source: 'Accounts/transactions/2026-05.csv', row: 35, importedFrom: 'chase-may.csv', accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-035', date: '2026-05-24', merchant: 'Marcus Travel Goal',  description: 'Transfer · travel',   account: 'Marcus Savings',       category: 'savings',     amount: -200.00,  direction: 'debit',  recurring: true,  source: 'Accounts/transactions/2026-05.csv', row: 36, importedFrom: 'chase-may.csv', goal: 'family-travel', accountGroupId: 'personal', deductible: false },
     
     // Unified Business Transactions
-    { id: 'BX-001', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-02', merchant: 'Atlassian',     description: 'Jira annual',       account: 'Brex Checking', category: 'b-saas',     amount: -680.00,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 37, importedFrom: 'brex-may.csv' },
-    { id: 'BX-002', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-03', merchant: 'Northstar Client', description: 'Invoice 2026-09', account: 'Brex Checking', category: 'income',     amount: 12500.00, direction: 'credit', recurring: false, deductible: false, source: 'Accounts/transactions/2026-05.csv', row: 38, importedFrom: 'brex-may.csv' },
-    { id: 'BX-003', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-05', merchant: 'Hilton SFO',    description: 'Onsite trip',       account: 'Brex Checking', category: 'b-travel',   amount: -384.20,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 39, importedFrom: 'brex-may.csv' },
-    { id: 'BX-004', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-06', merchant: 'Brex',          description: 'Bank fee',          account: 'Brex Checking', category: 'b-bank',     amount:  -12.00,  direction: 'debit',  recurring: true,  deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 40, importedFrom: 'brex-may.csv' },
-    { id: 'BX-005', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-09', merchant: 'Carbon CPA',    description: 'Quarterly fee',     account: 'Brex Checking', category: 'b-prof',     amount: -425.00,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 41, importedFrom: 'brex-may.csv' },
-    { id: 'BX-006', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-12', merchant: 'Notion',        description: 'Team plan',         account: 'Brex Checking', category: 'b-saas',     amount:  -80.00,  direction: 'debit',  recurring: true,  deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 42, importedFrom: 'brex-may.csv' },
-    { id: 'BX-007', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-13', merchant: 'Sushi Den',     description: 'Client dinner',     account: 'Brex Checking', category: 'b-meals',    amount: -142.00,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 43, importedFrom: 'brex-may.csv' },
-    { id: 'BX-008', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-15', merchant: 'Apple',         description: 'Mac mini · office', account: 'Brex Checking', category: 'b-supplies', amount: -1320.00, direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 44, importedFrom: 'brex-may.csv' },
-    { id: 'BX-009', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-18', merchant: 'Linear',        description: 'Team plan',         account: 'Brex Checking', category: 'b-saas',     amount:  -96.00,  direction: 'debit',  recurring: true,  deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 45, importedFrom: 'brex-may.csv' },
-    { id: 'BX-010', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-20', merchant: 'Northstar Client', description: 'Invoice 2026-10', account: 'Brex Checking', category: 'income',     amount:  4800.00, direction: 'credit', recurring: false, deductible: false, source: 'Accounts/transactions/2026-05.csv', row: 46, importedFrom: 'brex-may.csv' },
-    { id: 'BX-011', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-22', merchant: 'Delta Air Lines', description: 'Client trip',     account: 'Brex Checking', category: 'b-travel',   amount: -284.40,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 47, importedFrom: 'brex-may.csv' },
-    { id: 'BX-012', entity: 'consulting-llc', entityId: 'consulting-llc', date: '2026-05-25', merchant: 'OpenAI',        description: 'API usage',         account: 'Brex Checking', category: 'b-saas',     amount:  -184.20, direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 48, importedFrom: 'brex-may.csv' }
+    { id: 'BX-001', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-02', merchant: 'Atlassian',     description: 'Jira annual',       account: 'Brex Checking', category: 'b-saas',     amount: -680.00,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 37, importedFrom: 'brex-may.csv' },
+    { id: 'BX-002', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-03', merchant: 'Northstar Client', description: 'Invoice 2026-09', account: 'Brex Checking', category: 'income',     amount: 12500.00, direction: 'credit', recurring: false, deductible: false, source: 'Accounts/transactions/2026-05.csv', row: 38, importedFrom: 'brex-may.csv' },
+    { id: 'BX-003', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-05', merchant: 'Hilton SFO',    description: 'Onsite trip',       account: 'Brex Checking', category: 'b-travel',   amount: -384.20,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 39, importedFrom: 'brex-may.csv' },
+    { id: 'BX-004', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-06', merchant: 'Brex',          description: 'Bank fee',          account: 'Brex Checking', category: 'b-bank',     amount:  -12.00,  direction: 'debit',  recurring: true,  deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 40, importedFrom: 'brex-may.csv' },
+    { id: 'BX-005', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-09', merchant: 'Carbon CPA',    description: 'Quarterly fee',     account: 'Brex Checking', category: 'b-prof',     amount: -425.00,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 41, importedFrom: 'brex-may.csv' },
+    { id: 'BX-006', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-12', merchant: 'Notion',        description: 'Team plan',         account: 'Brex Checking', category: 'b-saas',     amount:  -80.00,  direction: 'debit',  recurring: true,  deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 42, importedFrom: 'brex-may.csv' },
+    { id: 'BX-007', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-13', merchant: 'Sushi Den',     description: 'Client dinner',     account: 'Brex Checking', category: 'b-meals',    amount: -142.00,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 43, importedFrom: 'brex-may.csv' },
+    { id: 'BX-008', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-15', merchant: 'Apple',         description: 'Mac mini · office', account: 'Brex Checking', category: 'b-supplies', amount: -1320.00, direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 44, importedFrom: 'brex-may.csv' },
+    { id: 'BX-009', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-18', merchant: 'Linear',        description: 'Team plan',         account: 'Brex Checking', category: 'b-saas',     amount:  -96.00,  direction: 'debit',  recurring: true,  deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 45, importedFrom: 'brex-may.csv' },
+    { id: 'BX-010', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-20', merchant: 'Northstar Client', description: 'Invoice 2026-10', account: 'Brex Checking', category: 'income',     amount:  4800.00, direction: 'credit', recurring: false, deductible: false, source: 'Accounts/transactions/2026-05.csv', row: 46, importedFrom: 'brex-may.csv' },
+    { id: 'BX-011', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-22', merchant: 'Delta Air Lines', description: 'Client trip',     account: 'Brex Checking', category: 'b-travel',   amount: -284.40,  direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 47, importedFrom: 'brex-may.csv' },
+    { id: 'BX-012', entity: 'consulting-llc', accountGroupId: 'consulting-llc', date: '2026-05-25', merchant: 'OpenAI',        description: 'API usage',         account: 'Brex Checking', category: 'b-saas',     amount:  -184.20, direction: 'debit',  recurring: false, deductible: true, source: 'Accounts/transactions/2026-05.csv', row: 48, importedFrom: 'brex-may.csv' }
   ];
 
   // recurring rules
@@ -181,13 +181,13 @@ const DATA = (() => {
   ];
 
   const sleeves = [
-    { id: 'core-growth', name: 'Core Growth',  strategy: 'Index core, broad equity tilt', benchmark: 'S&P 500', monthlyTarget: 1200 },
-    { id: 'income',      name: 'Income',       strategy: 'Dividend and bond income',      benchmark: 'AGG',     monthlyTarget: 300 },
-    { id: 'thematic',    name: 'Thematic',     strategy: 'Concentrated single-name bets', benchmark: 'S&P 500', monthlyTarget: 0 },
-    { id: 'cash',        name: 'Cash & Equiv.', strategy: 'Sweep + Marcus savings',       benchmark: '—',       monthlyTarget: 0 },
+    { id: 'core-growth', portfolioId: 'core', name: 'Core Growth',  strategy: 'Index core, broad equity tilt', benchmark: 'S&P 500', monthlyTarget: 1200 },
+    { id: 'income',      portfolioId: 'core', name: 'Income',       strategy: 'Dividend and bond income',      benchmark: 'AGG',     monthlyTarget: 300 },
+    { id: 'thematic',    portfolioId: 'core', name: 'Thematic',     strategy: 'Concentrated single-name bets', benchmark: 'S&P 500', monthlyTarget: 0 },
+    { id: 'cash',        portfolioId: 'core', name: 'Cash & Equiv.', strategy: 'Sweep + Marcus savings',       benchmark: '—',       monthlyTarget: 0 },
   ];
 
-  const holdings = [
+  const assets = [
     { id: 'h-vti',   ticker: 'VTI',    name: 'Vanguard Total Stock Market', account: 'brokerage-main', sleeve: 'core-growth', qty: 380.4,  price: 286.40, basis: 78420, asset: 'US Equity',  sector: 'Broad' },
     { id: 'h-vxus',  ticker: 'VXUS',   name: 'Vanguard Total International', account: 'brokerage-main', sleeve: 'core-growth', qty: 480.2, price:  64.85, basis: 26420, asset: 'Intl Equity', sector: 'Broad' },
     { id: 'h-nvda',  ticker: 'NVDA',   name: 'NVIDIA Corp',                  account: 'brokerage-main', sleeve: 'thematic',    qty:  12.0, price: 1485.20, basis:  8200, asset: 'US Equity',  sector: 'Tech' },
@@ -222,7 +222,7 @@ const DATA = (() => {
     { lotId: 'L-NVDA-003', ticker: 'NVDA', acquired: '2025-11-04', qty: 4, basis: 2200, currentValue: 5940.80, gain: 3740.80, term: 'short' },
   ];
 
-  const entities = [
+  const accountGroups = [
     { id: 'personal',       display: 'Personal Accounts',   type: 'personal',   active: true },
     { id: 'employment',     display: 'Place of Employment', type: 'employment', active: true },
     { id: 'consulting-llc', display: 'Consulting LLC',     type: 'business',   taxId: '8x-xxx-2241', active: true },
@@ -312,7 +312,7 @@ const DATA = (() => {
         type: 'monthly-review',
         note_id: 'note-2026-05-review',
         period: '2026-05',
-        entity_ids: ['consulting-llc'],
+        account_group_ids: ['consulting-llc'],
         account_ids: ['checking-main', 'brokerage-main'],
         goal_ids: ['house-down-payment', 'emergency-fund'],
         tags: ['monthly-close'],
@@ -423,7 +423,7 @@ Target **<$5,000 net realized short-term gains** in 2026. Long-term realizations
       frontMatter: {
         type: 'business-review',
         note_id: 'note-biz-strategy',
-        entity_ids: ['consulting-llc'],
+        account_group_ids: ['consulting-llc'],
         tags: ['business', 'strategy'],
         schema_version: 1,
       },
@@ -537,8 +537,8 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       group: 'Schema',
       title: 'Header casing mismatch',
       message: '`Account_ID` should be `account_id`.',
-      file: 'Investments/holdings.csv',
-      filePath: 'Investments/holdings.csv',
+      file: 'Investments/assets.csv',
+      filePath: 'Investments/assets.csv',
       row: 1,
       repairable: true,
       kind: 'header-casing',
@@ -575,8 +575,8 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       kind: 'missing-schema-version',
       preview: { add: '+ schema_version: 1' },
       repairPreview: {
-        before: 'type: business-review\nnote_id: note-biz-strategy\nentity_ids: [consulting-llc]',
-        after:  'type: business-review\nnote_id: note-biz-strategy\nentity_ids: [consulting-llc]\nschema_version: 1',
+        before: 'type: business-review\nnote_id: note-biz-strategy\naccount_group_ids: [consulting-llc]',
+        after:  'type: business-review\nnote_id: note-biz-strategy\naccount_group_ids: [consulting-llc]\nschema_version: 1',
       },
     },
     {
@@ -596,14 +596,14 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
   ];
 
   const accounts = [
-    { id: 'checking-main',   name: 'Chase Checking',     institution: 'Chase',    group: 'Everyday Banking', type: 'checking',  monthlyInflow: 9651,  ytdNetIncome: 52080, entityId: 'personal' },
-    { id: 'savings-marcus',  name: 'Marcus Savings',     institution: 'Marcus',   group: 'Everyday Banking', type: 'savings',   monthlyInflow: 200,   ytdNetIncome: 840,   entityId: 'personal' },
-    { id: 'credit-sapphire', name: 'Chase Sapphire',     institution: 'Chase',    group: 'Credit Cards',     type: 'credit',    monthlyInflow: 0,     ytdNetIncome: 0,     entityId: 'personal' },
-    { id: 'brokerage-main',  name: 'Fidelity Brokerage', institution: 'Fidelity', group: 'Investments',      type: 'brokerage', monthlyInflow: 1500,  ytdNetIncome: 10420, entityId: 'personal' },
-    { id: 'ira-main',        name: 'Fidelity IRA',       institution: 'Fidelity', group: 'Investments',      type: 'ira',       monthlyInflow: 0,     ytdNetIncome: 4820,  entityId: 'personal' },
-    { id: 'biz-checking',    name: 'Brex Checking',      institution: 'Brex',     group: 'Business',         type: 'checking',  monthlyInflow: 17300, ytdNetIncome: 13693, entityId: 'consulting-llc' },
-    { id: 'hsa-benefit',     name: 'Fidelity HSA',       institution: 'Fidelity', group: 'Benefits',          type: 'hsa',       monthlyInflow: 345,   ytdNetIncome: 1380,  entityId: 'employment' },
-    { id: 'payroll-benefit', name: 'W-2 Payroll',        institution: 'Acme Corp',group: 'Benefits',          type: 'payroll',   monthlyInflow: 9651,  ytdNetIncome: 38604, entityId: 'employment' },
+    { id: 'checking-main',   name: 'Chase Checking',     institution: 'Chase',    group: 'Everyday Banking', type: 'checking',  monthlyInflow: 9651,  ytdNetIncome: 52080, accountGroupId: 'personal' },
+    { id: 'savings-marcus',  name: 'Marcus Savings',     institution: 'Marcus',   group: 'Everyday Banking', type: 'savings',   monthlyInflow: 200,   ytdNetIncome: 840,   accountGroupId: 'personal' },
+    { id: 'credit-sapphire', name: 'Chase Sapphire',     institution: 'Chase',    group: 'Credit Cards',     type: 'credit',    monthlyInflow: 0,     ytdNetIncome: 0,     accountGroupId: 'personal' },
+    { id: 'brokerage-main',  name: 'Fidelity Brokerage', institution: 'Fidelity', group: 'Investments',      type: 'brokerage', monthlyInflow: 1500,  ytdNetIncome: 10420, accountGroupId: 'personal' },
+    { id: 'ira-main',        name: 'Fidelity IRA',       institution: 'Fidelity', group: 'Investments',      type: 'ira',       monthlyInflow: 0,     ytdNetIncome: 4820,  accountGroupId: 'personal' },
+    { id: 'biz-checking',    name: 'Brex Checking',      institution: 'Brex',     group: 'Business',         type: 'checking',  monthlyInflow: 17300, ytdNetIncome: 13693, accountGroupId: 'consulting-llc' },
+    { id: 'hsa-benefit',     name: 'Fidelity HSA',       institution: 'Fidelity', group: 'Benefits',          type: 'hsa',       monthlyInflow: 345,   ytdNetIncome: 1380,  accountGroupId: 'employment' },
+    { id: 'payroll-benefit', name: 'W-2 Payroll',        institution: 'Acme Corp',group: 'Benefits',          type: 'payroll',   monthlyInflow: 9651,  ytdNetIncome: 38604, accountGroupId: 'employment' },
   ];
 
   // ----- iCloud workspace states -------------------------------------------
@@ -649,8 +649,8 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
     },
   ];
 
-  // ----- Tax deductions -----------------------------------------------------
-  const deductions = [
+  // ----- Tax adjustments (was deductions) ----------------------------------
+  const taxAdjustments = [
     { id: 'ded-std-federal',  type: 'standard',   name: 'Federal Standard Deduction',   estimatedAmount: 14600, status: 'confirmed' },
     { id: 'ded-std-colorado', type: 'standard',   name: 'Colorado Standard Deduction',  estimatedAmount: 14600, status: 'confirmed' },
     { id: 'ded-ira',          type: 'above-line', name: 'Traditional IRA Contribution', estimatedAmount: 7000,  status: 'confirmed' },
@@ -702,6 +702,34 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
     ],
   };
 
+  // ----- Round 6 seed: liabilities, portfolios, multi-entry transactions ----
+  // Liabilities are first-class peers of assets, held within accounts.
+  const liabilities = [
+    { id: 'liab-mortgage', accountId: 'mortgage-home',   name: 'Home Mortgage',  liabilityType: 'mortgage',    principalBalance: 412800, interestRate: 0.0625, minimumPayment: 2640, dueDate: '2026-06-01' },
+    { id: 'liab-sapphire', accountId: 'credit-sapphire', name: 'Chase Sapphire', liabilityType: 'credit-card', principalBalance: 2480,   interestRate: 0.2199, creditLimit: 18000, minimumPayment: 75, dueDate: '2026-06-12' },
+    { id: 'liab-auto',     accountId: 'auto-loan',       name: 'Auto Loan',      liabilityType: 'loan',        principalBalance: 18420,  interestRate: 0.049,  minimumPayment: 410, dueDate: '2026-06-05' },
+  ];
+
+  // Portfolios are the container above sleeves (Portfolio → Sleeve → Asset).
+  const portfolios = [
+    { id: 'core',       name: 'Core Investment Portfolio', strategy: 'Long-term index core with satellite tilts', type: 'brokerage',  goal: 'Compound net worth at ~5% real', timeframe: 'long', accountGroupIds: ['personal'] },
+    { id: 'retirement', name: 'Retirement',                strategy: 'Tax-advantaged accumulation',               type: 'retirement', goal: 'Replace 80% income by 60',       timeframe: 'long', accountGroupIds: ['personal'] },
+  ];
+
+  // Multi-entry transactions: a paycheck gross/net split (does NOT net to zero;
+  // net = gross − Σ withholdings) and a transfer (nets to zero). Seeded as a
+  // dedicated example set so they don't double-count in the May snapshot totals.
+  const multiEntryExamples = [
+    { id: 'TX-2605-036', groupId: 'PAY-2605-1', groupRole: 'gross',       date: '2026-05-04', merchant: 'Acme Employer',     description: 'Gross pay · 1st half', account: 'W-2 Payroll',    category: 'income',    type: 'income',   amount:  6480.00, direction: 'credit', accountGroupId: 'employment', deductible: false },
+    { id: 'TX-2605-037', groupId: 'PAY-2605-1', groupRole: 'withholding', date: '2026-05-04', merchant: 'Fidelity HSA',      description: 'HSA contribution',     account: 'Fidelity HSA',   category: 'savings',   type: 'transfer', amount:  -345.00, direction: 'debit',  accountGroupId: 'employment', deductible: true,  taxAdjustmentId: 'ded-hsa' },
+    { id: 'TX-2605-038', groupId: 'PAY-2605-1', groupRole: 'withholding', date: '2026-05-04', merchant: 'United Health',     description: 'Insurance premium',    account: 'W-2 Payroll',    category: 'insurance', type: 'expense',  amount:  -210.00, direction: 'debit',  accountGroupId: 'employment', deductible: false },
+    { id: 'TX-2605-039', groupId: 'PAY-2605-1', groupRole: 'withholding', date: '2026-05-04', merchant: 'IRS',              description: 'Federal withholding',  account: 'W-2 Payroll',    category: 'taxes',     type: 'expense',  amount:  -899.60, direction: 'debit',  accountGroupId: 'employment', deductible: false },
+    { id: 'TX-2605-040', groupId: 'PAY-2605-1', groupRole: 'withholding', date: '2026-05-04', merchant: 'Colorado DOR',     description: 'State withholding',    account: 'W-2 Payroll',    category: 'taxes',     type: 'expense',  amount:  -200.00, direction: 'debit',  accountGroupId: 'employment', deductible: false },
+    { id: 'TX-2605-041', groupId: 'PAY-2605-1', groupRole: 'net',         date: '2026-05-04', merchant: 'Acme Employer',     description: 'Net take-home',        account: 'Chase Checking', category: 'income',    type: 'income',   amount:  4825.40, direction: 'credit', accountGroupId: 'employment', deductible: false },
+    { id: 'TX-2605-042', groupId: 'XFER-2605-1', groupRole: 'leg', date: '2026-05-10', merchant: 'Internal Transfer', description: 'To emergency fund', account: 'Chase Checking', category: 'savings', type: 'transfer', amount: -500.00, direction: 'debit',  sendingAssetId: 'h-cash',   accountGroupId: 'personal', deductible: false },
+    { id: 'TX-2605-043', groupId: 'XFER-2605-1', groupRole: 'leg', date: '2026-05-10', merchant: 'Internal Transfer', description: 'To emergency fund', account: 'Marcus Savings', category: 'savings', type: 'transfer', amount:  500.00, direction: 'credit', receivingAssetId: 'h-cash', accountGroupId: 'personal', deductible: false },
+  ];
+
   return {
     workspace,
     categories,
@@ -710,11 +738,11 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
     goals,
     investmentAccounts,
     sleeves,
-    holdings,
+    assets,
     sleeveTargets,
     benchSeries,
     taxLots,
-    entities,
+    accountGroups,
     businessCategories,
     businessTransactions,
     businessBudgets,
@@ -730,7 +758,10 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
     iCloudStates,
     benchmarkPeriods,
     benchmarkReturns,
-    deductions,
+    taxAdjustments,
     accountTaxRates,
+    liabilities,
+    portfolios,
+    multiEntryExamples,
   };
 })();

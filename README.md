@@ -22,11 +22,11 @@ The app is a structured interface over files the user owns — not a database, n
 | Module | Purpose |
 |---|---|
 | Overview | KPI dashboard across all domains |
-| Accounts | Income and expense management per taxable account |
+| Accounts | Income, expense, asset, and liability management per account |
 | Budget | Monthly plan-vs-actual, category and group totals |
-| Savings & Investments | Savings goals, portfolio holdings, sleeves, benchmark comparisons |
+| Savings & Investments | Savings goals; portfolios, sleeves, and assets; benchmark comparisons |
 | Business | Multi-entity income, expenses, and budget variance |
-| Taxes | Estimated payments, realized gains, deduction tracking, prep checklist |
+| Taxes | Estimated payments, realized gains, tax-adjustment tracking, prep checklist |
 
 Notes, Issues, and Files views are planned for V2.
 
@@ -41,9 +41,9 @@ open-finance/
 │   ├── technical-design.md        # How & where — architecture, CSV specs, service design
 │   ├── product-roadmap.md         # When — phased plan with milestone gates
 │   ├── project-management.md      # Tasks — remaining work before the Phase 1 build
-│   ├── _refinement/               # Review rounds and doc update plans
-│   │   ├── review-r{n}.md         # Raw feedback per prototype review round
-│   │   └── update-{doc}-r{n}.md   # Formatted doc update plan based on a review
+│   ├── _refinement/               # Review rounds and doc update plans (round-first naming)
+│   │   ├── r{n}-review.md         # Raw feedback per prototype review round
+│   │   └── r{n}-update-{doc}.md   # Formatted doc update plan based on a review
 │   ├── _design/                   # Design mocks, icons, images, design system
 │   └── _notes/                    # Loose notes and domain research for team reference
 ├── prototype/                     # Static prototype for reviewing the app experience
@@ -71,8 +71,8 @@ Phased implementation roadmap with Product/Design/Dev tasks per phase and milest
 ### `docs/_refinement/`
 Prototype review feedback and the doc update plans synthesized from it.
 
-- `review-r{n}.md` — UX and functionality notes from each prototype review round
-- `update-{doc}-r{n}.md` — formatted update plan per target document per round (e.g. `update-product-requirements-r1.md`, `update-technical-design-r1.md`)
+- `r{n}-review.md` — UX and functionality notes from each prototype review round
+- `r{n}-update-{doc}.md` — formatted update plan per target document per round (e.g. `r6-update-product-requirements.md`, `r6-update-technical-design.md`)
 
 ### `docs/_notes/`
 Loose notes and domain research referenced by the team (e.g. `account-types.md`, `deduction-types.md`, `workflow-overview.md`).
@@ -87,23 +87,23 @@ The app reads from a Finance folder in iCloud Drive with the following layout:
 Finance/
 ├── Workspace.md
 ├── .finance-meta/          # App-managed metadata (manifest, schemas, backups, logs)
-├── Personal/               # Personal transactions, categories, budgets
+├── Accounts/               # Master registry, account-groups, liabilities, unified transaction ledger
+├── Budget/                 # Categories, budgets, allocations
 ├── Savings/                # Savings goals and progress snapshots
-├── Investments/            # Holdings, trades, prices, sleeves, benchmarks
-├── Business/               # Business entities, transactions, categories, budgets
-├── Taxes/                  # Estimated payments, settings, yearly notes
+├── Investments/            # Assets, prices, portfolios, sleeves, benchmarks
+├── Taxes/                  # Tax-adjustments, estimates, documents, estimated payments, settings, archive
 └── Notes/                  # Monthly reviews and strategy notes
 ```
 
-Full file specifications (required columns, path conventions, validation rules) are in `docs/technical-design.md`.
+Personal and business activity share the unified `Accounts/transactions/` ledger (distinguished by `account_group_id` and a `BX-` ID prefix) — there is no separate `Personal/` or `Business/` folder. Full file specifications (required columns, path conventions, validation rules) are in `docs/technical-design.md`.
 
 ---
 
 ## Design and review workflow
 
-1. **Prototype review** → add `docs/_refinement/review-r{n}.md` with UX and functionality notes
+1. **Prototype review** → add `docs/_refinement/r{n}-review.md` with UX and functionality notes
 2. **Domain research** → add named research docs to `docs/_notes/` as questions arise
-3. **Update plan** → synthesize review docs into `docs/_refinement/update-{doc}-r{n}.md` per affected document
+3. **Update plan** → synthesize review docs into `docs/_refinement/r{n}-update-{doc}.md` per affected document
 4. **Apply updates** → apply changes to `docs/product-requirements.md`, then cascade to `docs/technical-design.md` and `docs/product-roadmap.md`, each with a Changelog entry
 5. **Design & prototype** → update `docs/_design/` assets and `prototype/` to reflect the changes, then start the next review round
 6. **Feature spec** → use Spec Kit (`/speckit-specify`) to create per-module specs when ready to build

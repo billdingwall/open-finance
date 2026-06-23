@@ -13,9 +13,10 @@ const Store = (() => {
   // Collections a user can mutate through the prototype UI. Everything
   // else (chart series, benchmark math, iCloud state defs) stays seeded.
   const PERSIST_KEYS = [
-    'goals', 'transactions', 'categories', 'rules', 'accounts', 'entities',
-    'estimatedPayments', 'deductions', 'taxChecklist', 'issues', 'holdings',
+    'goals', 'transactions', 'categories', 'rules', 'accounts', 'accountGroups',
+    'estimatedPayments', 'taxAdjustments', 'taxChecklist', 'issues', 'assets',
     'sleeves', 'sleeveTargets', 'notes', 'businessCategories', 'businessBudgets',
+    'liabilities', 'portfolios',
   ];
 
   function syncDerived() {
