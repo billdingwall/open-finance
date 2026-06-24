@@ -1,7 +1,7 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
-**Last updated**: 2026-06-24 (Round 7 extended — dev environment locked: macOS 15, Xcode 16, Swift 6, GitHub Actions CI/CD (SwiftLint Phase 1), figma-cli handoff policy; CLAUDE.md toolchain documented)  
+**Last updated**: 2026-06-24 (Round 7 extended — dev environment locked: macOS 15, Xcode 16, Swift 6, GitHub Actions CI/CD (SwiftLint Phase 1), figma-cli handoff policy; CLAUDE.md toolchain documented. Round 7 audit — [FIX-R7-P1] resolved (prototype write/edit/delete flows implemented); item counts table recomputed and corrected)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
@@ -175,8 +175,7 @@ Multi-entry transactions (transfers, paycheck gross/net splits) use a shared `gr
 **[FIX – R6-M5]** Create one-time `migrate-r6.swift` migration script  
 Before first build, a preview-able migration script is needed to rename the three legacy CSV files (`entities.csv` → `account-groups.csv`, `holdings.csv` → `assets.csv`, `deductions.csv` → `tax-adjustments.csv`), update FK column names in-place, and fold `Investments/transactions.csv` into the unified monthly ledger. Spec is in `docs/architecture/data-pipelines.md §2` (optional scripts). Existing workspaces from the prototype era will need this path.
 
-**[FIX – R7-P1]** Update prototype `data.js` write/edit flows  
-The prototype does not yet demonstrate edit and delete interactions. Roadmap tasks for write flows (Phase 6) should include updating the prototype to show: add transaction modal, edit account side panel, delete with reference preview, import CSV column-mapping flow. Tracked per `docs/_refinement/r7-review.md` item B1.
+~~**[FIX – R7-P1]** Update prototype `data.js` write/edit flows~~ **Resolved R7** — Prototype now demonstrates the full add/edit/delete cycle: add-transaction modal and manual single-entry flow, edit account/transaction/goal/category/group side panels, **delete with reference-check reassignment preview** (per-collection reassignment picker, atomic delete + reassign — matches the locked Round 7 reassign policy), and a two-step **import CSV column-mapping flow** (file picker → auto-detected column-mapping table → import). `prototype/data.js` also carries the full R6 schema (accountGroups, assets, taxAdjustments, liabilities, portfolios, multi-entry transactions with `groupId`/`groupRole`). Tracked per `docs/_refinement/r7-review.md` items A2/B1/B2.
 
 ---
 
@@ -431,15 +430,15 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 
 | Phase | FIX open | FIX resolved | DECIDE open | DECIDE resolved | Total open |
 |---|---|---|---|---|---|
-| Phase 1 — Foundation | 7 | 5 | 11 | 4 | 18 |
-| Phase 2 — Parsing | 7 | 0 | 5 | 0 | 12 |
-| Phase 3 — Domain I | 1 | 0 | 10 | 1 | 11 |
-| Phase 4 — Domain II | 2 | 0 | 14 | 0 | 16 |
-| Phase 5 — Presentation | 1 | 0 | 9 | 0 | 10 |
-| Phase 6 — Write Flows | 0 | 0 | 7 | 1 | 7 |
-| Phase 7 — Polish | 0 | 0 | 5 | 0 | 5 |
-| **Total** | **18** | **5** | **61** | **6** | **79** |
+| Phase 1 — Foundation | 10 | 6 | 9 | 4 | 19 |
+| Phase 2 — Parsing | 7 | 1 | 8 | 0 | 15 |
+| Phase 3 — Domain I | 1 | 0 | 13 | 1 | 14 |
+| Phase 4 — Domain II | 2 | 0 | 21 | 0 | 23 |
+| Phase 5 — Presentation | 1 | 0 | 11 | 0 | 12 |
+| Phase 6 — Write Flows | 0 | 0 | 14 | 0 | 14 |
+| Phase 7 — Polish | 0 | 0 | 6 | 0 | 6 |
+| **Total** | **21** | **7** | **82** | **5** | **103** |
 
 ---
 
-*Last updated: 2026-06-24*
+*Last updated: 2026-06-24 (Round 7 audit pass)*

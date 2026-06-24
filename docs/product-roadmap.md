@@ -623,9 +623,11 @@ backed up, and previewable.
 - [ ] **Repair preview panel**: issue description, fix description, diff-style preview,
   backup confirmation, apply/cancel
 - [ ] Export confirmation dialog: format picker (CSV/Markdown), file name, destination
-- [ ] **Prototype update** — update `prototype/data.js` and relevant views to demonstrate write/edit
-  flows: add transaction modal, edit account side panel, delete with reference-check preview,
-  import CSV column-mapping flow (tracked in `docs/project-management.md` as `[FIX – R7-P1]`)
+- [x] **Prototype update** — `prototype/app.js` demonstrates write/edit/delete flows: add transaction
+  modal + manual single-entry, edit side panels (account/transaction/goal/category/group), delete with
+  reference-check reassignment preview (per-collection picker, atomic delete + reassign), and a two-step
+  import CSV column-mapping flow (file picker → auto-detected mapping table → import). Resolved Round 7
+  (`[FIX – R7-P1]` in `docs/project-management.md`)
 
 ### Development Tasks
 

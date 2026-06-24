@@ -66,14 +66,14 @@ fixes available this round because they are pure execution — no new decisions.
   decisions. *Gap-analysis severity: High.*
   > **Applied:** `docs/project-management.md` updated — [FIX-C1], [FIX-C5], [FIX-S8] retired with strikethrough (resolved in R4/R7); five R6 migration FIX items added to Phase 2 Development (R6-M1 through R6-M5); prototype update task added as [FIX-R7-P1]; item counts table updated.
 
-- **A2 — Prototype not updated to the R6 schema (P1).** ✅ Partially applied 2026-06-24
+- **A2 — Prototype not updated to the R6 schema (P1).** ✅ Applied 2026-06-24 (completed in R7 audit pass)
   `prototype/data.js` / `store.js` still use the old mock collections
   (`entities`, `holdings`, `deductions`) and lack liabilities, portfolios, and the
   new transaction fields (`group_id`, `group_role`, `liability_id`, `trade`/`credit`
   types). If the prototype is our primary review vehicle, the next review round
   cannot validate R6 against it until this is done. No roadmap task captures the
   work. *Gap-analysis severity: High.*
-  > **Applied (partial):** `prototype/data.js` stale file paths corrected — `Investments/transactions.csv` references updated to `Accounts/transactions/YYYY-MM.csv` (realizedGains, incomeSummary); `Personal/transactions/*.csv` and `Personal/categories.csv` references updated in issues table (iss-001 through iss-003, iss-008). Most R6 entity renames (`accountGroups`, `assets`, `taxAdjustments`, `liabilities`, `portfolios`, `multiEntryExamples`) were already applied in a prior session. Write/edit flow prototype updates remain outstanding and are now tracked as `[FIX-R7-P1]` in `docs/project-management.md` and a Phase 6 Design task in the roadmap.
+  > **Applied:** `prototype/data.js` carries the full R6 schema — `accountGroups`, `assets`, `taxAdjustments`, `liabilities`, `portfolios`, and multi-entry transactions with `groupId`/`groupRole`/`sendingAssetId`/`receivingAssetId`/`liabilityId`/`taxAdjustmentId`. Stale file paths corrected (`Investments/transactions.csv` → `Accounts/transactions/YYYY-MM.csv`; `Personal/*` → `Accounts/*`). Write/edit/delete flows added to `prototype/app.js` under `[FIX-R7-P1]` (see B2). `[FIX-R7-P1]` is resolved in `docs/project-management.md`.
 
 - **A3 — `technical-design.md` is a monolith; file-org proposal not executed (P2).** ✅ Applied 2026-06-24
   The proposed `docs/architecture/` split (`index.md`, `core-domain.md`,
@@ -112,12 +112,12 @@ fixes available this round because they are pure execution — no new decisions.
   > **Direction:** Reassign. Delete flow surfaces referencing rows + per-collection picker. Delete + reassignments written atomically.
   > **Applied:** `docs/product-requirements.md §12`, `docs/architecture/rulesets-and-taxes.md §1`, `docs/technical-design.md §21`, `docs/product-roadmap.md` Open Decisions — all updated to reflect reassign as the locked behavior.
 
-- **B2 — Write/edit flows missing from the prototype (P1).** ✅ Tracked 2026-06-24
+- **B2 — Write/edit flows missing from the prototype (P1).** ✅ Applied 2026-06-24 (completed in R7 audit pass)
   PRD §12 makes universal add/edit/delete a V1 requirement, but the prototype
   inspector is read-only and the documented write-preview / safe-write behavior is
   not demonstrated. This is a prototype-fidelity gap, not a spec gap. *Audit severity: High.*
   > **Direction:** Add to prototype.
-  > **Applied:** Tracked as `[FIX – R7-P1]` in `docs/project-management.md` and as a Phase 6 Design task in `docs/product-roadmap.md`. Prototype update is a future execution task.
+  > **Applied:** `prototype/app.js` now demonstrates the full add/edit/delete cycle: add-transaction modal + manual single-entry flow, edit side panels (account/transaction/goal/category/group), **delete with reference-check reassignment preview** (per-collection reassignment picker; atomic delete + reassign, matching the locked reassign policy), and a two-step **import CSV column-mapping flow** (file picker → auto-detected mapping table → import). Tracked and resolved as `[FIX – R7-P1]` in `docs/project-management.md`; Phase 6 prototype task in `docs/product-roadmap.md` checked off.
 
 - **B3 — Business: domain vs. theme ambiguity persists (P1).** ✅ Applied 2026-06-24
   The audit and `project-management.md` [FIX-C3]/[S2] both flag that Business is

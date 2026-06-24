@@ -10,9 +10,9 @@ Status: **Applied 2026-06-24** (direction provided inline; no separate proposal 
 
 Round 7 made four categories of changes to `project-management.md`:
 
-1. **FIX retirements (R7)** — six FIX items resolved as part of doc-sync debt cleanup (A-section items) and functional gap resolution (B-section items).
+1. **FIX retirements (R7)** — five pre-existing FIX items retired as part of doc-sync debt cleanup (C3, S1, S8) and functional gap resolution (C5, S2).
 2. **R6 migration items** — five new `[FIX-R6-M*]` items added under Phase 2 Development to track schema migration tasks arising from the Round 6 object-model decisions.
-3. **R7 prototype FIX** — `[FIX-R7-P1]` added under Phase 2 Development tracking the outstanding prototype write/edit flow task.
+3. **R7 prototype FIX** — `[FIX-R7-P1]` added under Phase 2 Development for the prototype write/edit/delete flows, then resolved in the R7 audit pass once those flows were implemented in `prototype/app.js`.
 4. **Dev environment DECIDE items** — four DECIDE items added and resolved same day (macOS target, Xcode/Swift version, CI/CD, Figma handoff); one pre-existing DECIDE (OverviewEngine stub) resolved from a Phase 3 gap-analysis item.
 
 No phase structure, milestone gates, or open FIX/DECIDE items were removed without resolution. All additions are tracked items, not content changes.
@@ -37,7 +37,7 @@ No phase structure, milestone gates, or open FIX/DECIDE items were removed witho
 | 12 | Phase 2 Dev — [FIX-R6-M3] | Added — portfolios/sleeves schema entries | ✅ Applied — ⚠️ Pending execution (Phase 2) |
 | 13 | Phase 2 Dev — [FIX-R6-M4] | Added — group_id / group_role transaction columns | ✅ Applied — ⚠️ Pending execution (Phase 2) |
 | 14 | Phase 2 Dev — [FIX-R6-M5] | Added — migrate-r6.swift one-time migration script | ✅ Applied — ⚠️ Pending execution (Phase 2) |
-| 15 | Phase 2 Dev — [FIX-R7-P1] | Added — prototype write/edit/delete flows | ✅ Applied — ⚠️ Pending execution |
+| 15 | Phase 2 Dev — [FIX-R7-P1] | Added, then resolved in R7 audit pass — prototype write/edit/delete flows implemented | ✅ Resolved R7 |
 | 16 | Phase 3 Dev — [DECIDE] OverviewEngine stub | Resolved R7 — typed "data not available" state | ✅ Applied |
 | 17 | Item counts table | Updated to reflect all R7 additions and resolutions | ✅ Applied |
 | 18 | Changelog | R7 entry appended | ✅ Applied |
@@ -89,11 +89,11 @@ Five new [FIX-R6-M*] items added to track schema migration tasks required before
 - ⚠️ **Pending execution**: all five items require implementation in Phase 2 before `CSVSchemaRegistry` can be built.
 - Source: R6 object-model decisions (locked R6, tracked R7).
 
-### Phase 2 Development — [FIX-R7-P1] (added)
+### Phase 2 Development — [FIX-R7-P1] (added, then resolved)
 
-- **Added**: `[FIX-R7-P1]` — Update prototype `data.js` write/edit flows. The prototype does not yet demonstrate add, edit, or delete interactions. Roadmap Phase 6 Design includes a task to update the prototype to show: add transaction modal, edit account side panel, delete with reference-check reassignment preview, import CSV column-mapping flow.
-- ⚠️ **Pending execution**: prototype write/edit flows have not been implemented. This is the primary outstanding R7 execution task.
-- Source: B1, B2. Also tracked in `docs/product-roadmap.md` Phase 6 Design.
+- **Added, then resolved in the R7 audit pass**: `[FIX-R7-P1]` — prototype write/edit/delete flows. The prototype now demonstrates: add-transaction modal + manual single-entry, edit side panels (account/transaction/goal/category/group), delete with reference-check reassignment preview (per-collection picker; atomic delete + reassign), and a two-step import CSV column-mapping flow (file picker → auto-detected mapping table → import).
+- ✅ **Resolved**: implemented in `prototype/app.js`; `data.js` carries the full R6 schema. Marked resolved in `docs/project-management.md`; Phase 6 prototype task checked off in `docs/product-roadmap.md`.
+- Source: A2, B1, B2. Also tracked in `docs/product-roadmap.md` Phase 6 Design.
 
 ### Phase 3 Development — OverviewEngine DECIDE (resolved)
 
@@ -102,24 +102,24 @@ Five new [FIX-R6-M*] items added to track schema migration tasks required before
 
 ### Item counts table
 
-Updated to reflect all R7 resolutions and additions:
+Recomputed from the document in the R7 audit pass (every `[FIX]`/`[DECIDE]` line counted; strikethrough = resolved). The earlier hand-maintained counts had drifted in every phase and were corrected:
 
 | Phase | FIX open | FIX resolved | DECIDE open | DECIDE resolved | Total open |
 |---|---|---|---|---|---|
-| Phase 1 — Foundation | 7 | 5 | 11 | 4 | 18 |
-| Phase 2 — Parsing | 7 | 0 | 5 | 0 | 12 |
-| Phase 3 — Domain I | 1 | 0 | 10 | 1 | 11 |
-| Phase 4 — Domain II | 2 | 0 | 14 | 0 | 16 |
-| Phase 5 — Presentation | 1 | 0 | 9 | 0 | 10 |
-| Phase 6 — Write Flows | 0 | 0 | 7 | 1 | 7 |
-| Phase 7 — Polish | 0 | 0 | 5 | 0 | 5 |
-| **Total** | **18** | **5** | **61** | **6** | **79** |
+| Phase 1 — Foundation | 10 | 6 | 9 | 4 | 19 |
+| Phase 2 — Parsing | 7 | 1 | 8 | 0 | 15 |
+| Phase 3 — Domain I | 1 | 0 | 13 | 1 | 14 |
+| Phase 4 — Domain II | 2 | 0 | 21 | 0 | 23 |
+| Phase 5 — Presentation | 1 | 0 | 11 | 0 | 12 |
+| Phase 6 — Write Flows | 0 | 0 | 14 | 0 | 14 |
+| Phase 7 — Polish | 0 | 0 | 6 | 0 | 6 |
+| **Total** | **21** | **7** | **82** | **5** | **103** |
 
 Count explanation:
-- Phase 1 resolved FIX = 5 (C1 from R4, C3/S1/S8/C5/S2 from R7 — but C1+C5+S2 = 3 Dev items, C3+S1+S8 = 3 Product items = 6 resolved, however C1 is the only one visible in Dev section as already resolved, the counts show 5 because S1 and S8 are Product-section items counted separately). The table counts 5 resolved FIX across Phase 1 total.
-- Phase 1 resolved DECIDE = 4 (Figma handoff + macOS + Xcode/Swift + CI/CD, all added and resolved R7).
+- Phase 1 resolved FIX = 6 (C1 from R4; C3/S1/S8 Product + C5/S2 Dev from R7). Phase 1 resolved DECIDE = 4 (Figma + macOS + Xcode/Swift + CI/CD, all added and resolved R7).
+- Phase 2 FIX = S4, S7 (pre-existing) + R6-M1–M5 + R7-P1 = 8 total; R7-P1 resolved in the R7 audit pass → 7 open, 1 resolved.
 - Phase 3 resolved DECIDE = 1 (OverviewEngine stub, resolved R7).
-- R6-M1–M5 and R7-P1 are Phase 2 FIX items (7 total open) with 0 resolved.
+- DECIDE-open figures for Phases 3–7 were undercounted in prior revisions and are now recomputed directly from the document.
 
 ---
 
@@ -146,7 +146,7 @@ environment); update plan docs/_refinement/r7-update-project-management.md
 - Phase 1 Dev: [DECIDE] macOS target resolved (macOS 15), Xcode/Swift resolved (Xcode 16 / Swift 6),
   CI/CD resolved (GitHub Actions; SwiftLint Linux runner Phase 1; Mac build CI deferred Phase 5)
 - Phase 2 Dev: [FIX-R6-M1]–[FIX-R6-M5] added — schema migration tasks from R6 renames
-- Phase 2 Dev: [FIX-R7-P1] added — prototype write/edit flow (pending execution)
+- Phase 2 Dev: [FIX-R7-P1] added, then resolved in R7 audit pass — prototype write/edit/delete flows implemented
 - Phase 3 Dev: [DECIDE] OverviewEngine stub resolved — typed "data not available" state
-- Item counts updated
+- Item counts recomputed and corrected (prior counts had drifted in every phase)
 ```

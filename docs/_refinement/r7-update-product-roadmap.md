@@ -46,7 +46,7 @@ Items marked **⚠️ Verify** require execution or confirmation before advancin
 ### Phase 6 Design
 - **Added task**: "Update prototype to demonstrate write/edit/delete flows and write-preview: add transaction modal, edit account side panel, delete with reference-check reassignment preview, import CSV column-mapping flow."
 - This task is tracked as `[FIX-R7-P1]` in `docs/project-management.md`.
-- ⚠️ **Pending execution**: prototype write/edit flows have not been implemented. This is the primary outstanding R7 execution task.
+- ✅ **Resolved in the R7 audit pass**: implemented in `prototype/app.js`; the Phase 6 prototype task is checked off in the roadmap.
 - Source: A2, B2.
 
 ### Changelog
@@ -74,6 +74,6 @@ update plan docs/_refinement/r7-update-product-roadmap.md
 - Open Decisions: delete-on-reference resolved — locked as reassign (surface referencing rows,
   per-collection picker, atomic write)
 - Phase 1 Development: SwiftLint task updated with CI/CD context (GitHub Actions, Linux runner)
-- Phase 6 Design: prototype write/edit flow task added [FIX-R7-P1] — pending execution
+- Phase 6 Design: prototype write/edit/delete flow task added and resolved [FIX-R7-P1]
 - Phase 2 Development: migrate-r6.swift task added (one-time R6 schema migration)
 ```
