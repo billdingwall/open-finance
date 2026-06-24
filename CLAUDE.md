@@ -102,15 +102,15 @@ Before proposing any implementation detail, verify it doesn't violate these:
 
 **Primary IDE**: Google Antigravity 2.0 / Antigravity IDE. Xcode remains required as the macOS build toolchain — Antigravity is the code editing environment but does not replace Xcode for building and running SwiftUI apps. IDE-specific project settings must not conflict with Xcode project settings.
 
-**Design-to-code bridge**: Figma MCP tools give the AI assistant direct read access to design specs, design tokens, and component annotations from the Figma workspace (design assets in `docs/_design/`). MCP server configuration is documented in `.claude/settings.json` — set this up in Phase 1 before starting design-driven implementation.
+**Design-to-code bridge**: [figma-cli](https://github.com/silships/figma-cli) — a local CLI that lets Claude Code design directly in Figma Desktop using natural language. Communicates with Figma Desktop via CDP (no API key, no rate limits). Install in Yolo mode (default) during Phase 1 setup — Claude Code handles installation. Design tokens export to `docs/_design/tokens/` (DTCG/W3C format); icons and SVG assets export to `docs/_design/icons/`. Claude Code reads design specs live from Figma Desktop during implementation phases.
 
 **Secondary IDEs (later phases)**: VS Code and Kiro are candidates for later development phases. No setup required until needed.
 
-**Platform requirements** — pending Phase 1 DECIDE items (see `docs/project-management.md`):
-- macOS deployment target: TBD. Likely macOS 14 (Sonoma) — minimum for `@Observable` (Observation framework). Decision gates Xcode project creation.
-- Xcode version: TBD. Must be pinned for reproducible builds across all tools and CI.
-- Swift version: TBD. Follows from Xcode version.
-- CI/CD: TBD. GitHub Actions; Mac runner strategy for SwiftLint and build checks pending.
+**Platform requirements:**
+- macOS deployment target: **macOS 15 (Sequoia)**. Update to the latest stable release at Phase 1 build start if newer.
+- Xcode: **Xcode 16**. Update to latest stable at Phase 1 build start.
+- Swift: **Swift 6**.
+- CI/CD: GitHub Actions. SwiftLint on a standard Linux runner in Phase 1; full Mac build CI deferred to Phase 5.
 
 ## Spec Kit workflow
 

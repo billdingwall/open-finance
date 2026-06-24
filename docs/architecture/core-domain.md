@@ -64,9 +64,11 @@
 
 ### Recommended stack
 
+- **macOS 15 (Sequoia)** minimum deployment target. Update to the latest stable macOS at Phase 1 build start if newer.
+- **Xcode 16** (update to latest stable at Phase 1 build start) · **Swift 6**.
 - SwiftUI for macOS UI and scene management.
 - Swift Charts for all chart rendering (pie/donut, sparklines, holdings heat map, monthly net-income, portfolio). Charts use real charting, not hand-authored placeholder SVGs; the prototype uses a real charting library as the equivalent.
-- Observation for app state and model updates.
+- Observation (`@Observable`) for app state and model updates. Requires macOS 14+; macOS 15 target satisfies this.
 - Foundation `FileManager` for workspace access.
 - `NSFileCoordinator` for coordinated reads and writes where needed around iCloud documents.
 - Uniform Type Identifiers for file-type declaration and import/export boundaries.

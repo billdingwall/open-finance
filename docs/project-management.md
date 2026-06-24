@@ -1,7 +1,7 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
-**Last updated**: 2026-06-24 (Round 7 extended — added dev environment DECIDE items: macOS deployment target, Xcode/Swift version, CI/CD pipeline, Figma MCP handoff policy; CLAUDE.md toolchain documented)  
+**Last updated**: 2026-06-24 (Round 7 extended — dev environment locked: macOS 15, Xcode 16, Swift 6, GitHub Actions CI/CD (SwiftLint Phase 1), figma-cli handoff policy; CLAUDE.md toolchain documented)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
@@ -52,7 +52,7 @@ PRD non-goals says "AI model integrations to analyze performance" with no timeli
 
 ### Design
 
-**[DECIDE]** Figma → code handoff policy — with Figma MCP tooling in the stack, what does the MCP server expose to the AI assistant (design tokens, component specs, layer annotations, asset URLs)? What naming conventions apply for tokens and components? Which assets are committed to `docs/_design/` versus read live from Figma at implementation time? Document MCP server configuration in `.claude/settings.json` and `CLAUDE.md` once finalized.
+~~**[DECIDE]** Figma → code handoff policy~~ **Resolved R7** — figma-cli (local CLI via CDP, no API key). Yolo mode default. Claude Code reads design specs live from Figma Desktop. Design tokens exported to `docs/_design/tokens/` (DTCG/W3C format); icons/SVG assets exported to `docs/_design/icons/`. Component specs generated on demand, not committed. Set up figma-cli in Phase 1 — Claude Code handles installation.
 
 **[DECIDE]** First-launch onboarding flow — workspace creation screens, iCloud availability states, fallback UI when iCloud is unavailable
 
@@ -107,11 +107,11 @@ PRD recommends "MVVM for presentation logic." Tech Design §11 says "Observation
 **[FIX – M6]** Replace `PersonalTransaction` / `BusinessTransaction` with `Transaction`  
 Tech Design §10 and Roadmap Phase 1 list both `PersonalTransaction` and `BusinessTransaction` as separate entity types. The file model uses a single unified transaction file; personal vs business filtering is done at query time by `entity_id` and `account_group`. Replace with a single `Transaction` or `UnifiedTransaction` entity in §10 and the Phase 1 roadmap entity list.
 
-**[DECIDE]** macOS deployment target — what is the minimum macOS version for `FinanceWorkspaceApp`? Constraint: `@Observable` (Observation framework) requires macOS 14 (Sonoma). Given the M1+ hardware baseline (C2, locked R7), macOS 14 is the likely minimum. Candidates: macOS 14 (Sonoma) or macOS 15 (Sequoia). Decision gates Xcode project creation and determines which SwiftUI, Swift Charts, and Observation APIs are available across all phases.
+~~**[DECIDE]** macOS deployment target~~ **Resolved R7** — macOS 15 (Sequoia). Update to the latest stable macOS at Phase 1 build start if newer. Documented in `CLAUDE.md` and `docs/architecture/core-domain.md §2`.
 
-**[DECIDE]** Xcode and Swift version requirements — which Xcode version is required for development? Which Swift language version? These must be pinned for reproducible builds across Claude Code, Antigravity IDE, and CI. Document the answers in `CLAUDE.md` and `docs/technical-design.md §2`.
+~~**[DECIDE]** Xcode and Swift version requirements~~ **Resolved R7** — Xcode 16, Swift 6. Update to latest stable at Phase 1 build start. Documented in `CLAUDE.md` and `docs/architecture/core-domain.md §2`.
 
-**[DECIDE]** CI/CD pipeline — what runs on pull request? Options: (a) SwiftLint + doc/script checks on a Linux runner only (no Mac build check); (b) full Swift build on a self-hosted Mac runner; (c) defer build CI to a later phase. How are code signing and iCloud entitlements handled in a CI environment that has no Apple Developer account?
+~~**[DECIDE]** CI/CD pipeline~~ **Resolved R7** — GitHub Actions. Phase 1: SwiftLint on a standard Linux runner only (no Mac build CI). Full Mac build CI deferred to Phase 5. Code signing and entitlements are developer-machine only in Phase 1.
 
 **[DECIDE]** `FileWatcherService` implementation — `DispatchSource` (lower-level file descriptor watching) vs `NSFilePresenter` (higher-level, integrates with iCloud file coordination)?
 
@@ -431,14 +431,14 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 
 | Phase | FIX open | FIX resolved | DECIDE open | DECIDE resolved | Total open |
 |---|---|---|---|---|---|
-| Phase 1 — Foundation | 7 | 5 | 15 | 0 | 22 |
+| Phase 1 — Foundation | 7 | 5 | 11 | 4 | 18 |
 | Phase 2 — Parsing | 7 | 0 | 5 | 0 | 12 |
 | Phase 3 — Domain I | 1 | 0 | 10 | 1 | 11 |
 | Phase 4 — Domain II | 2 | 0 | 14 | 0 | 16 |
 | Phase 5 — Presentation | 1 | 0 | 9 | 0 | 10 |
 | Phase 6 — Write Flows | 0 | 0 | 7 | 1 | 7 |
 | Phase 7 — Polish | 0 | 0 | 5 | 0 | 5 |
-| **Total** | **18** | **5** | **65** | **2** | **83** |
+| **Total** | **18** | **5** | **61** | **6** | **79** |
 
 ---
 
