@@ -2,8 +2,8 @@
 round: 7
 date: 2026-06-24
 type: synthesis / mvp-prep
-summary: Initial round-7 draft synthesized from the architectural audit and the R6 gap analysis — focus is MVP readiness before the Phase 1 build
-status: ALL DIRECTION DECISIONS APPLIED 2026-06-24 — full round complete (including Section E dev environment)
+summary: Synthesized from the architectural audit and R6 gap analysis — MVP readiness before Phase 1 build; extended with Section E (development environment) per principal direction
+status: ALL DIRECTION DECISIONS APPLIED 2026-06-24 — full round complete (A–E)
 inputs:
   - docs/_notes/architectural-audit.md
   - docs/_notes/r6-gap-analysis.md
@@ -29,12 +29,12 @@ transactions; unified trade ledger). Two follow-up audits have since landed:
 
 This round is **not** a prototype review. It is a consolidation pass whose goal is
 to get the project genuinely *build-ready* for Phase 1: close the doc-sync debt
-left by Round 6, force the small number of decisions that block downstream phases,
-and lock the V1 boundary on a few areas where the docs still waffle.
+left by Round 6, force the decisions that block downstream phases, lock the V1
+boundary on a few areas where the docs still waffle, and establish the development
+environment before the Phase 1 build begins.
 
-The body below synthesizes both inputs into themes with a proposed priority. The
-final section translates these into **prioritized requirements updates** for the
-principal to review before we open per-doc update plans (`r7-update-{doc}.md`).
+All direction decisions were provided by the principal and applied inline. No
+separate `r7-update-{doc}.md` update plans were needed.
 
 ---
 
@@ -50,7 +50,7 @@ principal to review before we open per-doc update plans (`r7-update-{doc}.md`).
 
 ## A. Doc-sync debt carried over from Round 6 (from `r6-gap-analysis.md`)
 
-> **Status: All A items applied 2026-06-24.** See applied-changes summary below each item.
+> **Status: All A items applied 2026-06-24.**
 
 The R6 schema work was applied cleanly to the PRD, technical design, and roadmap,
 but four follow-through items were missed. These are the cheapest, highest-value
@@ -170,37 +170,25 @@ fixes available this round because they are pure execution — no new decisions.
 
 ---
 
-## D. Synthesis — what this round should actually do
-
-Cutting across A–C, Round 7 has three workstreams:
-
-1. **Pay down R6 doc debt** (A1 P0, A2 P1, then A3/A4/A5 P2) — mechanical, do first.
-2. **Force the two V1-blocking decisions** — delete-on-reference (B1 P0) and the
-   Business domain/theme model (B3 P1) — and lock two scope boundaries
-   (Markdown B4, tax guardrail C5).
-3. **Make the write/concurrency story real** before Phase 6 — prototype write flows
-   (B2), conflict resolution (C1), with performance/bootstrap/engine-shape
-   constraints (C2–C4) recorded as explicit criteria rather than assumptions.
-
----
-
 ## E. Development environment — toolchain, platform requirements, and CI/CD
 
 > **Status: All E items applied 2026-06-24.**
 
-The primary development toolchain has been specified by the principal. Three platform decisions remain open and block Phase 1 Xcode project creation. A CI/CD strategy is absent from all current docs.
+The principal specified the development toolchain. Platform versions, CI/CD
+strategy, and Figma → code handoff policy were locked in the same pass and applied
+to `CLAUDE.md` and `docs/architecture/core-domain.md`.
 
-- **E1 — Development toolchain: Claude Code + Antigravity 2.0 / Antigravity IDE + Figma MCP (P0).** ✅ Applied 2026-06-24
+- **E1 — Development toolchain: Claude Code + Antigravity 2.0 / Antigravity IDE + figma-cli (P0).** ✅ Applied 2026-06-24
   The confirmed dev environment is:
   - **Claude Code** (primary AI dev assistant) — context file is `CLAUDE.md`. Session-start hook and build/test commands will be added once the Xcode project is created in Phase 1.
   - **Google Antigravity 2.0 / Antigravity IDE** (primary IDE) — code editing environment. Xcode remains required as the macOS build toolchain; Antigravity does not replace Xcode for building and running SwiftUI apps. IDE-specific project settings must not conflict with Xcode project settings.
   - **figma-cli** ([github.com/silships/figma-cli](https://github.com/silships/figma-cli)) — local CLI that lets Claude Code design directly in Figma Desktop via CDP (no API key, no rate limits). Not an MCP server. Yolo mode default. Design tokens (DTCG/W3C) export to `docs/_design/tokens/`; icons/SVGs to `docs/_design/icons/`. Claude Code handles installation in Phase 1.
   - VS Code and Kiro are later-phase candidates; no immediate doc changes required.
   > **Direction:** Toolchain confirmed. figma-cli is a local CLI, not an MCP server — no separate MCP config needed.
-  > **Applied:** `CLAUDE.md` — new "Development toolchain" section documents all four tools and locked platform requirements (macOS 15, Xcode 16, Swift 6, GitHub Actions).
+  > **Applied:** `CLAUDE.md` — new "Development toolchain" section documents all four tools, locked platform requirements (macOS 15, Xcode 16, Swift 6), and figma-cli workflow.
 
 - **E2 — macOS deployment target, Xcode version, and Swift version (P0).** ✅ Applied 2026-06-24
-  All three were absent. They block Phase 1 Xcode project creation and gate every SwiftUI, Observation, and Swift Charts API decision.
+  All three were absent from every doc. They block Phase 1 Xcode project creation and gate every SwiftUI, Observation, and Swift Charts API decision in Phases 1–5.
   > **Direction:** macOS 15 (Sequoia), Xcode 16, Swift 6. Update all three to the latest stable release at Phase 1 build start.
   > **Applied:** `docs/architecture/core-domain.md §2` recommended stack updated; `CLAUDE.md` platform requirements updated; `project-management.md` DECIDE items retired.
 
@@ -210,68 +198,61 @@ The primary development toolchain has been specified by the principal. Three pla
   > **Applied:** `CLAUDE.md` platform requirements updated; `project-management.md` DECIDE item retired.
 
 - **E4 — Figma → code handoff policy (P1).** ✅ Applied 2026-06-24
-  No workflow defined for how design assets in `docs/_design/` flow into implementation. figma-cli (confirmed E1) lets Claude Code read live from Figma Desktop, eliminating most manual export steps.
+  No workflow defined for how design assets in `docs/_design/` flow into implementation. figma-cli lets Claude Code read live from Figma Desktop, eliminating most manual export steps.
   > **Direction:** figma-cli reads design specs live. Design tokens exported to `docs/_design/tokens/` (DTCG/W3C). Icons/SVGs exported to `docs/_design/icons/`. Component JSX specs generated on demand, not committed.
   > **Applied:** `CLAUDE.md` figma-cli workflow documented; `project-management.md` DECIDE item retired.
 
 ---
 
-## Proposed requirements updates — prioritized
+## D. Synthesis — what this round should actually do
 
-This section translates the findings above into concrete edits, scoped primarily to
-`docs/product-requirements.md` with the cascading doc each one touches. Ordered by
-priority for principal review. (No edits applied yet — this is the proposal set.)
+Cutting across A–E, Round 7 has four workstreams:
 
-### P0 — resolve this round (blocks build / undefined core V1 behavior)
+1. **Pay down R6 doc debt** (A1 P0, A2 P1, then A3/A4/A5 P2) — mechanical, do first.
+2. **Force the two V1-blocking decisions** — delete-on-reference (B1 P0) and the
+   Business domain/theme model (B3 P1) — and lock two scope boundaries
+   (Markdown B4, tax guardrail C5).
+3. **Make the write/concurrency story real** before Phase 6 — prototype write flows
+   (B2), conflict resolution (C1), with performance/bootstrap/engine-shape
+   constraints (C2–C4) recorded as explicit criteria rather than assumptions.
+4. **Establish the development environment** before Phase 1 begins — confirm the
+   toolchain (E1), lock platform versions (E2), define CI/CD strategy (E3), and
+   set the Figma → code handoff policy (E4).
 
-| # | Proposed requirement change | Primary doc | Cascades to | Source |
+---
+
+## Proposed requirements updates — applied
+
+All 16 updates were applied inline to the affected documents. Items are ordered by
+priority (P0 → P1 → P2), then by source section (A → B → C → E) within each tier.
+
+### P0 — blocked Phase 1 build or left a core V1 capability undefined
+
+| # | Requirement change | Primary doc | Cascades to | Source |
 |---|---|---|---|---|
-| 1 | **Define delete-on-reference behavior** and write it into PRD §12. Pick a default (recommend: *block + show referencing rows*, with explicit reassign/cascade only where it reads naturally). Resolve the matching roadmap Open Decision and `project-management.md` Phase 6 [DECIDE] to the same answer. | PRD §12 | technical-design (RepairService / write model), roadmap Open Decisions, project-management | B1 |
-| 2 | **Re-sync `project-management.md` to the R6 object model.** Retire resolved [FIX] items (C1, C6, M3, M6, and any naming items R6 closed); add migration tasks for the three renames, `liabilities.csv` + `portfolios.csv`, and `migrate-r6.swift`. Not a PRD edit, but it gates an accurate build plan. | project-management | — | A1 |
-| 13 | **Pin macOS deployment target, Xcode version, and Swift version** before Phase 1 Xcode project creation. Document in `CLAUDE.md`, `docs/technical-design.md §2`, and `README.md`. These three values gate every SwiftUI API and framework feature decision in Phases 1–5. Add three `[DECIDE]` items to `project-management.md` Phase 1 Development. | CLAUDE.md, technical-design §2 | README.md, roadmap Phase 1 Xcode setup task, project-management | E2 |
+| 1 | **Delete-on-reference behavior locked: reassign.** Delete flow surfaces referencing rows + per-collection picker. Delete + reassignments written atomically. | PRD §12 | rulesets-and-taxes.md §1, technical-design §21, roadmap Open Decisions | B1 |
+| 2 | **`project-management.md` re-synced to R6 object model.** Stale [FIX] items retired; five R6 migration tasks added. | project-management | — | A1 |
+| 3 | **macOS 15, Xcode 16, Swift 6 locked.** Update to latest stable release at Phase 1 build start. Documented in recommended stack and CLAUDE.md. | core-domain.md §2, CLAUDE.md | project-management (DECIDE items retired) | E2 |
 
-### P1 — resolve this round or schedule explicitly (blocks a later phase)
+### P1 — blocked a specific later phase
 
-| # | Proposed requirement change | Primary doc | Cascades to | Source |
+| # | Requirement change | Primary doc | Cascades to | Source |
 |---|---|---|---|---|
-| 3 | **Settle Business as group-under-Accounts vs. standalone module** and state it in PRD §5. Then align Tech Design §11/§12 (remove or formalize `BusinessEngine`) and the roadmap. | PRD §5 | technical-design §11/§12, roadmap, project-management [FIX-C3/S2] | B3 |
-| 4 | **Bound Markdown scope in PRD §4**: inline rendering in the right detail pane is V1; standalone Notes module is V2; name the supported subset (headers, tables, links). | PRD §4 | roadmap (Notes V2), project-management [FIX-S1] | B4 |
-| 5 | **Add a write-safety / conflict-resolution requirement** to PRD §1 and the Reliability NFR: atomic temp-then-rename, timestamped backup, and a user-driven conflict-winner flow for concurrent edits. | PRD §1 + NFR | technical-design (FileCoordinatorService, sync states), roadmap Phase 1/6 | C1 |
-| 6 | **Add prototype tasks** to bring it to the R6 schema (A2) and to demonstrate write/edit/delete + write-preview (B2). Roadmap/tracker tasks, not PRD requirements. | roadmap / project-management | prototype/ | A2, B2 |
-| 14 | **Document development toolchain in `CLAUDE.md`** — Claude Code, Antigravity 2.0 / Antigravity IDE, figma-cli (local CDP; not an MCP server), secondary IDE candidates. Platform requirements locked: macOS 15, Xcode 16, Swift 6. Not a PRD requirement, but gates correct AI assistant behavior from Phase 1 onward. | CLAUDE.md | project-management Phase 1, core-domain.md §2 | E1 |
-| 15 | **Define CI/CD pipeline** — GitHub Actions; SwiftLint on Linux runner in Phase 1; full Mac build CI deferred to Phase 5; entitlements are developer-machine only through Phase 4. | project-management, CLAUDE.md | roadmap Phase 1 Xcode setup task | E3 |
-| 16 | **Define Figma → code handoff policy** — figma-cli reads design specs live from Figma Desktop; design tokens (DTCG/W3C) to `docs/_design/tokens/`; icons/SVGs to `docs/_design/icons/`; component specs generated on demand. | CLAUDE.md | docs/_design/ | E4 |
+| 4 | **Business = group type under Accounts.** No standalone BusinessEngine; AccountEngine owns all business P&L. | core-domain.md §2–3, technical-design §21 | project-management (FIX-C3/S2 retired) | B3 |
+| 5 | **Markdown viewer/editor: V2.** Front matter only in v1. | PRD §4, technical-design §21 | project-management (FIX-S1 retired) | B4 |
+| 6 | **Sync-first write gate added to Reliability NFR.** `ICloudContainerService` exposes per-file sync state; write actions disabled while syncing; `NSFileCoordinator` serializes all I/O. | PRD NFR Reliability, core-domain.md §3 | technical-design §21 | C1 |
+| 7 | **Prototype write/edit flow tasks tracked.** Add/edit/delete + write-preview added to roadmap and project-management. | project-management [FIX-R7-P1], roadmap Phase 6 | prototype/ | A2, B2 |
+| 8 | **Development toolchain documented in `CLAUDE.md`.** Claude Code, Antigravity 2.0 / Antigravity IDE, figma-cli (local CDP; not an MCP server). | CLAUDE.md | core-domain.md §2 | E1 |
+| 9 | **CI/CD: GitHub Actions; SwiftLint on Linux runner (Phase 1).** Full Mac build CI deferred to Phase 5. Code signing developer-machine only through Phase 4. | CLAUDE.md | project-management (DECIDE item retired) | E3 |
+| 10 | **Figma → code handoff: figma-cli live reads + token export.** Design tokens → `docs/_design/tokens/` (DTCG/W3C); icons/SVGs → `docs/_design/icons/`; component specs on demand. | CLAUDE.md | docs/_design/ | E4 |
 
-### P2 — track now, may defer
+### P2 — tracked for later phases
 
-| # | Proposed requirement change | Primary doc | Cascades to | Source |
+| # | Requirement change | Primary doc | Cascades to | Source |
 |---|---|---|---|---|
-| 7 | **Add measurable performance acceptance criteria** (cold launch to first projection; full re-index of a realistic dataset; responsiveness during background re-index) to the Performance NFR. | PRD NFR | roadmap Phase 7 [DECIDE] | C2 |
-| 8 | **State the `AccountEngine` read-only-projection constraint** as an explicit design principle. | technical-design §12 | CLAUDE.md architecture note | C4 |
-| 9 | **Record bootstrap demo-data** as a first-run/onboarding requirement candidate (doubles as the dev fixture). | PRD §1 / roadmap Phase 1 | technical-design bootstrap | C3 |
-| 10 | **Split `technical-design.md`** into `docs/architecture/` and add the ingestion **pipeline diagrams**. | technical-design | new docs/architecture/ | A3, A4 |
-| 11 | **Track live market data** as an explicit V2 candidate in the roadmap out-of-scope list (already a V1 non-goal). | roadmap | PRD non-goals (reference) | A5 |
-| 12 | **Keep the tax-scope guardrail explicit** — reaffirm "no tax-filing/calculation engine in V1" where write/tax requirements are described. | PRD §8 / non-goals | constitution (reference) | C5 |
-
-### Applied 2026-06-24
-
-All 12 original proposed updates applied inline to the affected documents. Section E items 13–16 extended the round; E1 applied same day, E2–E4 tracked as open DECIDE items.
-
-| # | Status | Docs updated |
-|---|---|---|
-| 1 | ✅ B1 — delete: reassign | PRD §12, rulesets-and-taxes.md §1, technical-design §21, roadmap Open Decisions |
-| 2 | ✅ A1 — project-management re-sync | project-management.md (FIX items retired, R6 tasks added) |
-| 3 | ✅ B3 — Business = group type | core-domain.md §2–3, technical-design §21, project-management (FIX-C3/S2 retired) |
-| 4 | ✅ B4 — Markdown: V2 | PRD §4, technical-design §21, project-management (FIX-S1 retired) |
-| 5 | ✅ C1 — sync-first write gate | PRD NFR Reliability, core-domain.md §3 (ICloudContainerService), technical-design §21 |
-| 6 | ✅ A2/B2 — prototype tasks | project-management [FIX-R7-P1], roadmap Phase 6 Design task |
-| 7 | ✅ C2 — performance: M1+ | PRD NFR Performance, technical-design §21 |
-| 8 | ✅ C4 — AccountEngine constraint | Already applied (core-domain.md §3) — confirmed |
-| 9 | ✅ C3 — bootstrap demo-data | Already tracked (roadmap Phase 7 fixture-generate.swift) — confirmed |
-| 10 | ✅ A3 — architecture split | docs/architecture/ created, technical-design.md lean overview |
-| 11 | ✅ A4/A5 — pipeline diagrams + V2 tracking | data-pipelines.md §3, roadmap Out of Scope |
-| 12 | ✅ C5 — tax scope guardrail | PRD §8 + non-goals, technical-design §21 |
-| 13 | ✅ E2 — macOS 15, Xcode 16, Swift 6 | core-domain.md §2 recommended stack, CLAUDE.md platform requirements, project-management (DECIDE items retired) |
-| 14 | ✅ E1 — development toolchain (figma-cli) | CLAUDE.md — "Development toolchain" section; figma-cli workflow documented |
-| 15 | ✅ E3 — CI/CD: GitHub Actions, SwiftLint (Phase 1) | CLAUDE.md platform requirements, project-management (DECIDE item retired) |
-| 16 | ✅ E4 — Figma handoff: figma-cli + token export | CLAUDE.md figma-cli workflow; docs/_design/tokens/ + icons/ conventions; project-management (DECIDE item retired) |
+| 11 | **Performance target: M1+ baseline.** Longer times on older Intel hardware are acceptable. | PRD NFR Performance, technical-design §21 | — | C2 |
+| 12 | **`AccountEngine` read-only constraint** stated as an explicit design principle. | core-domain.md §3 | — | C4 |
+| 13 | **Bootstrap demo-data** confirmed as first-run / dev fixture path. | roadmap Phase 7 | — | C3 |
+| 14 | **Architecture split** into `docs/architecture/` + ingestion pipeline diagrams added. | docs/architecture/ (5 files) | technical-design.md lean overview | A3, A4 |
+| 15 | **Live market data** recorded as explicit V2 candidate in roadmap out-of-scope list. | roadmap Out of Scope | — | A5 |
+| 16 | **Tax scope guardrail** — primary goals are estimating payment obligations and organizing documents; not a computation engine. | PRD §8, non-goals, technical-design §21 | — | C5 |
