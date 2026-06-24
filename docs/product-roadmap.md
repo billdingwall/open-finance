@@ -110,7 +110,7 @@ and local-fallback modes.
   capabilities
 - [ ] Establish module folder structure: `App/`, `Platform/`, `Parsing/`, `Domain/`, `Validation/`,
   `Persistence/`, `UI/Shared/`, `Scripts/`
-- [ ] Set up `SwiftLint` and code style configuration
+- [ ] Set up `SwiftLint` and code style configuration. **CI/CD:** GitHub Actions runs SwiftLint on a standard Linux runner in Phase 1 (no Mac build runner required). Full Mac build CI is deferred to Phase 5. Code signing and entitlements are developer-machine only until Phase 5.
 - [ ] Configure unit test target and basic test infrastructure
 
 #### Platform Layer

@@ -245,6 +245,8 @@ Requirements:
   - Support group-specific category definitions and monthly budget targets.
   - Include default business categories aligned with common tax-prep expense groupings.
   - Support transaction review by category, merchant, account, and period.
+  > **Architecture note (locked Round 7):** Business is a **`group_type = business`** account group managed through the account-group system — it is not a standalone module. There is no separate Business module or `BusinessEngine`; all business P&L logic (monthly net income, category budget variance, expense summaries, Schedule C cross-reference) is owned by `AccountEngine`. See `docs/architecture/core-domain.md §2`. ⚠️ Verify (Phase 3): confirm `AccountEngine` projections correctly scope to `group_type = business` rows for monthly P&L, category variance, and expense summaries.
+
 - For `employment` type groups:
   - Track paycheck deposits, HSA/FSA contributions, ESPP/RSU vests.
   - Show paycheck metrics and YTD gross pay.

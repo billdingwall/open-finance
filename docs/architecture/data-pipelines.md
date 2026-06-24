@@ -34,7 +34,7 @@ The write flow covers **add, edit, and delete** for every user-addable object (a
 - Objects whose detail opens in the **right panel** — edit and delete actions live at the **bottom of the right panel**.
 - Objects with their **own dedicated screen** (e.g. an individual account) — **edit** is in the local screen actions; **delete** is offered inside the edit flow.
 
-**Delete-on-reference behavior:** block vs. cascade-warn vs. reassign is an open decision tracked in `docs/project-management.md` (Phase 6 `[DECIDE]`). Decide before implementing Phase 6 delete flows. The default will be written into `rulesets-and-taxes.md §1` once resolved.
+**Delete-on-reference behavior: reassign** (locked Round 7) — When deleting a referenced object, the write flow must surface all referencing rows grouped by collection, present a per-collection reassignment picker (nullable references may be left unlinked), and write the delete plus all reassignments atomically. The user can cancel the entire operation. Full policy in `docs/architecture/rulesets-and-taxes.md §1` and `docs/product-requirements.md §12`.
 
 ### Repair flow
 
