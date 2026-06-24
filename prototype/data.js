@@ -268,15 +268,15 @@ const DATA = (() => {
   ];
 
   const realizedGains = [
-    { id: 'rg-001', ticker: 'AAPL', closed: '2026-02-18', term: 'long',  proceeds: 8420, basis: 6120, gain: 2300, source: 'Investments/transactions.csv', row: 142 },
-    { id: 'rg-002', ticker: 'TSLA', closed: '2026-03-04', term: 'short', proceeds: 4180, basis: 4880, gain: -700, source: 'Investments/transactions.csv', row: 148 },
-    { id: 'rg-003', ticker: 'NVDA', closed: '2026-04-22', term: 'long',  proceeds: 6240, basis: 1820, gain: 4420, source: 'Investments/transactions.csv', row: 161 },
+    { id: 'rg-001', ticker: 'AAPL', closed: '2026-02-18', term: 'long',  proceeds: 8420, basis: 6120, gain: 2300, source: 'Accounts/transactions/2026-02.csv', row: 142 },
+    { id: 'rg-002', ticker: 'TSLA', closed: '2026-03-04', term: 'short', proceeds: 4180, basis: 4880, gain: -700, source: 'Accounts/transactions/2026-03.csv', row: 148 },
+    { id: 'rg-003', ticker: 'NVDA', closed: '2026-04-22', term: 'long',  proceeds: 6240, basis: 1820, gain: 4420, source: 'Accounts/transactions/2026-04.csv', row: 161 },
   ];
 
   const incomeSummary = [
     { kind: 'Dividends · qualified',     ytd: 1280, source: 'Investments/dividends.csv' },
     { kind: 'Dividends · ordinary',      ytd:  420, source: 'Investments/dividends.csv' },
-    { kind: 'Interest · savings',        ytd:  840, source: 'Personal/transactions/*.csv' },
+    { kind: 'Interest · savings',        ytd:  840, source: 'Accounts/transactions/' },
     { kind: 'Interest · treasury bills', ytd:  610, source: 'Investments/dividends.csv' },
   ];
 
@@ -478,8 +478,8 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       group: 'Schema',
       title: 'Missing required column',
       message: '`subcategory_id` column is missing.',
-      file: 'Personal/transactions/2026-03.csv',
-      filePath: 'Personal/transactions/2026-03.csv',
+      file: 'Accounts/transactions/2026-03.csv',
+      filePath: 'Accounts/transactions/2026-03.csv',
       row: null,
       repairable: true,
       kind: 'missing-optional-column',
@@ -495,8 +495,8 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       group: 'References',
       title: 'Duplicate transaction ID',
       message: '`TX-2605-026` collides with `TX-2605-011`.',
-      file: 'Personal/transactions/2026-05.csv',
-      filePath: 'Personal/transactions/2026-05.csv',
+      file: 'Accounts/transactions/2026-05.csv',
+      filePath: 'Accounts/transactions/2026-05.csv',
       row: 27,
       repairable: false,
       kind: 'duplicate-id',
@@ -508,9 +508,9 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       severity: 'warning',
       group: 'References',
       title: 'Unknown category reference',
-      message: '`category_id = food` not found in `Personal/categories.csv`. Did you mean `dining`?',
-      file: 'Personal/transactions/2026-04.csv',
-      filePath: 'Personal/transactions/2026-04.csv',
+      message: '`category_id = food` not found in `Budget/categories.csv`. Did you mean `dining`?',
+      file: 'Accounts/transactions/2026-04.csv',
+      filePath: 'Accounts/transactions/2026-04.csv',
       row: 18,
       repairable: false,
       kind: 'unknown-reference',
@@ -585,8 +585,8 @@ Quiet month. Q1 estimated tax payment cleared on the 12th. No anomalies in budge
       group: 'References',
       title: 'Zero-amount transaction',
       message: '`TX-2605-022` has amount = 0.00. Likely placeholder for a future renewal.',
-      file: 'Personal/transactions/2026-05.csv',
-      filePath: 'Personal/transactions/2026-05.csv',
+      file: 'Accounts/transactions/2026-05.csv',
+      filePath: 'Accounts/transactions/2026-05.csv',
       row: 23,
       repairable: false,
       kind: 'zero-amount',

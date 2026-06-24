@@ -38,9 +38,15 @@ Notes, Issues, and Files views are planned for V2.
 open-finance/
 ├── docs/
 │   ├── product-requirements.md    # What & why — modules, user scenarios, data model, IA
-│   ├── technical-design.md        # How & where — architecture, CSV specs, service design
+│   ├── technical-design.md        # How & where — lean overview with links to docs/architecture/
 │   ├── product-roadmap.md         # When — phased plan with milestone gates
 │   ├── project-management.md      # Tasks — remaining work before the Phase 1 build
+│   ├── architecture/              # Full technical specs (extracted from technical-design.md in R7)
+│   │   ├── index.md               # Quick-lookup table for the architecture directory
+│   │   ├── core-domain.md         # Entities, module layout, service responsibilities
+│   │   ├── containers-and-budgets.md  # Workspace structure + all 28 CSV/MD file specs
+│   │   ├── rulesets-and-taxes.md  # Validation rules + UI requirements per section
+│   │   └── data-pipelines.md      # Read/write/repair flows, scripts, ingestion diagrams
 │   ├── _refinement/               # Review rounds and doc update plans (round-first naming)
 │   │   ├── r{n}-review.md         # Raw feedback per prototype review round
 │   │   └── r{n}-update-{doc}.md   # Formatted doc update plan based on a review
@@ -63,7 +69,10 @@ open-finance/
 Product requirements document. Defines goals, user stories, functional requirements per module, data model, and information architecture. This is the long-horizon direction doc — it is updated after each prototype review round. See the Changelog section at the bottom of the file for a history of changes.
 
 ### `docs/technical-design.md`
-Technical architecture document. Covers the layered system model (storage → indexing → parsing → domain → projection → presentation), iCloud workspace strategy, workspace folder structure, full CSV and Markdown file specifications, internal data model, module layout, service responsibilities, validation rules, and read/write/repair flows.
+Technical architecture overview. Covers the layered system model, iCloud workspace strategy, workspace folder structure summary, and locked architectural decisions (§21). Detailed specs — CSV file definitions, validation rules, service responsibilities, data pipeline diagrams — are in `docs/architecture/` (extracted in Round 7); `technical-design.md` links to those files by section.
+
+### `docs/architecture/`
+Full technical specifications in four focused files. See `docs/architecture/index.md` for a quick-lookup guide to which file answers which question (e.g. "where is the transactions CSV spec?" → `containers-and-budgets.md §3.1`).
 
 ### `docs/product-roadmap.md`
 Phased implementation roadmap with Product/Design/Dev tasks per phase and milestone gates.
@@ -95,7 +104,7 @@ Finance/
 └── Notes/                  # Monthly reviews and strategy notes
 ```
 
-Personal and business activity share the unified `Accounts/transactions/` ledger (distinguished by `account_group_id` and a `BX-` ID prefix) — there is no separate `Personal/` or `Business/` folder. Full file specifications (required columns, path conventions, validation rules) are in `docs/technical-design.md`.
+Personal and business activity share the unified `Accounts/transactions/` ledger (distinguished by `account_group_id` and a `BX-` ID prefix) — there is no separate `Personal/` or `Business/` folder. Full file specifications (required columns, path conventions, validation rules) are in `docs/architecture/containers-and-budgets.md §3`.
 
 ---
 
@@ -104,6 +113,6 @@ Personal and business activity share the unified `Accounts/transactions/` ledger
 1. **Prototype review** → add `docs/_refinement/r{n}-review.md` with UX and functionality notes
 2. **Domain research** → add named research docs to `docs/_notes/` as questions arise
 3. **Update plan** → synthesize review docs into `docs/_refinement/r{n}-update-{doc}.md` per affected document
-4. **Apply updates** → apply changes to `docs/product-requirements.md`, then cascade to `docs/technical-design.md` and `docs/product-roadmap.md`, each with a Changelog entry
+4. **Apply updates** → apply changes to `docs/product-requirements.md`, then cascade to `docs/technical-design.md` and `docs/product-roadmap.md`, each with a Changelog entry. When spec details (schemas, validation rules, service responsibilities) are affected, update the relevant file in `docs/architecture/` directly. Update `docs/project-management.md` to retire resolved FIX items and add new ones.
 5. **Design & prototype** → update `docs/_design/` assets and `prototype/` to reflect the changes, then start the next review round
 6. **Feature spec** → use Spec Kit (`/speckit-specify`) to create per-module specs when ready to build

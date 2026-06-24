@@ -3,7 +3,7 @@
 **Project**: Personal Finance Workspace for macOS
 **Scope**: v1 as defined in `docs/product-requirements.md` and `docs/technical-design.md`
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
-**Last updated**: 2026-06-10
+**Last updated**: 2026-06-24
 
 ---
 
@@ -21,6 +21,7 @@ a PRD amendment before proceeding.
 | Bank account sync | V2 |
 | Brokerage API integration | V2 |
 | Real-time market data | V2 |
+| Live price ingestion strategy (endpoint choice, polling interval, error handling) | V2 |
 | OCR ingestion of PDFs | V2 |
 | Tax return filing engine | V2 |
 | Multi-workspace / multi-user support | V2 |
@@ -622,6 +623,9 @@ backed up, and previewable.
 - [ ] **Repair preview panel**: issue description, fix description, diff-style preview,
   backup confirmation, apply/cancel
 - [ ] Export confirmation dialog: format picker (CSV/Markdown), file name, destination
+- [ ] **Prototype update** — update `prototype/data.js` and relevant views to demonstrate write/edit
+  flows: add transaction modal, edit account side panel, delete with reference-check preview,
+  import CSV column-mapping flow (tracked in `docs/project-management.md` as `[FIX – R7-P1]`)
 
 ### Development Tasks
 
@@ -795,6 +799,17 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Round 7 — 2026-06-24
+Source: `docs/_refinement/r7-review.md` (MVP prep — doc-sync debt, prototype alignment, architectural gaps)
+
+- Out of Scope: added "Live price ingestion strategy" as an explicit V2 tracked item (A5)
+- Phase 2: R6 migration tasks promoted to explicit `[FIX]` items in `docs/project-management.md` (`R6-M1` through `R6-M5`); prototype path-fix task added as `[FIX – R7-P1]`
+- Phase 6 Design: added prototype update task for write/edit flow demos
+- `docs/technical-design.md` refactored to a lean overview with links to `docs/architecture/` (A3)
+- `docs/architecture/data-pipelines.md` §3 adds four ingestion pipeline diagrams (A4)
+- `prototype/data.js` stale file paths updated: `Personal/transactions/*.csv` and `Investments/transactions.csv` references corrected to canonical `Accounts/transactions/YYYY-MM.csv` paths (A2)
+- `docs/project-management.md`: resolved items C1, C5, S8 retired with ~~strikethrough~~; R6 migration tasks added to Phase 2 Development (A1)
 
 ### Round 6 — 2026-06-23
 Source: `docs/_refinement/r6-review.md` (fourth prototype review — data structuring & IA); update plan `docs/_refinement/r6-update-product-roadmap.md`

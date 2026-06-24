@@ -17,9 +17,10 @@ A native macOS personal finance workspace (SwiftUI, iCloud-backed) that uses CSV
 | Document | Purpose |
 |---|---|
 | `docs/product-requirements.md` | What & why: primary product direction — modules, user scenarios, data model, IA. Has a Changelog section at bottom. |
-| `docs/technical-design.md` | How & where: architecture, layered system model, workspace folder structure, all CSV file specs, service responsibilities, validation rules. |
+| `docs/technical-design.md` | How & where: lean overview file linking to `docs/architecture/` for detail. Covers architecture summary, workspace layout, and locked decisions (§21). |
+| `docs/architecture/` | Full technical specs extracted from `technical-design.md` in Round 7. Four files: `core-domain.md` (entities, module layout, services), `containers-and-budgets.md` (workspace structure + all 28 CSV/MD specs), `rulesets-and-taxes.md` (validation rules + UI requirements), `data-pipelines.md` (read/write/repair flows, scripts, ingestion diagrams). See `docs/architecture/index.md` for a quick-lookup table. |
 | `docs/product-roadmap.md` | When: phased implementation roadmap with Product/Design/Dev tasks per phase and milestone gates. |
-| `docs/project-management.md` | Tasks: remaining work needed before the Phase 1 build begins. |
+| `docs/project-management.md` | Tasks: remaining work needed before the Phase 1 build begins. Updated each round to retire resolved items and add new FIX/DECIDE items. |
 | `.specify/memory/constitution.md` | 7 non-negotiable principles governing all implementation decisions. Read this before proposing any architectural change. |
 | `docs/_refinement/` | Review rounds and update plans, named **round-first** so they group by round. `r{n}-review.md` = raw team feedback (or user-direction note). `r{n}-update-{doc}.md` = formatted doc update plan based on that round. Round numbers are global across all docs (one round = one revision event). |
 | `docs/_notes/` | Loose notes and domain research for team reference (e.g. `account-types.md`, `deduction-types.md`, `workflow-overview.md`). |
@@ -77,7 +78,7 @@ Finance/
   .finance-meta/    manifest.json, schemas/, backups/, logs/
 ```
 
-There is no separate `Personal/` or `Business/` folder — personal and business activity share the unified `Accounts/transactions/` ledger, distinguished by `account_group_id` and a `BX-` ID prefix. Full column-level specs for all CSV file types are in `docs/technical-design.md §8`.
+There is no separate `Personal/` or `Business/` folder — personal and business activity share the unified `Accounts/transactions/` ledger, distinguished by `account_group_id` and a `BX-` ID prefix. Full column-level specs for all CSV file types are in `docs/architecture/containers-and-budgets.md §3`.
 
 ## Constitution principles (non-negotiable)
 
@@ -117,7 +118,7 @@ The project-level docs are living documents updated after each prototype review 
 1. Add `docs/_refinement/r{n}-review.md` with prototype/UX feedback (or, for a user-direction revision, a short direction note). `{n}` is the next global round number, continuing the sequence already in the doc changelogs.
 2. Synthesize into `docs/_refinement/r{n}-update-{doc}.md` per affected document (section-by-section change list, e.g. `r4-update-product-requirements.md`)
 3. Apply changes to `docs/product-requirements.md` with a Changelog entry at the bottom
-4. Apply cascading changes to `docs/technical-design.md` with its own Changelog entry, then to `docs/product-roadmap.md`
+4. Apply cascading changes to `docs/technical-design.md` with its own Changelog entry, then to `docs/product-roadmap.md`. When spec details (CSV schemas, validation rules, service responsibilities, UI requirements) are affected, update the relevant file in `docs/architecture/` directly — `technical-design.md` links to those files rather than duplicating their content. Also update `docs/project-management.md` to retire resolved FIX items and add any new FIX/DECIDE items.
 5. If principles changed, amend `.specify/memory/constitution.md` with a version bump
 6. Update `docs/_design/` assets and `prototype/` to reflect the changes, then start the next review round
 7. Commit all affected docs together

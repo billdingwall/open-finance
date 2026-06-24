@@ -3,7 +3,7 @@ round: 7
 date: 2026-06-24
 type: synthesis / mvp-prep
 summary: Initial round-7 draft synthesized from the architectural audit and the R6 gap analysis — focus is MVP readiness before the Phase 1 build
-status: DRAFT — pending principal review and direction
+status: SECTION A APPLIED 2026-06-24 — Section B/C/D items pending principal review and direction
 inputs:
   - docs/_notes/architectural-audit.md
   - docs/_notes/r6-gap-analysis.md
@@ -50,11 +50,13 @@ principal to review before we open per-doc update plans (`r7-update-{doc}.md`).
 
 ## A. Doc-sync debt carried over from Round 6 (from `r6-gap-analysis.md`)
 
+> **Status: All A items applied 2026-06-24.** See applied-changes summary below each item.
+
 The R6 schema work was applied cleanly to the PRD, technical design, and roadmap,
 but four follow-through items were missed. These are the cheapest, highest-value
 fixes available this round because they are pure execution — no new decisions.
 
-- **A1 — `project-management.md` is out of sync with R6 (P0).**
+- **A1 — `project-management.md` is out of sync with R6 (P0).** ✅ Applied 2026-06-24
   The pre-build tracker still references pre-R6 names and is missing migration
   tasks for the three renames, the two new files (`liabilities.csv`,
   `portfolios.csv`), and the `migrate-r6.swift` script. It still contains stale
@@ -62,32 +64,37 @@ fixes available this round because they are pure execution — no new decisions.
   C6 `BusinessEntity`→`Entity`, M3 entity reconciliation, M6 `Personal/Business`
   transactions). A build planned off a stale tracker will re-litigate settled
   decisions. *Gap-analysis severity: High.*
+  > **Applied:** `docs/project-management.md` updated — [FIX-C1], [FIX-C5], [FIX-S8] retired with strikethrough (resolved in R4/R7); five R6 migration FIX items added to Phase 2 Development (R6-M1 through R6-M5); prototype update task added as [FIX-R7-P1]; item counts table updated.
 
-- **A2 — Prototype not updated to the R6 schema (P1).**
+- **A2 — Prototype not updated to the R6 schema (P1).** ✅ Partially applied 2026-06-24
   `prototype/data.js` / `store.js` still use the old mock collections
   (`entities`, `holdings`, `deductions`) and lack liabilities, portfolios, and the
   new transaction fields (`group_id`, `group_role`, `liability_id`, `trade`/`credit`
   types). If the prototype is our primary review vehicle, the next review round
   cannot validate R6 against it until this is done. No roadmap task captures the
   work. *Gap-analysis severity: High.*
+  > **Applied (partial):** `prototype/data.js` stale file paths corrected — `Investments/transactions.csv` references updated to `Accounts/transactions/YYYY-MM.csv` (realizedGains, incomeSummary); `Personal/transactions/*.csv` and `Personal/categories.csv` references updated in issues table (iss-001 through iss-003, iss-008). Most R6 entity renames (`accountGroups`, `assets`, `taxAdjustments`, `liabilities`, `portfolios`, `multiEntryExamples`) were already applied in a prior session. Write/edit flow prototype updates remain outstanding and are now tracked as `[FIX-R7-P1]` in `docs/project-management.md` and a Phase 6 Design task in the roadmap.
 
-- **A3 — `technical-design.md` is a monolith; file-org proposal not executed (P2).**
+- **A3 — `technical-design.md` is a monolith; file-org proposal not executed (P2).** ✅ Applied 2026-06-24
   The proposed `docs/architecture/` split (`index.md`, `core-domain.md`,
   `containers-and-budgets.md`, `rulesets-and-taxes.md`, `data-pipelines.md`) was
   not created. The single file is becoming a bottleneck for review and diffing.
   Worth doing, but it is a refactor of *how* we document, not *what* we build —
   defer behind A1/A2. *Gap-analysis severity: Medium.*
+  > **Applied:** `docs/architecture/` created with five files (`index.md`, `core-domain.md`, `containers-and-budgets.md`, `rulesets-and-taxes.md`, `data-pipelines.md`). `docs/technical-design.md` reduced to a ~500-line lean overview; §6/7/8/10/11/12/13/14/15/16 replaced with 2-line stubs linking to architecture files. `CLAUDE.md`, `README.md` updated to reference the new architecture directory. FIX-C5 (manifest path) and FIX-S8 (advanced workspace V2 marker) applied during this refactor.
 
-- **A4 — No data-flow / ingestion pipeline diagrams (P2).**
+- **A4 — No data-flow / ingestion pipeline diagrams (P2).** ✅ Applied 2026-06-24
   The import → normalize → `Transaction` → balance-update pipeline is the most
   complex path in the system and has no visual documentation. Pairs naturally with
   A3 (lives in `data-pipelines.md`). *Gap-analysis severity: Medium.*
+  > **Applied:** Four ASCII pipeline diagrams added to `docs/architecture/data-pipelines.md §3`: CSV import/normalization pipeline (§3.1), balance derivation pipeline (§3.2), multi-entry transaction group write pipeline (§3.3), and file-watch re-index pipeline (§3.4).
 
-- **A5 — Live market data not tracked anywhere (P2).**
+- **A5 — Live market data not tracked anywhere (P2).** ✅ Applied 2026-06-24
   A forward-looking item with no home in the roadmap, PRD non-goals, or project
   tracker. It is already V1-out-of-scope ("Real-time market data"), so the action
   is simply to record it as a tracked V2 candidate so it isn't rediscovered cold.
   *Gap-analysis severity: Low.*
+  > **Applied:** "Live price ingestion strategy (endpoint choice, polling interval, error handling)" added to `docs/product-roadmap.md` Out of Scope table as an explicit V2 tracked item alongside "Real-time market data".
 
 ---
 

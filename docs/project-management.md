@@ -1,6 +1,7 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
+**Last updated**: 2026-06-24 (Round 7 — retired resolved R4/R7 FIX items; added R6 migration tasks)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
@@ -25,8 +26,7 @@ Tech Design §11 includes `Domain/Business/BusinessEngine.swift` and `UI/Busines
 **[FIX – S1]** Clarify whether inline Markdown rendering is in v1 scope  
 PRD §4 (Markdown ingestion requirements) says "Provide a readable native viewer in v1." The PRD out-of-scope list and roadmap both say "Notes viewer and editor — V2." These conflict. The likely intent is that a standalone Notes module is V2, but inline Markdown rendering in the right detail pane (for tax notes and strategy notes linked from other modules) may still be needed in v1. Clarify and update PRD §4 to be specific about where Markdown is rendered in v1.
 
-**[FIX – S8]** Mark "advanced workspace mode" as V2 in Tech Design §5  
-Tech Design §5 describes two workspace modes — the app-owned iCloud container (v1) and an "advanced mode: user-selected iCloud Drive folder" — without any scope boundary. The locked decision covers only the app-owned container. Add a V2 deferral marker to the advanced mode description to match the PRD's "future extension" language.
+~~**[FIX – S8]** Mark "advanced workspace mode" as V2 in Tech Design §5~~ **Resolved R7** — `docs/technical-design.md §5` advanced workspace mode is now marked as V2 only.
 
 **[FIX – S9]** Add display name → enum value mapping for account groups  
 PRD §5 uses "Everyday Banking" and "Loans & Debt" as group display names. Tech Design §8.21 enum uses `checking` and `loan`. No mapping exists between the two. Add a mapping table to PRD §5 or Tech Design §8.21: "Everyday Banking" → `checking`, "Loans & Debt" → `loan`, "Credit Cards" → `credit_card`.
@@ -66,11 +66,9 @@ PRD non-goals says "AI model integrations to analyze performance" with no timeli
 
 ### Development
 
-**[FIX – C1]** Remove `InvestmentAccount` from Tech Design §10 entity list and Roadmap Phase 1 entity task  
-The unified accounts decision removed `InvestmentAccount` as a separate type — investment-specific fields are optional properties on `Account`. Despite this, Tech Design §10 canonical entities still lists `InvestmentAccount` as a discrete entry, and the Roadmap Phase 1 dev task still names it explicitly. Remove it from §10 and update the Phase 1 roadmap entity list to read `Account` with a note that investment fields are optional properties.
+~~**[FIX – C1]** Remove `InvestmentAccount` from Tech Design §10 entity list and Roadmap Phase 1 entity task~~ **Resolved R4** — `InvestmentAccount` removed; investment fields are optional properties on `Account`. `docs/architecture/core-domain.md` reflects this.
 
-**[FIX – C5]** Correct the manifest JSON example path in Tech Design §9  
-The §9 manifest shape example shows `"path": "Personal/transactions/2026-05.csv"` with `"domain": "personal"`. No `Personal/` folder exists in the workspace structure — transactions live at `Accounts/transactions/YYYY-MM.csv`. Update the example to use the correct path and confirm the correct domain label.
+~~**[FIX – C5]** Correct the manifest JSON example path in Tech Design §9~~ **Resolved R7** — `docs/technical-design.md §9` manifest example updated to `Accounts/transactions/2026-05.csv` / `"domain": "accounts"`.
 
 **[FIX – C6]** Rename `BusinessEntity` to `Entity` or `WorkspaceEntity` in Tech Design §10  
 `BusinessEntity` is the current entity name in §10, but the type covers personal, employment, business, and custom entities — not just business. Rename to `Entity` or `WorkspaceEntity` throughout §10 and any service descriptions that reference it.
@@ -156,6 +154,24 @@ Tech Design §8.5 lists `status` as an `enum` column with no defined values. The
 **[DECIDE]** `schema_version` header format — stored as a CSV comment row (e.g. `# schema_version: 1`), as a dedicated first column on data rows, or tracked only in the manifest? `CSVParserService` and `CSVSchemaRegistry` must agree.
 
 **[DECIDE]** Import sign-flip detection — how does `CSVNormalizer` detect that a source file uses the opposite sign convention? Options: explicit user confirmation in the column-mapping step, a heuristic (if most expense amounts are positive, flip), or always ask the user to declare the source sign convention per import.
+
+**[FIX – R6-M1]** Apply R6 schema renames in `CSVSchemaRegistry`  
+Three file/column renames from Round 6 must be reflected in the schema registry before parsing can be built: `entities.csv` → `account-groups.csv` (FK column `entity_id` → `account_group_id`); `holdings.csv` → `assets.csv` (FK column `holding_id` → `asset_id`); `deductions.csv` → `tax-adjustments.csv` (FK column `deduction_id` → `tax_adjustment_id`). All specs are in `docs/architecture/containers-and-budgets.md §3`.
+
+**[FIX – R6-M2]** Add `Accounts/liabilities.csv` spec to `CSVSchemaRegistry`  
+`Liability` is a first-class object as of Round 6 — `Accounts/liabilities.csv` was added. The schema registry must include this file. Spec is in `docs/architecture/containers-and-budgets.md §3.3`.
+
+**[FIX – R6-M3]** Add `Investments/portfolios.csv` and sleeve files to `CSVSchemaRegistry`  
+`Portfolio` was introduced as a formal investment container in Round 6 — `Investments/portfolios.csv`, `Investments/sleeves.csv`, and `Investments/sleeve-targets.csv` were added. The schema registry must include all three. Specs are in `docs/architecture/containers-and-budgets.md §3`.
+
+**[FIX – R6-M4]** Add `group_id` and `group_role` columns to the unified transaction schema  
+Multi-entry transactions (transfers, paycheck gross/net splits) use a shared `group_id` connector and a `group_role` column (`gross`, `net`, `withholding`, `credit`, `debit`). These columns must be in the `Accounts/transactions/YYYY-MM.csv` spec in `CSVSchemaRegistry`. Spec is in `docs/architecture/containers-and-budgets.md §3.1`.
+
+**[FIX – R6-M5]** Create one-time `migrate-r6.swift` migration script  
+Before first build, a preview-able migration script is needed to rename the three legacy CSV files (`entities.csv` → `account-groups.csv`, `holdings.csv` → `assets.csv`, `deductions.csv` → `tax-adjustments.csv`), update FK column names in-place, and fold `Investments/transactions.csv` into the unified monthly ledger. Spec is in `docs/architecture/data-pipelines.md §2` (optional scripts). Existing workspaces from the prototype era will need this path.
+
+**[FIX – R7-P1]** Update prototype `data.js` write/edit flows  
+The prototype does not yet demonstrate edit and delete interactions. Roadmap tasks for write flows (Phase 6) should include updating the prototype to show: add transaction modal, edit account side panel, delete with reference preview, import CSV column-mapping flow. Tracked per `docs/_refinement/r7-review.md` item B1.
 
 ---
 
@@ -406,17 +422,19 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 
 ## Item counts by phase
 
-| Phase | FIX | DECIDE | Total |
-|---|---|---|---|
-| Phase 1 — Foundation | 12 | 11 | 23 |
-| Phase 2 — Parsing | 2 | 5 | 7 |
-| Phase 3 — Domain I | 1 | 10 | 11 |
-| Phase 4 — Domain II | 2 | 14 | 16 |
-| Phase 5 — Presentation | 1 | 9 | 10 |
-| Phase 6 — Write Flows | 0 | 8 | 8 |
-| Phase 7 — Polish | 0 | 5 | 5 |
-| **Total** | **18** | **62** | **80** |
+> Resolved items (~~strikethrough~~) are kept for history but excluded from open counts.
+
+| Phase | FIX open | FIX resolved | DECIDE | Total open |
+|---|---|---|---|---|
+| Phase 1 — Foundation | 9 | 3 | 11 | 20 |
+| Phase 2 — Parsing | 7 | 0 | 5 | 12 |
+| Phase 3 — Domain I | 1 | 0 | 10 | 11 |
+| Phase 4 — Domain II | 2 | 0 | 14 | 16 |
+| Phase 5 — Presentation | 1 | 0 | 9 | 10 |
+| Phase 6 — Write Flows | 0 | 0 | 8 | 8 |
+| Phase 7 — Polish | 0 | 0 | 5 | 5 |
+| **Total** | **20** | **3** | **62** | **82** |
 
 ---
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-24*
