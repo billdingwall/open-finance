@@ -555,7 +555,7 @@ function addTransaction(v) {
     amount,
     direction: amount < 0 ? 'debit' : 'credit',
     recurring: false,
-    source: (business ? 'Business/transactions/' + (v.accountGroupId || 'entity') + '-' : 'Personal/transactions/') + (v.date ? v.date.slice(0, 7) : '2026-05') + '.csv',
+    source: 'Accounts/transactions/' + (v.date ? v.date.slice(0, 7) : '2026-05') + '.csv',
     row: DATA.transactions.length + 2,
     importedFrom: v.importedFrom || 'manual-entry',
     accountGroupId: v.accountGroupId || 'personal',
@@ -1473,7 +1473,7 @@ function viewOverviewDashboard() {
         el('div', { class: 'chart-wrap', html: barChart(cashFlowVals, { labels: cashFlowLabels }) }),
         el('div', { class: 'legend' }, [
           el('span', { class: 'legend-item' }, [el('span', { class: 'legend-swatch', style: { background: '#3651d3' } }), 'Net cash flow']),
-          el('span', { class: 'legend-item', style: { marginLeft: 'auto' }, text: 'Source · Personal/transactions/*.csv' }),
+          el('span', { class: 'legend-item', style: { marginLeft: 'auto' }, text: 'Source · Accounts/transactions/*.csv' }),
         ]),
       ]),
     ]),
@@ -1571,7 +1571,7 @@ function viewBudgetOverview() {
   const variance = actual - planned;
 
   const kpis = [
-    { id: 'planned',  label: 'Planned',   value: fmtUSD(planned),  delta: '10 categories', deltaCls: 'flat', foot: 'May targets · Personal/budgets.csv' },
+    { id: 'planned',  label: 'Planned',   value: fmtUSD(planned),  delta: '10 categories', deltaCls: 'flat', foot: 'May targets · Budget/budgets.csv' },
     { id: 'actual',   label: 'Actual',    value: fmtUSD(actual),   delta: fmtPctSigned(actual / planned - 1), deltaCls: variance > 0 ? 'neg' : 'pos', foot: 'Through May 24' },
     { id: 'variance', label: 'Variance',  value: fmtUSD(variance, { sign: true }), delta: variance > 0 ? 'over plan' : 'under plan', deltaCls: variance > 0 ? 'neg' : 'pos', foot: 'Travel + Dining are top drivers' },
   ];
@@ -1672,7 +1672,7 @@ function viewBudgetOverview() {
       el('span', { class: 'panel-sub', text: `${txs.length} transactions` }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Personal/transactions/2026-05.csv') }),
+        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Accounts/transactions/2026-05.csv') }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [
@@ -1800,7 +1800,7 @@ function viewBudgetCategories() {
   const totals = computeCategoryTotals();
   const panel = el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
-      el('h3', { text: 'Categories · Personal/categories.csv' }),
+      el('h3', { text: 'Categories · Budget/categories.csv' }),
       el('span', { class: 'panel-sub', text: `${totals.length} active` }),
       el('div', { class: 'panel-actions' }, [el('span', { class: 'imported-tag', text: 'Imported' })]),
     ]),
@@ -1824,43 +1824,6 @@ function viewBudgetCategories() {
         const overBy = t.actual - t.planned;
         const tag = overBy > t.planned * 0.05 ? el('span', { class: 'tag tag-err', text: 'over plan' }) : overBy > 0 ? el('span', { class: 'tag tag-warn', text: 'slight over' }) : el('span', { class: 'tag tag-ok', text: 'on plan' });
         tr.appendChild(el('td', {}, [tag]));
-        tbody.appendChild(tr);
-      }
-      return table;
-    })()]),
-  ]);
-  c.appendChild(panel);
-}
-
-function viewBudgetRules() {
-  setHeader({
-    title: 'Recurring Rules',
-    breadcrumb: ['Finance', 'Personal Budget', 'Rules'],
-    actions: [{ label: 'New rule', variant: '' }, { label: 'Export', variant: 'btn-ghost' }],
-  });
-  renderFilterBar([{ label: 'Status', value: 'Active' }]);
-  const c = $('#content');
-  const panel = el('div', { class: 'panel' }, [
-    el('div', { class: 'panel-head' }, [
-      el('h3', { text: 'Rules · Personal/rules.csv' }),
-      el('span', { class: 'panel-sub', text: `${DATA.rules.length} rules` }),
-      el('div', { class: 'panel-actions' }, [el('span', { class: 'imported-tag', text: 'Imported' })]),
-    ]),
-    el('div', { class: 'panel-body flush' }, [(() => {
-      const table = el('table', { class: 'tbl' });
-      table.innerHTML = `<thead><tr><th>Pattern</th><th>Category</th><th>Cadence</th><th class="num">Amount</th><th>Last applied</th></tr></thead><tbody></tbody>`;
-      const tbody = table.querySelector('tbody');
-      const C = cats();
-      for (const r of DATA.rules) {
-        const tr = el('tr', {
-          class: state.selection?.kind === 'rule' && state.selection?.id === r.id ? 'selected' : '',
-          onclick: () => openInspector('rule', r.id),
-        });
-        tr.appendChild(el('td', { class: 'mono', text: r.pattern }));
-        tr.appendChild(el('td', { text: C[r.category]?.name || r.category }));
-        tr.appendChild(el('td', { text: r.cadence + ' · day ' + r.day }));
-        tr.appendChild(el('td', { class: 'num', text: fmtUSD2(r.amount) }));
-        tr.appendChild(el('td', { class: 'muted', text: fmtDate(r.lastApplied) }));
         tbody.appendChild(tr);
       }
       return table;
@@ -2389,7 +2352,7 @@ function viewBusiness() {
       el('span', { class: 'panel-sub', text: txs.length + ' transactions' }),
       el('div', { class: 'panel-actions' }, [
         el('span', { class: 'imported-tag', text: 'Imported' }),
-        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Business/transactions/' + accountGroupId + '-2026-05.csv') }),
+        el('button', { class: 'btn btn-ghost', text: 'Open file', onclick: () => osAction('Open file', 'Accounts/transactions/2026-05.csv') }),
       ]),
     ]),
     el('div', { class: 'panel-body flush' }, [(() => {
@@ -2434,7 +2397,7 @@ function viewBusinessCategories() {
   renderFilterBar([{ label: 'Tax group', value: 'All' }]);
   const c = $('#content');
   c.appendChild(el('div', { class: 'panel' }, [
-    el('div', { class: 'panel-head' }, [el('h3', { text: 'Business/categories.csv' })]),
+    el('div', { class: 'panel-head' }, [el('h3', { text: 'Budget/categories.csv · business groups' })]),
     el('div', { class: 'panel-body flush' }, [(() => {
       const table = el('table', { class: 'tbl' });
       table.innerHTML = `<thead><tr><th>Category</th><th>Tax group</th><th>Default behavior</th></tr></thead><tbody></tbody>`;
@@ -2607,203 +2570,6 @@ function viewTaxes() {
   ]));
 }
 
-// ---------- Notes ------------------------------------------------------------
-
-function viewNotes() {
-  let label = 'Monthly Reviews';
-  let notes = DATA.notes;
-  if (state.view === 'notes-strategy') { label = 'Strategy Notes'; notes = notes.filter(n => n.type === 'strategy'); }
-  if (state.view === 'notes-business') { label = 'Business Notes'; notes = notes.filter(n => n.type === 'business-review'); }
-  if (state.view === 'notes-tax')      { label = 'Tax Notes';      notes = notes.filter(n => n.type === 'tax-note'); }
-  if (state.view === 'notes-monthly')  { label = 'Monthly Reviews';notes = notes.filter(n => n.type === 'monthly-review'); }
-
-  setHeader({
-    title: 'Notes',
-    breadcrumb: ['Finance', 'Notes', label],
-    actions: [
-      { label: 'New note', variant: '' },
-      { label: 'Open folder', variant: 'btn-ghost' },
-    ],
-  });
-  renderFilterBar([
-    { label: 'Type', value: state.view === 'notes-strategy' ? 'Strategy' : state.view === 'notes-business' ? 'Business' : state.view === 'notes-tax' ? 'Tax' : 'Monthly review', active: true },
-    { label: 'Period', value: 'All' },
-    { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search notes', onChange: () => {} },
-  ]);
-
-  const c = $('#content');
-  const selectedId = (state.selection?.kind === 'note' ? state.selection.id : null) || notes[0]?.id;
-  const note = notes.find(n => n.id === selectedId) || notes[0];
-
-  const grid = el('div', { class: 'row-1-2' });
-
-  const listWrap = el('div', { class: 'note-list' });
-  for (const n of notes) {
-    const row = el('div', {
-      class: 'note-row' + (note && note.id === n.id ? ' selected' : ''),
-      onclick: () => { select({ kind: 'note', id: n.id }); renderCenter(); },
-    }, [
-      el('div', { class: 'note-title', text: n.title }),
-      el('div', { class: 'note-meta' }, [
-        el('span', { class: 'tag tag-muted', text: n.type }),
-        n.period ? el('span', { text: n.period }) : null,
-        el('span', { text: 'Updated ' + fmtDateLong(n.updated) }),
-      ]),
-    ]);
-    listWrap.appendChild(row);
-  }
-  grid.appendChild(listWrap);
-
-  // Preview
-  if (note) {
-    const preview = el('div', { class: 'md-preview' });
-    // Build front matter block
-    const fmText = '---\n' + Object.entries(note.frontMatter).map(([k, v]) => {
-      const vv = Array.isArray(v) ? '[' + v.join(', ') + ']' : v;
-      return `${k}: ${vv}`;
-    }).join('\n') + '\n---';
-    preview.appendChild(el('pre', { class: 'frontmatter-block', text: fmText }));
-    preview.innerHTML += renderMarkdown(note.body);
-    grid.appendChild(preview);
-  } else {
-    grid.appendChild(el('div', { class: 'md-preview', text: 'No notes in this group.' }));
-  }
-  c.appendChild(grid);
-}
-
-function renderMarkdown(src) {
-  if (!src) return '';
-  const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const inline = s => escape(s)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  const lines = src.split('\n');
-  let html = '';
-  let inList = false;
-  let inOL = false;
-  let inBQ = false;
-  const closeList = () => { if (inList) { html += '</ul>'; inList = false; } if (inOL) { html += '</ol>'; inOL = false; } };
-  const closeBQ = () => { if (inBQ) { html += '</blockquote>'; inBQ = false; } };
-  for (let line of lines) {
-    if (line.startsWith('# ')) { closeList(); closeBQ(); html += `<h1>${inline(line.slice(2))}</h1>`; continue; }
-    if (line.startsWith('## ')) { closeList(); closeBQ(); html += `<h2>${inline(line.slice(3))}</h2>`; continue; }
-    if (line.startsWith('### ')) { closeList(); closeBQ(); html += `<h3>${inline(line.slice(4))}</h3>`; continue; }
-    if (line.startsWith('> ')) {
-      closeList();
-      if (!inBQ) { html += '<blockquote>'; inBQ = true; }
-      html += inline(line.slice(2)) + '<br>';
-      continue;
-    } else { closeBQ(); }
-    if (line.startsWith('- ')) {
-      if (inOL) { html += '</ol>'; inOL = false; }
-      if (!inList) { html += '<ul>'; inList = true; }
-      html += `<li>${inline(line.slice(2))}</li>`;
-      continue;
-    }
-    if (/^\d+\.\s/.test(line)) {
-      if (inList) { html += '</ul>'; inList = false; }
-      if (!inOL) { html += '<ol>'; inOL = true; }
-      html += `<li>${inline(line.replace(/^\d+\.\s/, ''))}</li>`;
-      continue;
-    }
-    closeList();
-    if (line.trim() === '') { html += ''; continue; }
-    html += `<p>${inline(line)}</p>`;
-  }
-  closeList();
-  closeBQ();
-  return html;
-}
-
-// ---------- Issues -----------------------------------------------------------
-
-function viewIssues() {
-  let label = 'All Issues';
-  let issues = DATA.issues;
-  if (state.view === 'issues-repairable') { label = 'Repairable'; issues = issues.filter(i => i.repairable); }
-  if (state.view === 'issues-manual')     { label = 'Manual Review'; issues = issues.filter(i => !i.repairable); }
-
-  setHeader({
-    title: 'Issues',
-    breadcrumb: ['Finance', 'Issues', label],
-    actions: [
-      { label: 'Apply repairable fixes', variant: 'btn-primary' },
-      { label: 'Export issue list', variant: 'btn-ghost' },
-      { label: 'Reindex', variant: 'btn-ghost' },
-    ],
-  });
-  renderFilterBar([
-    { label: 'Severity', value: 'All' },
-    { label: 'Domain', value: 'All' },
-    { label: 'Sort', value: 'Severity', active: true },
-    { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search issues', onChange: () => {} },
-  ]);
-
-  const c = $('#content');
-
-  // KPI strip
-  const errs = issues.filter(i => i.severity === 'error').length;
-  const warns = issues.filter(i => i.severity === 'warning').length;
-  const infos = issues.filter(i => i.severity === 'info').length;
-  const repair = issues.filter(i => i.repairable).length;
-
-  const kpiGrid = el('div', { class: 'kpi-grid' });
-  for (const k of [
-    { label: 'Errors',    value: String(errs), foot: 'Blocking', deltaCls: 'neg', delta: 'Must resolve' },
-    { label: 'Warnings',  value: String(warns), foot: 'Review recommended', deltaCls: 'flat', delta: 'Not blocking' },
-    { label: 'Info',      value: String(infos), foot: 'Cosmetic / cleanup', deltaCls: 'flat', delta: 'Optional' },
-    { label: 'Repairable',value: String(repair), foot: 'Auto-fixable with preview', deltaCls: 'flat', delta: 'Single click' },
-  ]) {
-    kpiGrid.appendChild(el('div', { class: 'kpi-card' }, [
-      el('div', { class: 'kpi-label', text: k.label }),
-      el('div', { class: 'kpi-value', text: k.value }),
-      el('div', { class: 'kpi-delta ' + k.deltaCls, text: k.delta }),
-      el('div', { class: 'kpi-foot', text: k.foot }),
-    ]));
-  }
-  c.appendChild(kpiGrid);
-
-  // Groups
-  const groups = {};
-  for (const i of issues) {
-    groups[i.group] = groups[i.group] || [];
-    groups[i.group].push(i);
-  }
-
-  for (const [groupName, items] of Object.entries(groups)) {
-    const groupEl = el('div', { class: 'issue-group' }, [
-      el('div', { class: 'issue-group-head' }, [
-        el('span', { text: groupName }),
-        el('span', { class: 'count', text: String(items.length) }),
-      ]),
-    ]);
-    for (const i of items) {
-      const sevRowCls = i.severity === 'error' ? 'issue-row--error' : i.severity === 'warning' ? 'issue-row--warning' : 'issue-row--info';
-      const sevDotCls = i.severity === 'error' ? 'sev-err' : i.severity === 'warning' ? 'sev-warn' : 'sev-info';
-      const row = el('div', {
-        class: 'issue-row ' + sevRowCls + (state.selection?.kind === 'issue' && state.selection?.id === i.id ? ' selected' : ''),
-        onclick: () => openInspector('issue', i.id),
-      }, [
-        el('span', { class: 'sev-dot ' + sevDotCls }),
-        el('div', { style: { flex: '1', minWidth: 0 } }, [
-          el('div', { class: 'issue-title', text: i.title }),
-          el('div', { class: 'issue-msg', text: i.message }),
-        ]),
-        el('span', { class: 'path-chip' }, [
-          i.filePath || i.file + (i.row ? ':' + i.row : ''),
-          el('span', { class: 'sync-badge sync-badge--available' }),
-        ]),
-        i.repairable ? el('span', { class: 'issue-badge--repairable', text: 'repairable' }) : el('span', { class: 'issue-badge--manual', text: 'manual' }),
-      ]);
-      groupEl.appendChild(row);
-    }
-    c.appendChild(groupEl);
-  }
-}
-
 // ---------- Settings ---------------------------------------------------------
 
 function viewSettingsWorkspace() {
@@ -2868,7 +2634,7 @@ function viewSettingsSchema() {
   c.appendChild(el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [el('h3', { text: 'Schema Registry' })]),
     el('div', { class: 'panel-body' }, [
-      el('p', { style: { color: 'var(--muted)', fontSize: '12px' }, text: 'Schema version ' + DATA.workspace.schemaVersion + ' · 24 file types defined' }),
+      el('p', { style: { color: 'var(--muted)', fontSize: '12px' }, text: 'Schema version ' + DATA.workspace.schemaVersion + ' · 28 file types defined' }),
     ]),
   ]));
 }
@@ -3655,21 +3421,7 @@ function renderInspectorBody() {
       ['Transactions', String(DATA.transactions.filter(t => t.category === c.id).length)],
       ['Pacing', fmtPct(totals.actual / totals.planned, 0) + ' of plan'],
     ]));
-    body.appendChild(insSourceBlock({ file: 'Personal/categories.csv', row: null, importedFrom: 'categories template' }));
-    return;
-  }
-
-  if (k === 'rule') {
-    const r = DATA.rules.find(x => x.id === sel.id);
-    head.textContent = r.pattern;
-    sub.textContent = 'Recurring rule';
-    body.appendChild(insSection('Rule', [
-      ['Category', cats()[r.category]?.name || r.category],
-      ['Cadence', r.cadence + ' · day ' + r.day],
-      ['Amount', fmtUSD2(r.amount)],
-      ['Last applied', fmtDateLong(r.lastApplied)],
-    ]));
-    body.appendChild(insSourceBlock({ file: 'Personal/rules.csv', row: null }));
+    body.appendChild(insSourceBlock({ file: 'Budget/categories.csv', row: null, importedFrom: 'categories template' }));
     return;
   }
 
@@ -3861,8 +3613,8 @@ function renderInspectorBody() {
     ], { tag: 'info' }));
     body.appendChild(insSection('Source files', [
       ['Files', el('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } }, [
-        el('span', { class: 'path-chip', text: 'Personal/transactions/2026-05.csv' }),
-        el('span', { class: 'path-chip', text: 'Personal/categories.csv' }),
+        el('span', { class: 'path-chip', text: 'Accounts/transactions/2026-05.csv' }),
+        el('span', { class: 'path-chip', text: 'Budget/categories.csv' }),
         sel.id === 'portfolioValue' ? el('span', { class: 'path-chip', text: 'Investments/holdings.csv' }) : null,
         sel.id === 'savingsProgress' ? el('span', { class: 'path-chip', text: 'Savings/goals.csv' }) : null,
       ].filter(Boolean))],
