@@ -3,7 +3,7 @@ round: 7
 date: 2026-06-24
 type: synthesis / mvp-prep
 summary: Initial round-7 draft synthesized from the architectural audit and the R6 gap analysis — focus is MVP readiness before the Phase 1 build
-status: ALL DIRECTION DECISIONS APPLIED 2026-06-24 — full round complete
+status: R7 extended 2026-06-24 — Section E (development environment) added; E1 applied, E2–E4 DECIDE items open
 inputs:
   - docs/_notes/architectural-audit.md
   - docs/_notes/r6-gap-analysis.md
@@ -184,6 +184,38 @@ Cutting across A–C, Round 7 has three workstreams:
 
 ---
 
+## E. Development environment — toolchain, platform requirements, and CI/CD
+
+> **Status: E1 direction confirmed and applied 2026-06-24 (`CLAUDE.md` updated). E2–E4 open — DECIDE items added to `project-management.md` Phase 1.**
+
+The primary development toolchain has been specified by the principal. Three platform decisions remain open and block Phase 1 Xcode project creation. A CI/CD strategy is absent from all current docs.
+
+- **E1 — Development toolchain: Claude Code + Antigravity 2.0 / Antigravity IDE + Figma MCP (P0).** ✅ Applied 2026-06-24
+  The confirmed dev environment is:
+  - **Claude Code** (primary AI dev assistant) — context file is `CLAUDE.md`. Session-start hook and build/test commands will be added once the Xcode project is created in Phase 1. MCP server configuration for Figma lives in `.claude/settings.json`.
+  - **Google Antigravity 2.0 / Antigravity IDE** (primary IDE) — code editing environment. Xcode remains required as the macOS build toolchain; Antigravity does not replace Xcode for building and running SwiftUI apps. IDE-specific project settings must not conflict with Xcode project settings.
+  - **Figma MCP tools** — CLI and MCP server tooling that gives the AI assistant direct read access to design specs, design tokens, and component annotations from the Figma workspace. Bridges `docs/_design/` assets to the implementation workflow. MCP server configuration must be documented in `CLAUDE.md` and `.claude/settings.json` once finalized in Phase 1.
+  - VS Code and Kiro are later-phase candidates; no immediate doc changes required.
+  > **Direction:** Toolchain confirmed. CLAUDE.md updated with development toolchain section. Figma MCP server config is a Phase 1 task.
+  > **Applied:** `CLAUDE.md` — new "Development toolchain" section added covering all four tools, pending platform DECIDE items, and Figma MCP configuration note.
+
+- **E2 — macOS deployment target, Xcode version, and Swift version are unspecified (P0).**
+  All three are absent from every doc. They block Phase 1 Xcode project creation and implicitly gate every feature decision in Phases 1–5 — which SwiftUI modifiers, `@Observable` (Observation framework), and Swift Charts APIs are available depends entirely on the macOS target. Key constraint: `@Observable` requires macOS 14 (Sonoma) minimum. Given the M1+ hardware target locked in C2, macOS 14 is the likely minimum floor.
+  Xcode version must be pinned for build reproducibility across Claude Code, Antigravity IDE, and any CI environment. Swift version follows from Xcode version and should be stated explicitly.
+  > **Direction needed.** Recommend macOS 14 (Sonoma) as the minimum deployment target — broadest M1-compatible target that includes `@Observable` and Swift Charts. Xcode and Swift version TBD.
+  > **Tracking:** Three `[DECIDE]` items added to `project-management.md` Phase 1 Development.
+
+- **E3 — No CI/CD strategy documented (P1).**
+  Phase 1 Development already includes "Set up SwiftLint and code style configuration" but with no CI context — no platform, no trigger, no scope. For a macOS SwiftUI app, full build CI requires a Mac runner (unavailable on standard GitHub Actions free tier; expensive on paid). Practical options: (a) SwiftLint + doc/script checks only, running on a Linux runner; (b) full build check on a self-hosted Mac runner; (c) defer build CI entirely and rely on developer machines. The absence of a CI decision means the Phase 1 SwiftLint task has no deployment context.
+  Additionally, iCloud entitlements and signing certificates present a CI-specific problem: a CI runner has no Apple Developer account. This intersects with the existing `[DECIDE]` for the iCloud entitlement strategy.
+  > **Direction needed.** Add `[DECIDE]` item to `project-management.md` Phase 1 Development.
+
+- **E4 — Figma → code handoff policy not defined (P1).**
+  Design assets are in `docs/_design/`, and design tasks span all roadmap phases. With Figma MCP tooling confirmed in E1, the AI assistant can read directly from Figma rather than requiring manual exports — but the workflow must establish what the MCP server exposes, naming conventions for tokens and components, and which assets are committed to `docs/_design/` versus read live from Figma at authoring time. Without this policy, Phase 1 design output (global app shell, onboarding) has no defined handoff path to Phase 5 implementation.
+  > **Direction needed.** Add `[DECIDE]` item to `project-management.md` Phase 1 Design.
+
+---
+
 ## Proposed requirements updates — prioritized
 
 This section translates the findings above into concrete edits, scoped primarily to
@@ -196,6 +228,7 @@ priority for principal review. (No edits applied yet — this is the proposal se
 |---|---|---|---|---|
 | 1 | **Define delete-on-reference behavior** and write it into PRD §12. Pick a default (recommend: *block + show referencing rows*, with explicit reassign/cascade only where it reads naturally). Resolve the matching roadmap Open Decision and `project-management.md` Phase 6 [DECIDE] to the same answer. | PRD §12 | technical-design (RepairService / write model), roadmap Open Decisions, project-management | B1 |
 | 2 | **Re-sync `project-management.md` to the R6 object model.** Retire resolved [FIX] items (C1, C6, M3, M6, and any naming items R6 closed); add migration tasks for the three renames, `liabilities.csv` + `portfolios.csv`, and `migrate-r6.swift`. Not a PRD edit, but it gates an accurate build plan. | project-management | — | A1 |
+| 13 | **Pin macOS deployment target, Xcode version, and Swift version** before Phase 1 Xcode project creation. Document in `CLAUDE.md`, `docs/technical-design.md §2`, and `README.md`. These three values gate every SwiftUI API and framework feature decision in Phases 1–5. Add three `[DECIDE]` items to `project-management.md` Phase 1 Development. | CLAUDE.md, technical-design §2 | README.md, roadmap Phase 1 Xcode setup task, project-management | E2 |
 
 ### P1 — resolve this round or schedule explicitly (blocks a later phase)
 
@@ -205,6 +238,9 @@ priority for principal review. (No edits applied yet — this is the proposal se
 | 4 | **Bound Markdown scope in PRD §4**: inline rendering in the right detail pane is V1; standalone Notes module is V2; name the supported subset (headers, tables, links). | PRD §4 | roadmap (Notes V2), project-management [FIX-S1] | B4 |
 | 5 | **Add a write-safety / conflict-resolution requirement** to PRD §1 and the Reliability NFR: atomic temp-then-rename, timestamped backup, and a user-driven conflict-winner flow for concurrent edits. | PRD §1 + NFR | technical-design (FileCoordinatorService, sync states), roadmap Phase 1/6 | C1 |
 | 6 | **Add prototype tasks** to bring it to the R6 schema (A2) and to demonstrate write/edit/delete + write-preview (B2). Roadmap/tracker tasks, not PRD requirements. | roadmap / project-management | prototype/ | A2, B2 |
+| 14 | **Document development toolchain in `CLAUDE.md`** — Claude Code, Antigravity 2.0 / Antigravity IDE, Figma MCP tools, secondary IDE candidates. Add Figma MCP server configuration as a Phase 1 task. Not a PRD requirement, but gates correct AI assistant behavior from Phase 1 onward. | CLAUDE.md | project-management Phase 1 | E1 |
+| 15 | **Define CI/CD pipeline** — platform (GitHub Actions), what runs on PR (SwiftLint minimum; build check scope TBD), and how signing/entitlements are handled in a CI environment without a Mac developer account. Add `[DECIDE]` to `project-management.md` Phase 1 Development. | project-management | roadmap Phase 1 Xcode setup task | E3 |
+| 16 | **Define Figma → code handoff policy** — what the Figma MCP server exposes, naming conventions for design tokens and components, and which assets are committed to `docs/_design/` vs read live. Add `[DECIDE]` to `project-management.md` Phase 1 Design. | project-management | docs/_design/, CLAUDE.md | E4 |
 
 ### P2 — track now, may defer
 
@@ -219,7 +255,7 @@ priority for principal review. (No edits applied yet — this is the proposal se
 
 ### Applied 2026-06-24
 
-All 12 proposed updates applied inline to the affected documents (no separate `r7-update-*.md` files needed — direction was provided directly):
+All 12 original proposed updates applied inline to the affected documents. Section E items 13–16 extended the round; E1 applied same day, E2–E4 tracked as open DECIDE items.
 
 | # | Status | Docs updated |
 |---|---|---|
@@ -235,3 +271,7 @@ All 12 proposed updates applied inline to the affected documents (no separate `r
 | 10 | ✅ A3 — architecture split | docs/architecture/ created, technical-design.md lean overview |
 | 11 | ✅ A4/A5 — pipeline diagrams + V2 tracking | data-pipelines.md §3, roadmap Out of Scope |
 | 12 | ✅ C5 — tax scope guardrail | PRD §8 + non-goals, technical-design §21 |
+| 13 | ⏳ E2 — macOS/Xcode/Swift pinning | DECIDE items added to project-management.md Phase 1 Development — awaiting direction |
+| 14 | ✅ E1 — development toolchain documented | CLAUDE.md — new "Development toolchain" section added |
+| 15 | ⏳ E3 — CI/CD pipeline | DECIDE item added to project-management.md Phase 1 Development — awaiting direction |
+| 16 | ⏳ E4 — Figma → code handoff policy | DECIDE item added to project-management.md Phase 1 Design — awaiting direction |

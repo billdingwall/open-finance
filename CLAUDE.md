@@ -96,6 +96,22 @@ Before proposing any implementation detail, verify it doesn't violate these:
 
 **Deferred to V2** (do not implement, do not design for): Notes viewer, Issues standalone view, Files explorer, Budget rules/automation, bank/brokerage sync, multi-workspace, AI analysis.
 
+## Development toolchain
+
+**Primary AI dev assistant**: Claude Code (this file provides Claude Code context). Build/test commands and a session-start hook will be added here once the Xcode project is created in Phase 1.
+
+**Primary IDE**: Google Antigravity 2.0 / Antigravity IDE. Xcode remains required as the macOS build toolchain — Antigravity is the code editing environment but does not replace Xcode for building and running SwiftUI apps. IDE-specific project settings must not conflict with Xcode project settings.
+
+**Design-to-code bridge**: Figma MCP tools give the AI assistant direct read access to design specs, design tokens, and component annotations from the Figma workspace (design assets in `docs/_design/`). MCP server configuration is documented in `.claude/settings.json` — set this up in Phase 1 before starting design-driven implementation.
+
+**Secondary IDEs (later phases)**: VS Code and Kiro are candidates for later development phases. No setup required until needed.
+
+**Platform requirements** — pending Phase 1 DECIDE items (see `docs/project-management.md`):
+- macOS deployment target: TBD. Likely macOS 14 (Sonoma) — minimum for `@Observable` (Observation framework). Decision gates Xcode project creation.
+- Xcode version: TBD. Must be pinned for reproducible builds across all tools and CI.
+- Swift version: TBD. Follows from Xcode version.
+- CI/CD: TBD. GitHub Actions; Mac runner strategy for SwiftLint and build checks pending.
+
 ## Spec Kit workflow
 
 Features are developed using the Spec Kit workflow. Commands in order:
