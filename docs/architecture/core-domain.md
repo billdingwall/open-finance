@@ -139,7 +139,7 @@ FinanceWorkspaceApp/
     export-summary.swift
 ```
 
-> **Business module note:** `Domain/Business/BusinessEngine.swift` appears in the layout above but has no entry in §3 service responsibilities and no roadmap build task. The current PRD and prototype model Business as an account-group type under Accounts (not a standalone module). `[FIX-C3]` and `[FIX-S2]` in `docs/project-management.md` track resolution. Until resolved: do not add `BusinessEngine` responsibilities here; treat business P&L logic as part of `AccountEngine`.
+> **Business module (resolved Round 7):** Business is a **group type** under Accounts — managed through the account-group system (`group_type = business`). There is no standalone `BusinessEngine.swift` or `Domain/Business/` subfolder. All business P&L logic (monthly net income, category budget variance, expense summaries, Schedule C cross-reference) lives in `AccountEngine`. `[FIX-C3]` and `[FIX-S2]` retired. The module layout above does not include a Business subfolder.
 
 ---
 
@@ -164,6 +164,11 @@ FinanceWorkspaceApp/
 - Resolve ubiquity container.
 - Expose availability state.
 - Provide diagnostics for missing entitlements or unavailable container.
+- **Sync-first write gate** (locked Round 7): exposes per-file sync state (`available`, `downloading`, `uploading`, `conflict`, `error`). The write layer queries this before applying any write plan. If the target file is not `available` locally, the write is blocked with a user-visible "File syncing — edits will be available shortly" message. Write actions in the UI are disabled globally while the workspace `syncState` is `syncing` or any targeted file is in `downloading` state.
+  - **On launch**: the app checks workspace sync state before enabling write actions. A "Syncing workspace…" indicator replaces action buttons until all monitored files are `available`.
+  - **On write attempt**: `WritePlanBuilder` queries `ICloudContainerService.syncState(for: targetFile)` before building the plan. If not `available`, the write is deferred and the user is notified inline (non-blocking banner, not a modal).
+  - **On iCloud push** (external file change detected by `FileWatcherService`): the affected file is marked `downloading` in the sync state; write actions targeting it are disabled until re-index completes and the file returns to `available`.
+  - **`NSFileCoordinator`**: all reads and writes on monitored files go through `FileCoordinatorService` / `NSFileCoordinator` to serialize concurrent access at the OS level. This is the primary technical guard against overwriting a file that iCloud is concurrently updating.
 
 ### FileIndexService
 - Recursively scan `.csv` and `.md`.

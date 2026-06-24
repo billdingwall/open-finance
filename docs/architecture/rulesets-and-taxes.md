@@ -30,7 +30,7 @@
 - missing benchmark data
 - duplicate transaction ID
 - orphan note link
-- **delete with reference check**: before deleting a row, resolve inbound references (e.g. an account group referenced by accounts; an account referenced by transactions/holdings; a category referenced by transactions). The write preview must list referencing rows and block or warn per the chosen default. (Default behavior — block vs. cascade-warn vs. reassign — is an open decision tracked as `[DECIDE]` in `docs/project-management.md` Phase 6 and `docs/technical-design.md §21`; pick before implementing Phase 6 delete flows.)
+- **delete with reference check — default: reassign** (locked Round 7): before deleting a row, resolve inbound references (e.g. an account group referenced by accounts; an account referenced by transactions; a category referenced by transactions). The write preview must list referencing rows and present a reassignment picker per referencing collection (e.g. "Reassign 42 transactions to: [category picker]"). Nullable references may be left unlinked. The delete and all reassignments are written atomically; the user can cancel the entire operation. The app never silently drops referencing rows and never blocks a delete the user confirms with a valid reassignment. See `docs/product-requirements.md §12`.
 
 ### Domain validation
 - budget period without budget rows

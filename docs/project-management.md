@@ -1,7 +1,7 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
-**Last updated**: 2026-06-24 (Round 7 — retired resolved R4/R7 FIX items; added R6 migration tasks)  
+**Last updated**: 2026-06-24 (Round 7 — retired resolved FIX items (C1, C5, S8, S1, C3, S2); added R6 migration tasks; locked B1/B3/B4/C1/C2/C5 direction decisions)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
@@ -20,11 +20,9 @@
 
 ### Product
 
-**[FIX – C3]** Decide whether Business is a standalone module or a theme under Accounts, then align all docs  
-Tech Design §11 includes `Domain/Business/BusinessEngine.swift` and `UI/Business/`, but there is no Business top-level navigation section — all business logic is assigned to `AccountEngine` in §12. No §16 requirements section exists for Business as a standalone module, and the roadmap has no Business module build task. Either remove the Business files from §11 and confirm AccountEngine owns all business P&L and entity logic, or define Business as a first-class module with a nav entry, §16 requirements, and a roadmap phase task.
+~~**[FIX – C3]** Decide whether Business is a standalone module or a theme under Accounts~~ **Resolved R7** — Business is a `group_type = business` account group, managed through the account-group system. No standalone BusinessEngine. All business P&L logic lives in `AccountEngine`. `docs/architecture/core-domain.md §2–3` updated; no `Domain/Business/` subfolder in the module layout.
 
-**[FIX – S1]** Clarify whether inline Markdown rendering is in v1 scope  
-PRD §4 (Markdown ingestion requirements) says "Provide a readable native viewer in v1." The PRD out-of-scope list and roadmap both say "Notes viewer and editor — V2." These conflict. The likely intent is that a standalone Notes module is V2, but inline Markdown rendering in the right detail pane (for tax notes and strategy notes linked from other modules) may still be needed in v1. Clarify and update PRD §4 to be specific about where Markdown is rendered in v1.
+~~**[FIX – S1]** Clarify whether inline Markdown rendering is in v1 scope~~ **Resolved R7** — `docs/product-requirements.md §4` updated: Markdown viewer/editor is V2. In v1, Markdown files are parsed for front matter metadata only; no body rendering in the app UI. Consistent with the out-of-scope list and roadmap.
 
 ~~**[FIX – S8]** Mark "advanced workspace mode" as V2 in Tech Design §5~~ **Resolved R7** — `docs/technical-design.md §5` advanced workspace mode is now marked as V2 only.
 
@@ -73,8 +71,7 @@ PRD non-goals says "AI model integrations to analyze performance" with no timeli
 **[FIX – C6]** Rename `BusinessEntity` to `Entity` or `WorkspaceEntity` in Tech Design §10  
 `BusinessEntity` is the current entity name in §10, but the type covers personal, employment, business, and custom entities — not just business. Rename to `Entity` or `WorkspaceEntity` throughout §10 and any service descriptions that reference it.
 
-**[FIX – S2]** Add a `BusinessEngine` service description to §12, or remove it from §11  
-`Domain/Business/BusinessEngine.swift` is listed in Tech Design §11 but has no entry in §12 and no roadmap build task. If business logic stays inside `AccountEngine`, remove the file from §11. If it is intended to be a separate service, add it to §12 with defined responsibilities and add a build task to the appropriate roadmap phase.
+~~**[FIX – S2]** Add a `BusinessEngine` service description to §12, or remove it from §11~~ **Resolved R7** — `BusinessEngine.swift` removed from module layout; business P&L is part of `AccountEngine`. See [FIX-C3] resolution above.
 
 **[FIX – S6]** Add service descriptions for `FileCoordinatorService`, `ManifestStore`, and `SettingsStore`  
 All three appear in the Tech Design §11 module layout but have no entries in §12 service responsibilities. `FileCoordinatorService` wraps `NSFileCoordinator` for iCloud-safe reads and writes — non-trivial and needs a service spec. `ManifestStore` and `SettingsStore` are named in roadmap build tasks but have no §12 definition.
@@ -232,7 +229,7 @@ The note currently reads: "`Investments/accounts.csv`, `Business/entities.csv`, 
 
 ### Development
 
-**[DECIDE]** `OverviewEngine` stub contract — when `PortfolioEngine` and `TaxEngine` are stubs in Phase 3, what does `OverviewEngine` return for the Investments and Taxes KPI cards — nil, empty placeholder values, or a typed "data not available" state that renders as a distinct empty card?
+~~**[DECIDE]** `OverviewEngine` stub contract~~ **Resolved R7** — `OverviewEngine` returns a typed "data not available" state (not nil, not empty zero values) when downstream engines are stubs; the Overview dashboard renders a distinct empty card. Documented in `docs/architecture/core-domain.md §3`.
 
 ---
 
@@ -424,16 +421,16 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 
 > Resolved items (~~strikethrough~~) are kept for history but excluded from open counts.
 
-| Phase | FIX open | FIX resolved | DECIDE | Total open |
-|---|---|---|---|---|
-| Phase 1 — Foundation | 9 | 3 | 11 | 20 |
-| Phase 2 — Parsing | 7 | 0 | 5 | 12 |
-| Phase 3 — Domain I | 1 | 0 | 10 | 11 |
-| Phase 4 — Domain II | 2 | 0 | 14 | 16 |
-| Phase 5 — Presentation | 1 | 0 | 9 | 10 |
-| Phase 6 — Write Flows | 0 | 0 | 8 | 8 |
-| Phase 7 — Polish | 0 | 0 | 5 | 5 |
-| **Total** | **20** | **3** | **62** | **82** |
+| Phase | FIX open | FIX resolved | DECIDE open | DECIDE resolved | Total open |
+|---|---|---|---|---|---|
+| Phase 1 — Foundation | 7 | 5 | 11 | 0 | 18 |
+| Phase 2 — Parsing | 7 | 0 | 5 | 0 | 12 |
+| Phase 3 — Domain I | 1 | 0 | 10 | 1 | 11 |
+| Phase 4 — Domain II | 2 | 0 | 14 | 0 | 16 |
+| Phase 5 — Presentation | 1 | 0 | 9 | 0 | 10 |
+| Phase 6 — Write Flows | 0 | 0 | 7 | 1 | 7 |
+| Phase 7 — Polish | 0 | 0 | 5 | 0 | 5 |
+| **Total** | **18** | **5** | **61** | **2** | **79** |
 
 ---
 

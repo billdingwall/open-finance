@@ -3,7 +3,7 @@ round: 7
 date: 2026-06-24
 type: synthesis / mvp-prep
 summary: Initial round-7 draft synthesized from the architectural audit and the R6 gap analysis — focus is MVP readiness before the Phase 1 build
-status: SECTION A APPLIED 2026-06-24 — Section B/C/D items pending principal review and direction
+status: ALL DIRECTION DECISIONS APPLIED 2026-06-24 — full round complete
 inputs:
   - docs/_notes/architectural-audit.md
   - docs/_notes/r6-gap-analysis.md
@@ -100,76 +100,73 @@ fixes available this round because they are pure execution — no new decisions.
 
 ## B. Functional & semantic gaps (from `architectural-audit.md`)
 
-- **B1 — Delete-on-reference behavior is still undecided (P0).**
+> **Status: All B items applied 2026-06-24.**
+
+- **B1 — Delete-on-reference behavior is still undecided (P0).** ✅ Applied 2026-06-24
   Both audits flag this, and the roadmap lists it as an Open Decision for Phase 6.
   But PRD §12 already commits us to delete for *every* user-addable object with a
   "reference check" — without defining what the check *does* (block / cascade-warn
   / reassign). Deleting an account or category with hundreds of linked transactions
   has no defined behavior. This is the single most load-bearing undefined V1
-  semantic. Decide the default (and any per-object exceptions) this round; PRD §12
-  and the roadmap Open Decision must agree. *Audit severity: High.*
+  semantic. *Audit severity: High.*
+  > **Direction:** Reassign. Delete flow surfaces referencing rows + per-collection picker. Delete + reassignments written atomically.
+  > **Applied:** `docs/product-requirements.md §12`, `docs/architecture/rulesets-and-taxes.md §1`, `docs/technical-design.md §21`, `docs/product-roadmap.md` Open Decisions — all updated to reflect reassign as the locked behavior.
 
-- **B2 — Write/edit flows missing from the prototype (P1).**
+- **B2 — Write/edit flows missing from the prototype (P1).** ✅ Tracked 2026-06-24
   PRD §12 makes universal add/edit/delete a V1 requirement, but the prototype
   inspector is read-only and the documented write-preview / safe-write behavior is
-  not demonstrated. This is a prototype-fidelity gap, not a spec gap — but for a
-  data-entry app it is the core interaction we most need to review before build.
-  Should become an explicit prototype task (pairs with A2). *Audit severity: High.*
+  not demonstrated. This is a prototype-fidelity gap, not a spec gap. *Audit severity: High.*
+  > **Direction:** Add to prototype.
+  > **Applied:** Tracked as `[FIX – R7-P1]` in `docs/project-management.md` and as a Phase 6 Design task in `docs/product-roadmap.md`. Prototype update is a future execution task.
 
-- **B3 — Business: domain vs. theme ambiguity persists (P1).**
+- **B3 — Business: domain vs. theme ambiguity persists (P1).** ✅ Applied 2026-06-24
   The audit and `project-management.md` [FIX-C3]/[S2] both flag that Business is
   modeled inconsistently: Tech Design §11 lists `Business/BusinessEngine.swift`,
-  but §12 assigns all business P&L to `AccountEngine`, and there is no standalone
-  Business nav section or requirements block. R5/R6 leaned toward "business is a
-  *group* under Accounts" (transactions inline, no sub-tabs), which suggests the
-  files in §11 are vestigial. Pick one model and align §11/§12, the roadmap, and
-  PRD §5 in one pass. *Audit severity: (structural).*
+  but §12 assigns all business P&L to `AccountEngine`. *Audit severity: (structural).*
+  > **Direction:** Business is a group type (`group_type = business`) under Accounts. No standalone BusinessEngine. AccountEngine owns all business P&L.
+  > **Applied:** `docs/architecture/core-domain.md §2–3` updated (note updated to "resolved"; BusinessEngine removed from module layout); `docs/technical-design.md §21` locked decision added; `docs/project-management.md` [FIX-C3] and [FIX-S2] retired.
 
-- **B4 — Markdown viewer scope still waffles (P1).**
+- **B4 — Markdown viewer scope still waffles (P1).** ✅ Applied 2026-06-24
   PRD §4 says "provide a readable native viewer in v1" while the out-of-scope list
   and roadmap defer the Notes viewer/editor to V2. `project-management.md` [FIX-S1]
-  already names this. The likely intent — inline Markdown rendering in the right
-  detail pane for linked tax/strategy notes is V1; a standalone Notes module is V2 —
-  needs to be stated explicitly, with the supported Markdown subset (headers,
-  tables, links) bounded to prevent scope creep. *Audit severity: (scope).*
+  already names this. *Audit severity: (scope).*
+  > **Direction:** Markdown viewer/editor is V2 and consistent across docs. In v1, only front matter is parsed.
+  > **Applied:** `docs/product-requirements.md §4` updated; `docs/technical-design.md §21` locked decision added; `docs/project-management.md` [FIX-S1] retired.
 
 ---
 
 ## C. Architecture & execution risks (from `architectural-audit.md`)
 
-- **C1 — iCloud concurrency / conflict resolution underspecified (P1).**
-  The design names a "Conflict detected" UI state but does not specify how
-  concurrent offline edits to a `transactions/YYYY-MM.csv` are resolved (the audit
-  rates this High/High risk). Constitution principle #4 (Safe writes) demands
-  atomic temp-file-then-rename and a conflict-winner flow. This intersects the
-  Phase 1 `[DECIDE]` on the 7 iCloud sync states and the Phase 6 atomic-write
-  temp-file location decision. Define the conflict model before Phase 6, ideally
-  sketch it now since it shapes the write layer. *Audit severity: High.*
+> **Status: All C items applied or confirmed 2026-06-24.**
 
-- **C2 — Re-index / file-watch performance at scale (P2).**
-  Multi-year transaction history across dozens of CSVs could make full re-index a
-  main-thread hazard on low-power Macs (audit: Medium/High). Mitigations —
-  incremental parse, projection caching keyed by file hash, background parsing —
-  are partly implied but should become explicit non-functional acceptance criteria
-  (ties to the Phase 7 performance `[DECIDE]`). *Audit severity: Medium.*
+- **C1 — iCloud concurrency / conflict resolution underspecified (P1).** ✅ Applied 2026-06-24
+  The design names a "Conflict detected" UI state but does not specify how concurrent offline edits are resolved. *Audit severity: High.*
+  > **Direction:** Sync-first write pattern. Sync from iCloud before allowing UI write actions. Disable write actions while sync is in progress.
+  > **Proposed implementation (applied to docs):**
+  > - `ICloudContainerService` exposes per-file sync state; write actions gate on `available` state
+  > - On launch: show "Syncing workspace…" and disable write actions until all files are `available`
+  > - On write attempt: `WritePlanBuilder` checks sync state; blocks with inline "File syncing — edits will be available shortly" if not available
+  > - On iCloud push: `FileWatcherService` marks affected file as downloading; write actions disabled until re-index completes
+  > - `NSFileCoordinator` serializes all file reads/writes at the OS level
+  > **Applied:** `docs/architecture/core-domain.md §3` (ICloudContainerService); `docs/product-requirements.md` NFR Reliability; `docs/technical-design.md §21` locked decision.
 
-- **C3 — Bootstrap / demo-data onboarding (P2).**
-  Creating a ~20-file workspace from templates is heavy for a first run. A pre-filled
-  demo dataset would de-risk first-use and double as the dev fixture
-  (`fixture-generate.swift` already exists in the dev-loop notes). Improvement, not
-  a blocker. *Audit severity: (improvement).*
+- **C2 — Re-index / file-watch performance at scale (P2).** ✅ Applied 2026-06-24
+  Multi-year transaction history across dozens of CSVs could make full re-index a main-thread hazard on low-power Macs. *Audit severity: Medium.*
+  > **Direction:** Target higher-performance Macs (M1+). Longer sync times on older Intel hardware are acceptable.
+  > **Applied:** `docs/product-requirements.md` NFR Performance; `docs/technical-design.md §21` locked decision.
 
-- **C4 — `AccountEngine` monolith risk (P2).**
-  Every engine depends on `AccountEngine`; the audit warns it could absorb Tax/
-  Investment logic and become a bottleneck. CLAUDE.md already mandates building it
-  first. The mitigation — keep it to read-only projection interfaces — should be a
-  stated design constraint, not just folklore. *Audit severity: Medium.*
+- **C3 — Bootstrap / demo-data onboarding (P2).** ✅ Confirmed — looks good.
+  Pre-filled demo dataset de-risks first-use and doubles as the dev fixture (`fixture-generate.swift` already exists). *Audit severity: (improvement).*
+  > **Direction:** Looks good. No change needed. `fixture-generate.swift` already tracked in roadmap Phase 7.
 
-- **C5 — Tax scope creep guardrail (P2 — already mitigated).**
-  Audit rates "tax logic expands into real calculation" High severity but Low
-  likelihood; the PRD non-goal ("Tax return filing") and constitution already fence
-  this. Action is to keep the guardrail explicit, not to change anything. *Audit
-  severity: High / Low likelihood.*
+- **C4 — `AccountEngine` monolith risk (P2).** ✅ Confirmed — already applied.
+  The mitigation — keep AccountEngine to read-only projection interfaces — should be a stated design constraint. *Audit severity: Medium.*
+  > **Direction:** Looks good. Already documented in `docs/architecture/core-domain.md §3` (AccountEngine) as an explicit design constraint.
+
+- **C5 — Tax scope creep guardrail (P2).** ✅ Applied 2026-06-24
+  Audit rates "tax logic expands into real calculation" as High severity / Low likelihood. The existing non-goal ("Tax return filing") needs to be more specific. *Audit severity: High / Low likelihood.*
+  > **Direction:** Add explicit guardrail focused on estimating tax payments based on income and income types. Primary goal is to understand tax payment obligations and organize documents.
+  > **Applied:** `docs/product-requirements.md §8` tax scope guardrail statement added; non-goals updated to "Tax return filing or tax computation engine"; `docs/technical-design.md §21` locked decision added.
 
 ---
 
@@ -220,12 +217,21 @@ priority for principal review. (No edits applied yet — this is the proposal se
 | 11 | **Track live market data** as an explicit V2 candidate in the roadmap out-of-scope list (already a V1 non-goal). | roadmap | PRD non-goals (reference) | A5 |
 | 12 | **Keep the tax-scope guardrail explicit** — reaffirm "no tax-filing/calculation engine in V1" where write/tax requirements are described. | PRD §8 / non-goals | constitution (reference) | C5 |
 
-### Recommended sequencing for the principal
+### Applied 2026-06-24
 
-1. Approve the two **P0** items (delete semantics decision + project-management re-sync) — these unblock everything else.
-2. Confirm direction on the four **P1** items, especially the Business model (#3), since it has the widest doc cascade.
-3. Triage **P2**: which become this-round update plans vs. tracked-for-later.
+All 12 proposed updates applied inline to the affected documents (no separate `r7-update-*.md` files needed — direction was provided directly):
 
-Once direction is set, I'll open `r7-update-product-requirements.md` (and cascading
-`r7-update-technical-design.md` / `r7-update-product-roadmap.md`) per the doc-update
-workflow.
+| # | Status | Docs updated |
+|---|---|---|
+| 1 | ✅ B1 — delete: reassign | PRD §12, rulesets-and-taxes.md §1, technical-design §21, roadmap Open Decisions |
+| 2 | ✅ A1 — project-management re-sync | project-management.md (FIX items retired, R6 tasks added) |
+| 3 | ✅ B3 — Business = group type | core-domain.md §2–3, technical-design §21, project-management (FIX-C3/S2 retired) |
+| 4 | ✅ B4 — Markdown: V2 | PRD §4, technical-design §21, project-management (FIX-S1 retired) |
+| 5 | ✅ C1 — sync-first write gate | PRD NFR Reliability, core-domain.md §3 (ICloudContainerService), technical-design §21 |
+| 6 | ✅ A2/B2 — prototype tasks | project-management [FIX-R7-P1], roadmap Phase 6 Design task |
+| 7 | ✅ C2 — performance: M1+ | PRD NFR Performance, technical-design §21 |
+| 8 | ✅ C4 — AccountEngine constraint | Already applied (core-domain.md §3) — confirmed |
+| 9 | ✅ C3 — bootstrap demo-data | Already tracked (roadmap Phase 7 fixture-generate.swift) — confirmed |
+| 10 | ✅ A3 — architecture split | docs/architecture/ created, technical-design.md lean overview |
+| 11 | ✅ A4/A5 — pipeline diagrams + V2 tracking | data-pipelines.md §3, roadmap Out of Scope |
+| 12 | ✅ C5 — tax scope guardrail | PRD §8 + non-goals, technical-design §21 |

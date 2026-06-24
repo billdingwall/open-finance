@@ -439,14 +439,22 @@ These decisions are settled and should not be reopened for v1:
 - **Multi-entry transactions** ✓ — A shared `group_id` (with `group_role`) links the rows of a transfer or paycheck split; `group_id` is a connector, not a primary key. Transfers net to zero; gross/net splits reconcile `net = gross − Σ(withholding)`.
 - **Investment trades fold into the unified ledger** ✓ — Recorded as `type = trade` rows in `Accounts/transactions/YYYY-MM.csv`; `Investments/transactions.csv` is removed/absorbed.
 - **Account two-tier classification retained** ✓ — Keep `account_group` (enum) + `account_type`; `status` (draft/active/frozen/closed) is the canonical lifecycle field with `is_active` derived.
-- **Open** — default delete-on-reference behavior (block / cascade-warn / reassign) is still to be picked before Phase 6 delete flows.
+- **Delete-on-reference: reassign** ✓ *(Locked Round 7)* — When deleting a referenced object, the delete flow surfaces all referencing rows, presents a reassignment picker per referencing collection, and writes the delete + all reassignments atomically. No silent drops; no blocking cancels. Nullable references may be left unlinked. See `docs/product-requirements.md §12` and `docs/architecture/rulesets-and-taxes.md §1`.
+
+### Locked — 2026-06-24 (Round 7 — domain model and safety)
+
+- **Business is a group type, not a module** ✓ — Business P&L is handled by `AccountEngine` for `group_type = business` account groups. There is no standalone `BusinessEngine` module or `Domain/Business/` subfolder. See `docs/architecture/core-domain.md §2`.
+- **Markdown viewer/editor is V2** ✓ — In v1, Markdown files are parsed for front matter metadata only. No visual rendering of note body content in the app UI. See `docs/product-requirements.md §4`.
+- **Sync-first write gate** ✓ — Write actions are disabled while the workspace or target file is in a syncing/downloading state. Per-file sync state is exposed by `ICloudContainerService`; `WritePlanBuilder` checks it before constructing any write plan. `NSFileCoordinator` serializes all file reads/writes. See `docs/architecture/core-domain.md §3` (ICloudContainerService).
+- **Performance baseline: Apple Silicon (M1+)** ✓ — Acceptance criteria are defined against M1-class hardware. Longer times on older Intel machines are acceptable.
+- **Tax module scope** ✓ — The tax module estimates payment obligations and organizes documents. It is not a tax computation engine. All tax figures are estimates. See `docs/product-requirements.md §8`.
 
 ### Open decisions (pre-build)
 
 All Phase 1 architectural decisions were locked as of 2026-06-10. Remaining open decisions are tracked in `docs/project-management.md` by phase. Key open items that gate upcoming build phases:
 
 - `docs/project-management.md` Phase 1 `[DECIDE]`: iCloud entitlement strategy, 7 sync state UI treatments, manifest per-file field set
-- `docs/project-management.md` Phase 6 `[DECIDE]`: V1 write scope, delete-on-reference default behavior, backup retention policy, export column inclusion
+- `docs/project-management.md` Phase 6 `[DECIDE]`: V1 write scope, backup retention policy, export column inclusion *(delete-on-reference behavior locked Round 7: reassign)*
 
 ## 22. Recommended implementation stance
 
@@ -516,15 +524,24 @@ Left sidebar with collapsible navigation sections that open and close independen
 ## 24. Changelog
 
 ### Round 7 — 2026-06-24
-Source: `docs/_refinement/r7-review.md` (Round 7 synthesis — MVP prep); addresses doc-sync debt A1–A5 from `docs/_notes/r6-gap-analysis.md`.
+Source: `docs/_refinement/r7-review.md` (Round 7 synthesis — MVP prep + direction decisions B1–C5)
 
+**Section A — doc-sync debt (applied first pass):**
 - **Architecture split (A3):** Extracted §6–8 and §10–16 to `docs/architecture/` (`core-domain.md`, `containers-and-budgets.md`, `rulesets-and-taxes.md`, `data-pipelines.md`). This file now serves as the overview and locked-decisions record; detailed specs live in the architecture directory. Section stubs with direct links replace the moved sections.
 - **Pipeline diagrams (A4):** Added ingestion pipeline diagrams to `docs/architecture/data-pipelines.md §3` (CSV import pipeline, balance derivation, multi-entry group write, file-watch re-index).
-- **Manifest path corrected (FIX-C5):** Updated the §9 manifest example path from `"Personal/transactions/2026-05.csv"` (incorrect — no `Personal/` folder) to `"Accounts/transactions/2026-05.csv"` and updated `"domain": "personal"` to `"domain": "accounts"`.
-- **`migrate-r6.swift` script** added to `docs/architecture/data-pipelines.md §2` optional scripts list.
+- **Manifest path corrected (FIX-C5):** Updated the §9 manifest example path from `"Personal/transactions/2026-05.csv"` to `"Accounts/transactions/2026-05.csv"` / `"domain": "accounts"`.
+- **`migrate-r6.swift` script** added to `docs/architecture/data-pipelines.md §2` optional scripts.
 - **Advanced workspace mode** clarified in §5 as V2 only (FIX-S8).
 - **`OverviewEngine` stub contract** documented in `docs/architecture/core-domain.md §3`.
 - **`AccountEngine` read-only constraint** stated explicitly in `docs/architecture/core-domain.md §3`.
+
+**Section B/C — direction decisions (applied second pass):**
+- **§21 B1 — Delete-on-reference locked: reassign.** Write preview surfaces referencing rows + reassignment picker; delete + reassignments written atomically. Updated `docs/architecture/rulesets-and-taxes.md §1`, `docs/product-requirements.md §12`.
+- **§21 B3 — Business module resolved: group type under Accounts.** No `BusinessEngine` or `Domain/Business/` subfolder. `AccountEngine` owns all business P&L for `group_type = business`. `[FIX-C3]` and `[FIX-S2]` retired. Updated `docs/architecture/core-domain.md §2–3`.
+- **§21 B4 — Markdown viewer/editor: V2.** In v1, only front matter is parsed. Updated `docs/product-requirements.md §4`.
+- **§21 C1 — Sync-first write gate locked.** Write actions disabled while workspace/file is syncing; `ICloudContainerService` exposes per-file sync state; `WritePlanBuilder` gates on it; `NSFileCoordinator` serializes all file I/O. Approach documented in `docs/architecture/core-domain.md §3` (ICloudContainerService). Updated `docs/product-requirements.md` NFR Reliability.
+- **§21 C2 — Performance baseline: M1+.** Updated `docs/product-requirements.md` NFR Performance.
+- **§21 C5 — Tax scope guardrail.** Module goals: estimate payment obligations + organize documents. Not a computation engine. Updated `docs/product-requirements.md §8` and non-goals.
 
 ### Round 6 — 2026-06-23
 Source: `docs/_refinement/r6-review.md` (fourth prototype review — data structuring & IA); update plan `docs/_refinement/r6-update-technical-design.md`
@@ -539,7 +556,7 @@ Source: `docs/_refinement/r6-review.md` (fourth prototype review — data struct
 - §8.3: categories `entity_id`→`account_group_id`, +`parent_category_id`, +`sort_order`, `group_id`→`category_group_id`
 - §9/§10/§12/§13/§15: metadata key renamed; data model + engines updated (liability balances, Portfolio container, `TaxAdjustmentEngine`); multi-entry group write + validation rules added
 - §21: reopened the deductions-file decision; added the Round 6 lock block (storage-name alignment, first-class Liability, Portfolio container, multi-entry, trades-in-unified-ledger, two-tier account classification)
-- Overrides the r5 object-model audit where they differ (`account_group_id` not `group_id`, Portfolio not Strategy, `asset_class` not `asset_kind`, no group nesting) — r6-review takes priority; delete-on-reference behavior remains open
+- Overrides the r5 object-model audit where they differ (`account_group_id` not `group_id`, Portfolio not Strategy, `asset_class` not `asset_kind`, no group nesting) — r6-review takes priority *(delete-on-reference behavior locked in Round 7: reassign)*
 
 ### Round 5 — 2026-06-15
 Source: `docs/_refinement/r5-review.md` (third prototype review — functional details); update plan `docs/_refinement/r5-update-technical-design.md`

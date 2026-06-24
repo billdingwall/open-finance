@@ -53,10 +53,10 @@ A file-first macOS app solves that gap by indexing structured CSV data and Markd
 
 - Full accounting software.
 - Brokerage syncing in the first release.
-- Tax return filing.
+- Tax return filing or tax computation engine (see §8 tax scope guardrail).
 - Mobile-first parity in v1.
 - Multi-user collaboration in v1.
-- AI model integrations to analyze performance.
+- AI model integrations to analyze performance — V2 deferred.
 
 ## Target users
 
@@ -214,8 +214,8 @@ Requirements:
 - Read Markdown body content.
 - Parse optional YAML front matter.
 - Classify note type by front matter and path.
-- Link notes to periods, business entities, accounts, portfolio sleeves, or tax years.
-- Provide a readable native viewer in v1.
+- Link notes to periods, accounts, portfolio sleeves, or tax years.
+- **Markdown viewer/editor is V2.** In v1, Markdown files are parsed for front matter metadata only (note type, linked entities, period); no visual rendering of the body content in the app. The standalone Notes module is V2. This is consistent with the v1 out-of-scope list.
 
 ### 5. Accounts module
 
@@ -295,6 +295,8 @@ Requirements:
 
 The tax module presents three screens in v1: Current Tax Year, Prep Checklist, and Tax Archive. Estimated payments, gains & income, and deductions have no dedicated screens — their content surfaces within the Current Tax Year view.
 
+**Tax scope guardrail** — The tax module has two primary goals: (1) help the user estimate their tax payment obligations based on income types (employment, business, investment), and (2) organize tax documents, deductions, and prep checklist items so they are ready for filing. The app is **not** a tax computation engine or a filing assistant. It does not calculate precise tax liability with bracket math, phase-out rules, or AMT. All tax figures are estimates and projections, clearly labeled as such. See non-goals.
+
 Requirements:
 - Model tax items as **tax-adjustments** (deductions, credits, and liabilities are kinds of adjustment), keeping user-facing "deduction" language where it reads naturally. An adjustment can link to the transaction, category, asset, liability, account, or account-group it applies to.
 - Maintain a **tax-estimate** for the year — projected income, projected deductions, projected liability, and a safe-harbor target — distinct from logged estimated payments.
@@ -354,15 +356,21 @@ Requirements:
   - Objects whose detail opens in the right panel: edit and delete actions appear at the bottom of that panel.
   - Objects with their own dedicated screen (e.g. an individual account): edit is in the local screen navigation/actions, and delete is an option within the edit flow.
 - All edits and deletes follow the safe-write model: preview, timestamped backup, and atomic apply.
+- **Delete-on-reference: reassign.** When a user deletes an object that other rows reference (e.g. deleting a category referenced by transactions, or deleting an account group referenced by accounts), the delete flow must:
+  1. Surface all referencing rows in the write preview.
+  2. Ask the user to pick a reassignment target for each referencing collection (e.g. "Reassign these 42 transactions to: [category picker]"). For nullable references, "leave unlinked" is a valid choice.
+  3. Write the delete and all reassignments atomically as a single write plan — or cancel the entire operation.
+  The app never silently deletes referencing rows, and never blocks a delete that the user explicitly confirms with a valid reassignment.
 - Delete must surface any rows that reference the object before applying (reference check).
 
 ## Non-functional requirements
 
 ### Performance
 
-- Initial indexing should feel fast on typical personal-finance and small-business datasets.
+- **Target hardware: Apple Silicon Macs (M1 or newer).** Performance acceptance criteria are defined against this baseline. Longer indexing times on older Intel hardware are acceptable and not a blocking issue.
+- Initial indexing should feel fast on typical personal-finance and small-business datasets on M1-class hardware.
 - Incremental refresh should avoid full rescans when possible.
-- UI interactions should remain responsive during parsing and projection.
+- UI interactions should remain responsive during parsing and projection (parsing and domain projection must not block the main thread).
 
 ### Reliability
 
@@ -370,6 +378,7 @@ Requirements:
 - The app must preserve the last known valid projection when possible.
 - Writes must be atomic and reversible.
 - Repair actions must be previewable and recoverable.
+- **Sync-first write safety.** To minimize iCloud sync conflicts, the app must confirm that the local copy of a target file is fully synced before writing to it. Write actions are disabled while a file or the workspace is in a syncing or downloading state. See the proposed implementation approach in `docs/architecture/core-domain.md §3` (ICloudContainerService). Users will not lose changes made on another device because the app wrote over an unsynced file.
 
 ### Transparency
 
@@ -475,13 +484,16 @@ Parsing Layer
   ValidationEngine
 
 Domain Layer
-  AccountEngine (including theme grouping and business P&L calculations)
+  AccountEngine  (account groups, per-group detail, business P&L — "business" is a group type, not a module)
   BudgetEngine
   SavingsGoalEngine
   PortfolioEngine
+  BenchmarkEngine
   TaxEngine
-  ReportingEngine
+  TaxAdjustmentEngine
+  TaxPrepEngine
   CrossDomainLinkingEngine
+  OverviewEngine
 
 Presentation Layer
   OverviewView
@@ -495,6 +507,17 @@ Presentation Layer
 ```
 
 ## Changelog
+
+### Round 7 — 2026-06-24
+Source: `docs/_refinement/r7-review.md` (MVP prep — direction decisions on B1–C5)
+
+- §3 Non-goals: "Tax return filing" → "Tax return filing or tax computation engine"; AI integrations noted as "V2 deferred" for consistency with roadmap
+- §4 Markdown: removed "readable native viewer in v1"; Markdown viewer/editor is V2; in v1 only front matter is parsed (B4)
+- §5 Accounts Technical Architecture: removed `ReportingEngine`, added `BenchmarkEngine`/`TaxAdjustmentEngine`/`TaxPrepEngine`/`OverviewEngine`; Business is a group type under AccountEngine — no standalone BusinessEngine (B3)
+- §8 Taxes: added tax scope guardrail — primary goals are estimating tax payments and organizing documents; not a tax computation engine (C5)
+- §12 Object management: added delete-on-reference policy — default is **reassign**: surface referencing rows, ask user to pick reassignment target, write delete + reassignments atomically (B1)
+- NFR Performance: added M1+ target hardware baseline; older Intel hardware has acceptable longer times (C2)
+- NFR Reliability: added sync-first write safety requirement — write actions disabled while file/workspace is syncing; implementation approach in `docs/architecture/core-domain.md §3` (C1)
 
 ### Round 6 — 2026-06-23
 Source: `docs/_refinement/r6-review.md` (fourth prototype review — data structuring & IA); update plan `docs/_refinement/r6-update-product-requirements.md`
