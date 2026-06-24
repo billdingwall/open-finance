@@ -82,7 +82,6 @@ const state = {
     'budget-history':        { },
     'savings-goals':         { search: '' },
     'investments-portfolio': { account: 'all', sleeve: 'all', assetClass: 'all' },
-    'investments-holdings':  { account: 'all', sleeve: 'all', search: '' },
     'business-entity':       { entity: 'consulting-llc', period: '2026-05' },
     'taxes-current':         { year: 2026 },
     'accounts-overview':     { },
@@ -110,9 +109,9 @@ const NAV = [
     { id: 'budget-categories',  label: 'Categories' },
   ]},
   { id: 'savings-investments', label: 'Savings & Investments', items: [
+    { id: 'savings-investments-overview', label: 'Overview' },
     { id: 'savings-goals',            label: 'Goals', badge: String(DATA.goals.length) },
-    { id: 'investments-portfolio',    label: 'Portfolio Overview' },
-    { id: 'investments-holdings',     label: 'Holdings' },
+    { id: 'investments-portfolio',    label: 'Portfolio' },
   ]},
   { id: 'taxes', label: 'Taxes', items: [
     { id: 'taxes-current',    label: 'Current Tax Year' },
@@ -1389,10 +1388,11 @@ function routeView() {
   if (v === 'budget-overview')                                                           return viewBudgetOverview();
   if (v === 'budget-history')                                                            return viewBudgetHistory();
   if (v === 'budget-categories')                                                         return viewBudgetCategories();
-  // Legacy deep links from removed screens (Round 4) redirect to their parent view
+  if (v === 'savings-investments-overview' || v === 'savings-investments') return viewSavingsInvestmentsOverview();
+  // Legacy deep links from removed screens redirect to their parent view
   if (v === 'savings-goals' || v === 'savings-goals-active' || v === 'savings-goals-archived') return viewSavingsGoals();
-  if (v === 'investments-portfolio' || v === 'investments-accounts' || v === 'investments-sleeves' || v === 'savings-accounts') return viewInvestments();
-  if (v === 'investments-holdings' || v === 'investments-benchmarks' || v === 'investments-benchmark') return viewInvestmentsHoldings();
+  // Holdings, sleeves, and the benchmark heat map live inside Portfolio (no separate screens, per IA)
+  if (v === 'investments-portfolio' || v === 'investments-accounts' || v === 'investments-sleeves' || v === 'savings-accounts' || v === 'investments-holdings' || v === 'investments-benchmarks' || v === 'investments-benchmark') return viewInvestments();
   if (v === 'business-entity' || v === 'business-all-entities' || v === 'business-monthly') return viewBusiness();
   if (v === 'business-categories')                                                       return viewBusinessCategories();
   if (v === 'business-budgets')                                                          return viewBusinessBudgets();
@@ -1832,6 +1832,119 @@ function viewBudgetCategories() {
   c.appendChild(panel);
 }
 
+// ---------- Savings & Investments (Overview) ---------------------------------
+
+// Combined savings + investments summary. The S&I sidebar landing screen
+// (IA: Overview, Goals, Portfolio). KPIs and snapshot panels link out to the
+// Goals and Portfolio screens for full detail (traceability).
+function viewSavingsInvestmentsOverview() {
+  setHeader({
+    title: 'Savings & Investments',
+    breadcrumb: ['Finance', 'Savings & Investments', 'Overview'],
+    actions: [
+      { label: 'New goal', variant: '', onClick: addGoalFlow },
+      { label: 'Import prices', variant: 'btn-ghost', onClick: updatePriceFlow },
+    ],
+  });
+  renderFilterBar([]);
+
+  const c = $('#content');
+
+  // Savings (goals) aggregates
+  const goals = DATA.goals;
+  const goalsBalance = goals.reduce((s, g) => s + g.balance, 0);
+  const goalsTarget = goals.reduce((s, g) => s + g.target, 0);
+  const monthlyPlan = goals.reduce((s, g) => s + g.monthlyTarget, 0);
+  const monthlyActual = goals.reduce((s, g) => s + g.monthlyActual, 0);
+
+  // Investments (portfolio) aggregates
+  const pvTotal = DATA.assets.reduce((s, h) => s + h.qty * h.price, 0);
+  const pvBasis = DATA.assets.reduce((s, h) => s + h.basis, 0);
+  const unrealized = pvTotal - pvBasis;
+  const dividendYtd = 1700;
+
+  // KPI cards — click navigates to the relevant detail screen
+  const kpis = [
+    { label: 'Combined value', value: fmtUSD(goalsBalance + pvTotal), delta: 'Saved + invested', deltaCls: 'flat', foot: fmtUSD(goalsBalance) + ' saved · ' + fmtUSD(pvTotal) + ' invested', nav: 'investments-portfolio' },
+    { label: 'Savings progress', value: fmtPct(goalsBalance / goalsTarget, 0), delta: fmtUSD(monthlyActual) + ' / ' + fmtUSD(monthlyPlan) + ' this month', deltaCls: monthlyActual >= monthlyPlan ? 'pos' : 'neg', foot: 'Across ' + goals.length + ' goals', nav: 'savings-goals' },
+    { label: 'Portfolio value', value: fmtUSD(pvTotal), delta: fmtPctSigned(unrealized / pvBasis), deltaCls: unrealized >= 0 ? 'pos' : 'neg', foot: fmtUSD(unrealized, { sign: true }) + ' unrealized', nav: 'investments-portfolio' },
+    { label: 'Dividend income', value: fmtUSD(dividendYtd) + ' YTD', delta: '+$240 vs prior YTD', deltaCls: 'pos', foot: 'Qualified + ordinary', nav: 'investments-portfolio' },
+  ];
+  const kpiGrid = el('div', { class: 'kpi-grid' });
+  for (const k of kpis) {
+    kpiGrid.appendChild(el('div', { class: 'kpi-card', onclick: () => navigate(k.nav) }, [
+      el('div', { class: 'kpi-label', text: k.label }),
+      el('div', { class: 'kpi-value', text: k.value }),
+      el('div', { class: 'kpi-delta ' + k.deltaCls, text: k.delta }),
+      el('div', { class: 'kpi-foot', text: k.foot }),
+    ]));
+  }
+  c.appendChild(kpiGrid);
+
+  // Goals snapshot + Sleeve allocation snapshot, each linking to its full screen
+  const goalsSnap = el('div', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Savings Goals' }),
+      el('span', { class: 'panel-sub', text: goals.length + ' active' }),
+      el('div', { class: 'panel-actions' }, [
+        el('button', { class: 'btn btn-ghost', text: 'View all', onclick: () => navigate('savings-goals') }),
+      ]),
+    ]),
+    el('div', { class: 'panel-body' }, [(() => {
+      const wrap = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px' } });
+      for (const g of goals) {
+        const pct = g.balance / g.target;
+        wrap.appendChild(el('div', { style: { cursor: 'pointer' }, onclick: () => { navigate('savings-goals'); openInspector('goal', g.id); } }, [
+          el('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' } }, [
+            el('span', { text: g.name }),
+            el('span', { style: { color: 'var(--muted)' }, text: fmtUSD(g.balance) + ' / ' + fmtUSD(g.target) }),
+          ]),
+          el('div', { class: 'goal-progress' }, [el('span', { style: { width: Math.min(pct, 1) * 100 + '%' } })]),
+        ]));
+      }
+      return wrap;
+    })()]),
+  ]);
+
+  const sleeveTotals = {};
+  for (const h of DATA.assets) sleeveTotals[h.sleeve] = (sleeveTotals[h.sleeve] || 0) + h.qty * h.price;
+  const sleeveColors = { 'core-growth': '#3651d3', 'income': '#0ea5e9', 'thematic': '#a855f7', 'cash': '#94a3b8' };
+  const slices = Object.entries(sleeveTotals).map(([sid, v]) => ({ value: v, color: sleeveColors[sid] || '#94a3b8', label: sleeveById()[sid]?.name }));
+
+  const allocSnap = el('div', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [
+      el('h3', { text: 'Sleeve Allocation' }),
+      el('div', { class: 'panel-actions' }, [
+        el('span', { class: 'derived-tag', text: 'Derived' }),
+        el('button', { class: 'btn btn-ghost', text: 'Portfolio', onclick: () => navigate('investments-portfolio') }),
+      ]),
+    ]),
+    el('div', { class: 'panel-body' }, [
+      el('div', { style: { display: 'flex', gap: '14px', alignItems: 'center' } }, [
+        el('div', { style: { width: '120px', flex: '0 0 120px' }, html: donutChart(slices, { size: 120, thickness: 20 }) }),
+        el('div', { style: { flex: '1', minWidth: 0 } }, [(() => {
+          const list = el('div', { class: 'alloc-list' });
+          for (const s of DATA.sleeves) {
+            const value = sleeveTotals[s.id] || 0;
+            const pct = value / (pvTotal || 1);
+            list.appendChild(el('div', { class: 'alloc-row', onclick: () => navigate('investments-portfolio') }, [
+              el('div', { class: 'alloc-name' }, [
+                el('span', { style: { display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: sleeveColors[s.id], marginRight: '6px' } }),
+                s.name,
+              ]),
+              el('div', { class: 'alloc-bar' }, [el('div', { class: 'actual', style: { width: pct * 100 + '%' } })]),
+              el('div', { class: 'alloc-num', text: fmtPct(pct, 1) }),
+            ]));
+          }
+          return list;
+        })()]),
+      ]),
+    ]),
+  ]);
+
+  c.appendChild(el('div', { class: 'row2' }, [goalsSnap, allocSnap]));
+}
+
 // ---------- Savings & Investments (Goals) ------------------------------------
 
 function viewSavingsGoals() {
@@ -1939,8 +2052,8 @@ function viewSavingsGoals() {
 
 function viewInvestments() {
   setHeader({
-    title: 'Portfolio Overview',
-    breadcrumb: ['Finance', 'Savings & Investments', 'Portfolio Overview'],
+    title: 'Portfolio',
+    breadcrumb: ['Finance', 'Savings & Investments', 'Portfolio'],
     actions: [
       { label: 'Import prices', variant: '', onClick: updatePriceFlow },
       { label: 'Rebalance plan', variant: 'btn-ghost', onClick: rebalancePlanFlow },
@@ -2040,43 +2153,61 @@ function viewInvestments() {
 
   c.appendChild(el('div', { class: 'row2' }, [allocPanel, benchPanel]));
 
-  // Holdings table
+  // Holdings panel with a Holdings-table / Performance-heat-map toggle.
+  // The benchmark heat map lives here — no separate Holdings or Benchmark screen (per IA).
+  const mode = state.holdingsMode || 'standard';
+  const holdingsToggle = el('div', { class: 'view-toggle', role: 'tablist' }, [
+    el('button', { class: 'view-toggle-btn' + (mode === 'standard' ? ' active' : ''), text: 'Holdings table',
+      onclick: () => { state.holdingsMode = 'standard'; renderCenter(); } }),
+    el('button', { class: 'view-toggle-btn' + (mode === 'heatmap' ? ' active' : ''), text: 'Performance heat map',
+      onclick: () => { state.holdingsMode = 'heatmap'; renderCenter(); } }),
+  ]);
+
   const holdingsPanel = el('div', { class: 'panel' }, [
     el('div', { class: 'panel-head' }, [
-      el('h3', { text: 'Holdings' }),
-      el('span', { class: 'panel-sub', text: DATA.assets.length + ' positions' }),
-      el('div', { class: 'panel-actions' }, [el('span', { class: 'imported-tag', text: 'Imported' })]),
+      el('h3', { text: mode === 'heatmap' ? 'Period Returns · Investments/benchmarks/' : 'Holdings' }),
+      el('span', { class: 'panel-sub', text: mode === 'heatmap' ? 'Indexed period returns' : DATA.assets.length + ' positions' }),
+      el('div', { class: 'panel-actions' }, [
+        holdingsToggle,
+        el('span', { class: 'imported-tag', text: 'Imported' }),
+        mode === 'heatmap' ? el('span', { class: 'tag tag-warn', text: 'Missing May data' }) : null,
+      ]),
     ]),
-    el('div', { class: 'panel-body flush' }, [(() => {
-      const table = el('table', { class: 'tbl' });
-      table.innerHTML = `<thead><tr><th>Ticker</th><th>Name</th><th>Account</th><th>Sleeve</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Market value</th><th class="num">Unrealized</th></tr></thead><tbody></tbody>`;
-      const tbody = table.querySelector('tbody');
-      const AB = acctById();
-      const SB = sleeveById();
-      for (const h of DATA.assets) {
-        const mv = h.qty * h.price;
-        const ug = mv - h.basis;
-        const tr = el('tr', {
-          class: state.selection?.kind === 'holding' && state.selection?.id === h.id ? 'selected' : '',
-          onclick: () => openInspector('holding', h.id),
-        });
-        tr.appendChild(el('td', {}, [el('span', { class: 'tag tag-accent', text: h.ticker })]));
-        tr.appendChild(el('td', { class: 'truncate', text: h.name }));
-        tr.appendChild(el('td', { class: 'muted', text: AB[h.account]?.name || h.account }));
-        tr.appendChild(el('td', { class: 'muted', text: SB[h.sleeve]?.name || h.sleeve }));
-        tr.appendChild(el('td', { class: 'num', text: fmtNum(h.qty) }));
-        tr.appendChild(el('td', { class: 'num', text: fmtUSD2(h.price) }));
-        tr.appendChild(el('td', { class: 'num', text: fmtUSD(mv) }));
-        tr.appendChild(el('td', { class: 'num ' + (ug >= 0 ? 'pos' : 'neg'), text: fmtUSD(ug, { sign: true }) }));
-        tbody.appendChild(tr);
-      }
-      return table;
-    })()]),
+    el('div', { class: 'panel-body flush' }, [
+      mode === 'heatmap' ? heatMapTable(DATA.benchmarkReturns, DATA.benchmarkPeriods) : holdingsTable(),
+    ]),
   ]);
   c.appendChild(holdingsPanel);
 
-  // Sleeve table at the bottom of the Portfolio overview (no dedicated sleeves screen in v1)
+  // Sleeve table at the bottom of the Portfolio view (no dedicated sleeves screen in v1)
   c.appendChild(sleeveTargetsPanel());
+}
+
+// Standard holdings table — shared by the Portfolio view's holdings/heat-map toggle.
+function holdingsTable() {
+  const table = el('table', { class: 'tbl' });
+  table.innerHTML = `<thead><tr><th>Ticker</th><th>Name</th><th>Account</th><th>Sleeve</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Market value</th><th class="num">Unrealized</th></tr></thead><tbody></tbody>`;
+  const tbody = table.querySelector('tbody');
+  const AB = acctById();
+  const SB = sleeveById();
+  for (const h of DATA.assets) {
+    const mv = h.qty * h.price;
+    const ug = mv - h.basis;
+    const tr = el('tr', {
+      class: state.selection?.kind === 'holding' && state.selection?.id === h.id ? 'selected' : '',
+      onclick: () => openInspector('holding', h.id),
+    });
+    tr.appendChild(el('td', {}, [el('span', { class: 'tag tag-accent', text: h.ticker })]));
+    tr.appendChild(el('td', { class: 'truncate', text: h.name }));
+    tr.appendChild(el('td', { class: 'muted', text: AB[h.account]?.name || h.account }));
+    tr.appendChild(el('td', { class: 'muted', text: SB[h.sleeve]?.name || h.sleeve }));
+    tr.appendChild(el('td', { class: 'num', text: fmtNum(h.qty) }));
+    tr.appendChild(el('td', { class: 'num', text: fmtUSD2(h.price) }));
+    tr.appendChild(el('td', { class: 'num', text: fmtUSD(mv) }));
+    tr.appendChild(el('td', { class: 'num ' + (ug >= 0 ? 'pos' : 'neg'), text: fmtUSD(ug, { sign: true }) }));
+    tbody.appendChild(tr);
+  }
+  return table;
 }
 
 function sleeveTargetsPanel() {
@@ -2105,103 +2236,6 @@ function sleeveTargetsPanel() {
       return list;
     })()]),
   ]);
-}
-
-function viewInvestmentsHoldings() {
-  // Holdings table is the focal point; toggle switches between the standard
-  // table and the benchmark-style heat map (no dedicated benchmark screen in v1)
-  const mode = state.holdingsMode || 'standard';
-
-  setHeader({
-    title: 'Holdings',
-    breadcrumb: ['Finance', 'Savings & Investments', 'Holdings'],
-    actions: [
-      { label: 'Import prices', variant: '', onClick: updatePriceFlow },
-      { label: 'Export', variant: 'btn-ghost', onClick: () => exportCSV('assets.csv',
-        [{ label: 'ticker', value: 'ticker' }, { label: 'name', value: 'name' }, { label: 'account', value: 'account' }, { label: 'sleeve', value: 'sleeve' }, { label: 'qty', value: 'qty' }, { label: 'price', value: 'price' }, { label: 'basis', value: 'basis' }],
-        DATA.assets) },
-    ],
-  });
-  renderFilterBar([
-    { label: 'Account', value: 'All' },
-    { label: 'Sleeve', value: 'All' },
-    { label: 'As of', value: 'May 11, 2026', active: true },
-    { kind: 'spacer' },
-    { kind: 'search', placeholder: 'Search holdings', onChange: (q) => {
-      const ql = q.trim().toLowerCase();
-      document.querySelectorAll('#content table tbody tr').forEach(tr => {
-        tr.style.display = !ql || tr.textContent.toLowerCase().includes(ql) ? '' : 'none';
-      });
-    } },
-  ]);
-
-  const c = $('#content');
-
-  const toggle = el('div', { class: 'view-toggle', role: 'tablist' }, [
-    el('button', {
-      class: 'view-toggle-btn' + (mode === 'standard' ? ' active' : ''),
-      text: 'Holdings table',
-      onclick: () => { state.holdingsMode = 'standard'; renderCenter(); },
-    }),
-    el('button', {
-      class: 'view-toggle-btn' + (mode === 'heatmap' ? ' active' : ''),
-      text: 'Performance heat map',
-      onclick: () => { state.holdingsMode = 'heatmap'; renderCenter(); },
-    }),
-  ]);
-
-  if (mode === 'heatmap') {
-    c.appendChild(el('div', { class: 'panel' }, [
-      el('div', { class: 'panel-head' }, [
-        el('h3', { text: 'Period Returns · Investments/benchmarks/' }),
-        el('div', { class: 'panel-actions' }, [
-          toggle,
-          el('span', { class: 'imported-tag', text: 'Imported' }),
-          el('span', { class: 'tag tag-warn', text: 'Missing May data' }),
-        ]),
-      ]),
-      el('div', { class: 'panel-body flush' }, [
-        heatMapTable(DATA.benchmarkReturns, DATA.benchmarkPeriods),
-      ]),
-    ]));
-    return;
-  }
-
-  c.appendChild(el('div', { class: 'panel' }, [
-    el('div', { class: 'panel-head' }, [
-      el('h3', { text: 'Holdings' }),
-      el('span', { class: 'panel-sub', text: DATA.assets.length + ' positions' }),
-      el('div', { class: 'panel-actions' }, [
-        toggle,
-        el('span', { class: 'imported-tag', text: 'Imported' }),
-      ]),
-    ]),
-    el('div', { class: 'panel-body flush' }, [(() => {
-      const table = el('table', { class: 'tbl' });
-      table.innerHTML = `<thead><tr><th>Ticker</th><th>Name</th><th>Account</th><th>Sleeve</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Market value</th><th class="num">Unrealized</th></tr></thead><tbody></tbody>`;
-      const tbody = table.querySelector('tbody');
-      const AB = acctById();
-      const SB = sleeveById();
-      for (const h of DATA.assets) {
-        const mv = h.qty * h.price;
-        const ug = mv - h.basis;
-        const tr = el('tr', {
-          class: state.selection?.kind === 'holding' && state.selection?.id === h.id ? 'selected' : '',
-          onclick: () => openInspector('holding', h.id),
-        });
-        tr.appendChild(el('td', {}, [el('span', { class: 'tag tag-accent', text: h.ticker })]));
-        tr.appendChild(el('td', { class: 'truncate', text: h.name }));
-        tr.appendChild(el('td', { class: 'muted', text: AB[h.account]?.name || h.account }));
-        tr.appendChild(el('td', { class: 'muted', text: SB[h.sleeve]?.name || h.sleeve }));
-        tr.appendChild(el('td', { class: 'num', text: fmtNum(h.qty) }));
-        tr.appendChild(el('td', { class: 'num', text: fmtUSD2(h.price) }));
-        tr.appendChild(el('td', { class: 'num', text: fmtUSD(mv) }));
-        tr.appendChild(el('td', { class: 'num ' + (ug >= 0 ? 'pos' : 'neg'), text: fmtUSD(ug, { sign: true }) }));
-        tbody.appendChild(tr);
-      }
-      return table;
-    })()]),
-  ]));
 }
 
 function heatMapTable(rows, periods) {
