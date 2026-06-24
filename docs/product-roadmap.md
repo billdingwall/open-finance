@@ -3,7 +3,7 @@
 **Project**: Personal Finance Workspace for macOS
 **Scope**: v1 as defined in `docs/product-requirements.md` and `docs/technical-design.md`
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
-**Last updated**: 2026-06-10
+**Last updated**: 2026-06-24
 
 ---
 
@@ -21,6 +21,7 @@ a PRD amendment before proceeding.
 | Bank account sync | V2 |
 | Brokerage API integration | V2 |
 | Real-time market data | V2 |
+| Live price ingestion strategy (endpoint choice, polling interval, error handling) | V2 |
 | OCR ingestion of PDFs | V2 |
 | Tax return filing engine | V2 |
 | Multi-workspace / multi-user support | V2 |
@@ -109,7 +110,7 @@ and local-fallback modes.
   capabilities
 - [ ] Establish module folder structure: `App/`, `Platform/`, `Parsing/`, `Domain/`, `Validation/`,
   `Persistence/`, `UI/Shared/`, `Scripts/`
-- [ ] Set up `SwiftLint` and code style configuration
+- [ ] Set up `SwiftLint` and code style configuration. **CI/CD:** GitHub Actions runs SwiftLint on a standard Linux runner in Phase 1 (no Mac build runner required). Full Mac build CI is deferred to Phase 5. Code signing and entitlements are developer-machine only until Phase 5.
 - [ ] Configure unit test target and basic test infrastructure
 
 #### Platform Layer
@@ -622,6 +623,11 @@ backed up, and previewable.
 - [ ] **Repair preview panel**: issue description, fix description, diff-style preview,
   backup confirmation, apply/cancel
 - [ ] Export confirmation dialog: format picker (CSV/Markdown), file name, destination
+- [x] **Prototype update** — `prototype/app.js` demonstrates write/edit/delete flows: add transaction
+  modal + manual single-entry, edit side panels (account/transaction/goal/category/group), delete with
+  reference-check reassignment preview (per-collection picker, atomic delete + reassign), and a two-step
+  import CSV column-mapping flow (file picker → auto-detected mapping table → import). Resolved Round 7
+  (`[FIX – R7-P1]` in `docs/project-management.md`)
 
 ### Development Tasks
 
@@ -786,7 +792,7 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 | Right pane default-closed scope | Global — closed by default, opens on main-panel interaction, no section exceptions. |
 | iCloud container identifier | `OpenFinance` |
 | Workspace bootstrap seed accounts | Personal bank, personal credit card, business bank, business credit card, savings, investment |
-| Default delete behavior when an object is referenced | **Open** — block / cascade-warn / reassign; pick before Phase 6 delete flows (see `docs/_notes/object-model-audit.md` G7) |
+| Default delete behavior when an object is referenced | **Locked Round 7** — reassign: surface referencing rows, present per-collection reassignment picker, write delete + reassignments atomically. See `docs/product-requirements.md §12`. |
 
 ---
 
@@ -795,6 +801,25 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Round 7 — 2026-06-24
+Source: `docs/_refinement/r7-review.md` (MVP prep — doc-sync debt + direction decisions B1–C5)
+
+**Section A — doc-sync debt:**
+- Out of Scope: added "Live price ingestion strategy" as an explicit V2 tracked item (A5)
+- Phase 2: R6 migration tasks promoted to explicit `[FIX]` items in `docs/project-management.md` (`R6-M1` through `R6-M5`); prototype path-fix task added as `[FIX – R7-P1]`
+- Phase 6 Design: added prototype update task for write/edit flow demos
+- `docs/technical-design.md` refactored to a lean overview with links to `docs/architecture/` (A3)
+- `docs/architecture/data-pipelines.md` §3 adds four ingestion pipeline diagrams (A4)
+- `prototype/data.js` stale file paths corrected (A2)
+- `docs/project-management.md`: resolved items C1, C5, S8 retired; R6 migration tasks added (A1)
+
+**Section B/C — direction decisions:**
+- Open Decisions: delete-on-reference locked as **reassign** (B1); Business module locked as **group type under Accounts** — no standalone BusinessEngine (B3); Markdown viewer/editor locked as **V2** (B4)
+- `docs/product-requirements.md`: §4 Markdown V2, §8 tax scope guardrail, §12 reassign delete policy, NFR Performance M1+ target, NFR Reliability sync-first write safety (C1)
+- `docs/architecture/core-domain.md §3`: sync-first write gate documented on ICloudContainerService; Business module note updated to resolved
+- `docs/technical-design.md §21`: locked decisions added for B1/B3/B4/C1/C2/C5
+- `docs/project-management.md`: [FIX-S1], [FIX-C3], [FIX-S2] retired
 
 ### Round 6 — 2026-06-23
 Source: `docs/_refinement/r6-review.md` (fourth prototype review — data structuring & IA); update plan `docs/_refinement/r6-update-product-roadmap.md`
@@ -805,7 +830,7 @@ Source: `docs/_refinement/r6-review.md` (fourth prototype review — data struct
 - Phase 4: PortfolioEngine gains the Portfolio container; investment trades fold into the unified ledger; `TaxAdjustmentEngine` replaces `DeductionEngine` (adds tax-estimates + tax-documents)
 - Phase 5: account screens surface assets and liabilities; Portfolio views; new multi-entry transaction editor
 - Phase 6: multi-entry groups written atomically
-- Open Decisions: reopened+resolved the deductions-file decision; recorded the Round 6 reconciliation resolutions; delete-on-reference behavior still open
+- Open Decisions: reopened+resolved the deductions-file decision; recorded the Round 6 reconciliation resolutions *(delete-on-reference locked Round 7: reassign)*
 - Overrides the r5 object-model audit where they differ (Portfolio not Strategy, `account_group_id` not `group_id`, no group nesting) — r6-review takes priority
 
 ### Round 5 — 2026-06-15

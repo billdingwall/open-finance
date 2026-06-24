@@ -1613,6 +1613,21 @@ a { color: var(--accent); text-decoration: none; }
 .modal-file { font-size: 12px; }
 .modal-or { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; margin-top: 6px; }
 
+/* Delete-with-reassign flow (R7) */
+.delete-reassign-body { display: flex; flex-direction: column; }
+.reassign-section { padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
+.reassign-section:last-of-type { border-bottom: none; padding-bottom: 0; }
+.reassign-collection-label { font-size: 12px; font-weight: 500; color: var(--ink-2); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+.reassign-samples { font-size: 11.5px; color: var(--muted); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reassign-select { width: 100%; font-size: 12px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink); outline: none; }
+.reassign-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* Import column-mapping step (R7) */
+.col-map-table { table-layout: fixed; width: 100%; }
+.col-map-table tbody td { vertical-align: middle; }
+.col-map-select { font-size: 11.5px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--ink); width: 134px; outline: none; }
+.col-map-select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+
 .modal-foot {
   padding: 12px 18px;
   border-top: 1px solid var(--border-soft);

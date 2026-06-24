@@ -1,6 +1,7 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
+**Last updated**: 2026-06-24 (Round 7 extended — dev environment locked: macOS 15, Xcode 16, Swift 6, GitHub Actions CI/CD (SwiftLint Phase 1), figma-cli handoff policy; CLAUDE.md toolchain documented. Round 7 audit — [FIX-R7-P1] resolved (prototype write/edit/delete flows implemented); item counts table recomputed and corrected)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
@@ -19,14 +20,11 @@
 
 ### Product
 
-**[FIX – C3]** Decide whether Business is a standalone module or a theme under Accounts, then align all docs  
-Tech Design §11 includes `Domain/Business/BusinessEngine.swift` and `UI/Business/`, but there is no Business top-level navigation section — all business logic is assigned to `AccountEngine` in §12. No §16 requirements section exists for Business as a standalone module, and the roadmap has no Business module build task. Either remove the Business files from §11 and confirm AccountEngine owns all business P&L and entity logic, or define Business as a first-class module with a nav entry, §16 requirements, and a roadmap phase task.
+~~**[FIX – C3]** Decide whether Business is a standalone module or a theme under Accounts~~ **Resolved R7** — Business is a `group_type = business` account group, managed through the account-group system. No standalone BusinessEngine. All business P&L logic lives in `AccountEngine`. `docs/architecture/core-domain.md §2–3` updated; no `Domain/Business/` subfolder in the module layout.
 
-**[FIX – S1]** Clarify whether inline Markdown rendering is in v1 scope  
-PRD §4 (Markdown ingestion requirements) says "Provide a readable native viewer in v1." The PRD out-of-scope list and roadmap both say "Notes viewer and editor — V2." These conflict. The likely intent is that a standalone Notes module is V2, but inline Markdown rendering in the right detail pane (for tax notes and strategy notes linked from other modules) may still be needed in v1. Clarify and update PRD §4 to be specific about where Markdown is rendered in v1.
+~~**[FIX – S1]** Clarify whether inline Markdown rendering is in v1 scope~~ **Resolved R7** — `docs/product-requirements.md §4` updated: Markdown viewer/editor is V2. In v1, Markdown files are parsed for front matter metadata only; no body rendering in the app UI. Consistent with the out-of-scope list and roadmap.
 
-**[FIX – S8]** Mark "advanced workspace mode" as V2 in Tech Design §5  
-Tech Design §5 describes two workspace modes — the app-owned iCloud container (v1) and an "advanced mode: user-selected iCloud Drive folder" — without any scope boundary. The locked decision covers only the app-owned container. Add a V2 deferral marker to the advanced mode description to match the PRD's "future extension" language.
+~~**[FIX – S8]** Mark "advanced workspace mode" as V2 in Tech Design §5~~ **Resolved R7** — `docs/technical-design.md §5` advanced workspace mode is now marked as V2 only.
 
 **[FIX – S9]** Add display name → enum value mapping for account groups  
 PRD §5 uses "Everyday Banking" and "Loans & Debt" as group display names. Tech Design §8.21 enum uses `checking` and `loan`. No mapping exists between the two. Add a mapping table to PRD §5 or Tech Design §8.21: "Everyday Banking" → `checking`, "Loans & Debt" → `loan`, "Credit Cards" → `credit_card`.
@@ -54,6 +52,8 @@ PRD non-goals says "AI model integrations to analyze performance" with no timeli
 
 ### Design
 
+~~**[DECIDE]** Figma → code handoff policy~~ **Resolved R7** — figma-cli (local CLI via CDP, no API key). Yolo mode default. Claude Code reads design specs live from Figma Desktop. Design tokens exported to `docs/_design/tokens/` (DTCG/W3C format); icons/SVG assets exported to `docs/_design/icons/`. Component specs generated on demand, not committed. Set up figma-cli in Phase 1 — Claude Code handles installation.
+
 **[DECIDE]** First-launch onboarding flow — workspace creation screens, iCloud availability states, fallback UI when iCloud is unavailable
 
 **[DECIDE]** Workspace sync status indicators — persistent status bar element design, per-file sync badge design for all 7 sync states
@@ -66,17 +66,14 @@ PRD non-goals says "AI model integrations to analyze performance" with no timeli
 
 ### Development
 
-**[FIX – C1]** Remove `InvestmentAccount` from Tech Design §10 entity list and Roadmap Phase 1 entity task  
-The unified accounts decision removed `InvestmentAccount` as a separate type — investment-specific fields are optional properties on `Account`. Despite this, Tech Design §10 canonical entities still lists `InvestmentAccount` as a discrete entry, and the Roadmap Phase 1 dev task still names it explicitly. Remove it from §10 and update the Phase 1 roadmap entity list to read `Account` with a note that investment fields are optional properties.
+~~**[FIX – C1]** Remove `InvestmentAccount` from Tech Design §10 entity list and Roadmap Phase 1 entity task~~ **Resolved R4** — `InvestmentAccount` removed; investment fields are optional properties on `Account`. `docs/architecture/core-domain.md` reflects this.
 
-**[FIX – C5]** Correct the manifest JSON example path in Tech Design §9  
-The §9 manifest shape example shows `"path": "Personal/transactions/2026-05.csv"` with `"domain": "personal"`. No `Personal/` folder exists in the workspace structure — transactions live at `Accounts/transactions/YYYY-MM.csv`. Update the example to use the correct path and confirm the correct domain label.
+~~**[FIX – C5]** Correct the manifest JSON example path in Tech Design §9~~ **Resolved R7** — `docs/technical-design.md §9` manifest example updated to `Accounts/transactions/2026-05.csv` / `"domain": "accounts"`.
 
 **[FIX – C6]** Rename `BusinessEntity` to `Entity` or `WorkspaceEntity` in Tech Design §10  
 `BusinessEntity` is the current entity name in §10, but the type covers personal, employment, business, and custom entities — not just business. Rename to `Entity` or `WorkspaceEntity` throughout §10 and any service descriptions that reference it.
 
-**[FIX – S2]** Add a `BusinessEngine` service description to §12, or remove it from §11  
-`Domain/Business/BusinessEngine.swift` is listed in Tech Design §11 but has no entry in §12 and no roadmap build task. If business logic stays inside `AccountEngine`, remove the file from §11. If it is intended to be a separate service, add it to §12 with defined responsibilities and add a build task to the appropriate roadmap phase.
+~~**[FIX – S2]** Add a `BusinessEngine` service description to §12, or remove it from §11~~ **Resolved R7** — `BusinessEngine.swift` removed from module layout; business P&L is part of `AccountEngine`. See [FIX-C3] resolution above.
 
 **[FIX – S6]** Add service descriptions for `FileCoordinatorService`, `ManifestStore`, and `SettingsStore`  
 All three appear in the Tech Design §11 module layout but have no entries in §12 service responsibilities. `FileCoordinatorService` wraps `NSFileCoordinator` for iCloud-safe reads and writes — non-trivial and needs a service spec. `ManifestStore` and `SettingsStore` are named in roadmap build tasks but have no §12 definition.
@@ -109,6 +106,12 @@ PRD recommends "MVVM for presentation logic." Tech Design §11 says "Observation
 
 **[FIX – M6]** Replace `PersonalTransaction` / `BusinessTransaction` with `Transaction`  
 Tech Design §10 and Roadmap Phase 1 list both `PersonalTransaction` and `BusinessTransaction` as separate entity types. The file model uses a single unified transaction file; personal vs business filtering is done at query time by `entity_id` and `account_group`. Replace with a single `Transaction` or `UnifiedTransaction` entity in §10 and the Phase 1 roadmap entity list.
+
+~~**[DECIDE]** macOS deployment target~~ **Resolved R7** — macOS 15 (Sequoia). Update to the latest stable macOS at Phase 1 build start if newer. Documented in `CLAUDE.md` and `docs/architecture/core-domain.md §2`.
+
+~~**[DECIDE]** Xcode and Swift version requirements~~ **Resolved R7** — Xcode 16, Swift 6. Update to latest stable at Phase 1 build start. Documented in `CLAUDE.md` and `docs/architecture/core-domain.md §2`.
+
+~~**[DECIDE]** CI/CD pipeline~~ **Resolved R7** — GitHub Actions. Phase 1: SwiftLint on a standard Linux runner only (no Mac build CI). Full Mac build CI deferred to Phase 5. Code signing and entitlements are developer-machine only in Phase 1.
 
 **[DECIDE]** `FileWatcherService` implementation — `DispatchSource` (lower-level file descriptor watching) vs `NSFilePresenter` (higher-level, integrates with iCloud file coordination)?
 
@@ -156,6 +159,23 @@ Tech Design §8.5 lists `status` as an `enum` column with no defined values. The
 **[DECIDE]** `schema_version` header format — stored as a CSV comment row (e.g. `# schema_version: 1`), as a dedicated first column on data rows, or tracked only in the manifest? `CSVParserService` and `CSVSchemaRegistry` must agree.
 
 **[DECIDE]** Import sign-flip detection — how does `CSVNormalizer` detect that a source file uses the opposite sign convention? Options: explicit user confirmation in the column-mapping step, a heuristic (if most expense amounts are positive, flip), or always ask the user to declare the source sign convention per import.
+
+**[FIX – R6-M1]** Apply R6 schema renames in `CSVSchemaRegistry`  
+Three file/column renames from Round 6 must be reflected in the schema registry before parsing can be built: `entities.csv` → `account-groups.csv` (FK column `entity_id` → `account_group_id`); `holdings.csv` → `assets.csv` (FK column `holding_id` → `asset_id`); `deductions.csv` → `tax-adjustments.csv` (FK column `deduction_id` → `tax_adjustment_id`). All specs are in `docs/architecture/containers-and-budgets.md §3`.
+
+**[FIX – R6-M2]** Add `Accounts/liabilities.csv` spec to `CSVSchemaRegistry`  
+`Liability` is a first-class object as of Round 6 — `Accounts/liabilities.csv` was added. The schema registry must include this file. Spec is in `docs/architecture/containers-and-budgets.md §3.3`.
+
+**[FIX – R6-M3]** Add `Investments/portfolios.csv` and sleeve files to `CSVSchemaRegistry`  
+`Portfolio` was introduced as a formal investment container in Round 6 — `Investments/portfolios.csv`, `Investments/sleeves.csv`, and `Investments/sleeve-targets.csv` were added. The schema registry must include all three. Specs are in `docs/architecture/containers-and-budgets.md §3`.
+
+**[FIX – R6-M4]** Add `group_id` and `group_role` columns to the unified transaction schema  
+Multi-entry transactions (transfers, paycheck gross/net splits) use a shared `group_id` connector and a `group_role` column (`gross`, `net`, `withholding`, `credit`, `debit`). These columns must be in the `Accounts/transactions/YYYY-MM.csv` spec in `CSVSchemaRegistry`. Spec is in `docs/architecture/containers-and-budgets.md §3.1`.
+
+**[FIX – R6-M5]** Create one-time `migrate-r6.swift` migration script  
+Before first build, a preview-able migration script is needed to rename the three legacy CSV files (`entities.csv` → `account-groups.csv`, `holdings.csv` → `assets.csv`, `deductions.csv` → `tax-adjustments.csv`), update FK column names in-place, and fold `Investments/transactions.csv` into the unified monthly ledger. Spec is in `docs/architecture/data-pipelines.md §2` (optional scripts). Existing workspaces from the prototype era will need this path.
+
+~~**[FIX – R7-P1]** Update prototype `data.js` write/edit flows~~ **Resolved R7** — Prototype now demonstrates the full add/edit/delete cycle: add-transaction modal and manual single-entry flow, edit account/transaction/goal/category/group side panels, **delete with reference-check reassignment preview** (per-collection reassignment picker, atomic delete + reassign — matches the locked Round 7 reassign policy), and a two-step **import CSV column-mapping flow** (file picker → auto-detected column-mapping table → import). `prototype/data.js` also carries the full R6 schema (accountGroups, assets, taxAdjustments, liabilities, portfolios, multi-entry transactions with `groupId`/`groupRole`). Tracked per `docs/_refinement/r7-review.md` items A2/B1/B2.
 
 ---
 
@@ -216,7 +236,7 @@ The note currently reads: "`Investments/accounts.csv`, `Business/entities.csv`, 
 
 ### Development
 
-**[DECIDE]** `OverviewEngine` stub contract — when `PortfolioEngine` and `TaxEngine` are stubs in Phase 3, what does `OverviewEngine` return for the Investments and Taxes KPI cards — nil, empty placeholder values, or a typed "data not available" state that renders as a distinct empty card?
+~~**[DECIDE]** `OverviewEngine` stub contract~~ **Resolved R7** — `OverviewEngine` returns a typed "data not available" state (not nil, not empty zero values) when downstream engines are stubs; the Overview dashboard renders a distinct empty card. Documented in `docs/architecture/core-domain.md §3`.
 
 ---
 
@@ -406,17 +426,19 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 
 ## Item counts by phase
 
-| Phase | FIX | DECIDE | Total |
-|---|---|---|---|
-| Phase 1 — Foundation | 12 | 11 | 23 |
-| Phase 2 — Parsing | 2 | 5 | 7 |
-| Phase 3 — Domain I | 1 | 10 | 11 |
-| Phase 4 — Domain II | 2 | 14 | 16 |
-| Phase 5 — Presentation | 1 | 9 | 10 |
-| Phase 6 — Write Flows | 0 | 8 | 8 |
-| Phase 7 — Polish | 0 | 5 | 5 |
-| **Total** | **18** | **62** | **80** |
+> Resolved items (~~strikethrough~~) are kept for history but excluded from open counts.
+
+| Phase | FIX open | FIX resolved | DECIDE open | DECIDE resolved | Total open |
+|---|---|---|---|---|---|
+| Phase 1 — Foundation | 10 | 6 | 9 | 4 | 19 |
+| Phase 2 — Parsing | 7 | 1 | 8 | 0 | 15 |
+| Phase 3 — Domain I | 1 | 0 | 13 | 1 | 14 |
+| Phase 4 — Domain II | 2 | 0 | 21 | 0 | 23 |
+| Phase 5 — Presentation | 1 | 0 | 11 | 0 | 12 |
+| Phase 6 — Write Flows | 0 | 0 | 14 | 0 | 14 |
+| Phase 7 — Polish | 0 | 0 | 6 | 0 | 6 |
+| **Total** | **21** | **7** | **82** | **5** | **103** |
 
 ---
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-24 (Round 7 audit pass)*

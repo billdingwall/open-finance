@@ -17,9 +17,10 @@ A native macOS personal finance workspace (SwiftUI, iCloud-backed) that uses CSV
 | Document | Purpose |
 |---|---|
 | `docs/product-requirements.md` | What & why: primary product direction — modules, user scenarios, data model, IA. Has a Changelog section at bottom. |
-| `docs/technical-design.md` | How & where: architecture, layered system model, workspace folder structure, all CSV file specs, service responsibilities, validation rules. |
+| `docs/technical-design.md` | How & where: lean overview file linking to `docs/architecture/` for detail. Covers architecture summary, workspace layout, and locked decisions (§21). |
+| `docs/architecture/` | Full technical specs extracted from `technical-design.md` in Round 7. Four files: `core-domain.md` (entities, module layout, services), `containers-and-budgets.md` (workspace structure + all 28 CSV/MD specs), `rulesets-and-taxes.md` (validation rules + UI requirements), `data-pipelines.md` (read/write/repair flows, scripts, ingestion diagrams). See `docs/architecture/index.md` for a quick-lookup table. |
 | `docs/product-roadmap.md` | When: phased implementation roadmap with Product/Design/Dev tasks per phase and milestone gates. |
-| `docs/project-management.md` | Tasks: remaining work needed before the Phase 1 build begins. |
+| `docs/project-management.md` | Tasks: remaining work needed before the Phase 1 build begins. Updated each round to retire resolved items and add new FIX/DECIDE items. |
 | `.specify/memory/constitution.md` | 7 non-negotiable principles governing all implementation decisions. Read this before proposing any architectural change. |
 | `docs/_refinement/` | Review rounds and update plans, named **round-first** so they group by round. `r{n}-review.md` = raw team feedback (or user-direction note). `r{n}-update-{doc}.md` = formatted doc update plan based on that round. Round numbers are global across all docs (one round = one revision event). |
 | `docs/_notes/` | Loose notes and domain research for team reference (e.g. `account-types.md`, `deduction-types.md`, `workflow-overview.md`). |
@@ -77,7 +78,7 @@ Finance/
   .finance-meta/    manifest.json, schemas/, backups/, logs/
 ```
 
-There is no separate `Personal/` or `Business/` folder — personal and business activity share the unified `Accounts/transactions/` ledger, distinguished by `account_group_id` and a `BX-` ID prefix. Full column-level specs for all CSV file types are in `docs/technical-design.md §8`.
+There is no separate `Personal/` or `Business/` folder — personal and business activity share the unified `Accounts/transactions/` ledger, distinguished by `account_group_id` and a `BX-` ID prefix. Full column-level specs for all CSV file types are in `docs/architecture/containers-and-budgets.md §3`.
 
 ## Constitution principles (non-negotiable)
 
@@ -94,6 +95,22 @@ Before proposing any implementation detail, verify it doesn't violate these:
 ## V1 scope boundaries
 
 **Deferred to V2** (do not implement, do not design for): Notes viewer, Issues standalone view, Files explorer, Budget rules/automation, bank/brokerage sync, multi-workspace, AI analysis.
+
+## Development toolchain
+
+**Primary AI dev assistant**: Claude Code (this file provides Claude Code context). Build/test commands and a session-start hook will be added here once the Xcode project is created in Phase 1.
+
+**Primary IDE**: Google Antigravity 2.0 / Antigravity IDE. Xcode remains required as the macOS build toolchain — Antigravity is the code editing environment but does not replace Xcode for building and running SwiftUI apps. IDE-specific project settings must not conflict with Xcode project settings.
+
+**Design-to-code bridge**: [figma-cli](https://github.com/silships/figma-cli) — a local CLI that lets Claude Code design directly in Figma Desktop using natural language. Communicates with Figma Desktop via CDP (no API key, no rate limits). Install in Yolo mode (default) during Phase 1 setup — Claude Code handles installation. Design tokens export to `docs/_design/tokens/` (DTCG/W3C format); icons and SVG assets export to `docs/_design/icons/`. Claude Code reads design specs live from Figma Desktop during implementation phases.
+
+**Secondary IDEs (later phases)**: VS Code and Kiro are candidates for later development phases. No setup required until needed.
+
+**Platform requirements:**
+- macOS deployment target: **macOS 15 (Sequoia)**. Update to the latest stable release at Phase 1 build start if newer.
+- Xcode: **Xcode 16**. Update to latest stable at Phase 1 build start.
+- Swift: **Swift 6**.
+- CI/CD: GitHub Actions. SwiftLint on a standard Linux runner in Phase 1; full Mac build CI deferred to Phase 5.
 
 ## Spec Kit workflow
 
@@ -117,7 +134,7 @@ The project-level docs are living documents updated after each prototype review 
 1. Add `docs/_refinement/r{n}-review.md` with prototype/UX feedback (or, for a user-direction revision, a short direction note). `{n}` is the next global round number, continuing the sequence already in the doc changelogs.
 2. Synthesize into `docs/_refinement/r{n}-update-{doc}.md` per affected document (section-by-section change list, e.g. `r4-update-product-requirements.md`)
 3. Apply changes to `docs/product-requirements.md` with a Changelog entry at the bottom
-4. Apply cascading changes to `docs/technical-design.md` with its own Changelog entry, then to `docs/product-roadmap.md`
+4. Apply cascading changes to `docs/technical-design.md` with its own Changelog entry, then to `docs/product-roadmap.md`. When spec details (CSV schemas, validation rules, service responsibilities, UI requirements) are affected, update the relevant file in `docs/architecture/` directly — `technical-design.md` links to those files rather than duplicating their content. Also update `docs/project-management.md` to retire resolved FIX items and add any new FIX/DECIDE items.
 5. If principles changed, amend `.specify/memory/constitution.md` with a version bump
 6. Update `docs/_design/` assets and `prototype/` to reflect the changes, then start the next review round
 7. Commit all affected docs together
