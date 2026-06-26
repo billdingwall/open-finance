@@ -56,6 +56,35 @@
 - duplicated but divergent transactions
 - broken business entity linkage
 
+### Rule catalog structure (Round 8)
+
+The `RuleCatalog` is authored as data (alongside the `.finance-meta/schemas/` JSON
+schemas). Each rule has the shape:
+
+```
+{ id: VAL-<TIER>-<NNN>,          // e.g. VAL-CROSS-007
+  tier: file | cross-file | domain,
+  severity: error | warning | info,
+  repair_class: auto | manual | none,
+  message_template: "...",
+  predicate: (WorkspaceContext) -> [ValidationIssue] }
+```
+
+**Classification defaults** (`[DECIDE]` validation issue classification):
+
+| Condition | Severity | Repair |
+|---|---|---|
+| Missing optional column | warning | auto (inject empty column) |
+| Unknown `category_id` reference | warning | manual (show "uncategorized"; don't block) |
+| Unknown `account_id` on a transaction | error | manual (assisted "create account"; never silent auto-add) |
+| Missing required folder | info | auto (create it) |
+
+**Severity philosophy:** errors block projections and writes; warnings surface but do
+not block; info is silent/diagnostic.
+
+> R8 locks the rule *shape* and these classification defaults. The full per-rule
+> enumeration (a `VAL-…` ID and entry for every condition above) remains Phase 2 work.
+
 ---
 
 ## 2. UI requirements by section

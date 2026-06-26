@@ -1,7 +1,7 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
-**Last updated**: 2026-06-24 (Round 7 extended — dev environment locked: macOS 15, Xcode 16, Swift 6, GitHub Actions CI/CD (SwiftLint Phase 1), figma-cli handoff policy; CLAUDE.md toolchain documented. Round 7 audit — [FIX-R7-P1] resolved (prototype write/edit/delete flows implemented); item counts table recomputed and corrected)  
+**Last updated**: 2026-06-26 (Round 8 — foundation hardening for Phases 1–2: iCloud entitlement/container-ID, manifest location + field set, schema_version format, FileWatcher mechanism, 7 sync-state UI + conflict UX, Account model shape, validation classification, sign-flip, S4/S5/S6/S7/S9 resolved; 15 items retired)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
@@ -26,27 +26,17 @@
 
 ~~**[FIX – S8]** Mark "advanced workspace mode" as V2 in Tech Design §5~~ **Resolved R7** — `docs/technical-design.md §5` advanced workspace mode is now marked as V2 only.
 
-**[FIX – S9]** Add display name → enum value mapping for account groups  
-PRD §5 uses "Everyday Banking" and "Loans & Debt" as group display names. Tech Design §8.21 enum uses `checking` and `loan`. No mapping exists between the two. Add a mapping table to PRD §5 or Tech Design §8.21: "Everyday Banking" → `checking`, "Loans & Debt" → `loan`, "Credit Cards" → `credit_card`.
+~~**[FIX – S9]** Add display name → enum value mapping for account groups~~ **Resolved R8** — Mapping encoded in the accounts JSON schema and documented in `docs/architecture/containers-and-budgets.md §3.21`: "Everyday Banking" → `checking`, "Credit Cards" → `credit_card`, "Loans & Debt" → `loan`, etc.
 
-**[FIX – S5]** Decide whether `OwnerDistribution` is in scope for v1  
-PRD data model and Roadmap Phase 1 both list `OwnerDistribution` as an entity to define. Tech Design §10 does not include it. No CSV spec exists. Either add it to Tech Design §10 and create a §8 CSV spec, or remove it from the PRD data model and the Roadmap Phase 1 entity list.
+~~**[FIX – S5]** Decide whether `OwnerDistribution` is in scope for v1~~ **Resolved R8** — Removed from v1. Cut from PRD data model and the Roadmap Phase 1 entity list. Owner-draw accounting deferred to V2.
 
-**[FIX – M5]** Align AI integration language  
-PRD non-goals says "AI model integrations to analyze performance" with no timeline (implying never). Roadmap out-of-scope says "AI-driven analysis or recommendations — V2." Update PRD non-goals to say "V2 deferred" to match the roadmap.
+~~**[FIX – M5]** Align AI integration language~~ **Resolved R7** — PRD §3 non-goals already reads "AI integrations … V2 deferred" (R7 changelog). Verified during R8.
 
-**[DECIDE]** iCloud entitlement strategy — what provisioning profile and signing approach is used for development vs distribution? Is a separate development container needed, or is one identifier (`OpenFinance`) used across both environments?
+~~**[DECIDE]** iCloud entitlement strategy~~ **Resolved R8** — Single `iCloud.<bundle-id>` container across development and distribution (iCloud Documents has no dev/prod split; the bare `OpenFinance` value was malformed and is corrected). Dev-data isolation is at the provider layer via the DEBUG local-folder provider (`~/Finance-Dev/`), not a separate container. See `docs/technical-design.md §5/§21`.
 
-**[DECIDE]** 7 iCloud sync states — for each state below, what is the UI treatment? Options per state: persistent toolbar badge, full-screen blocking prompt, dismissible banner, per-file row indicator, or no indicator.
-- Available
-- Not signed into iCloud
-- Container unavailable
-- Syncing
-- Local copy stale
-- File missing locally
-- Conflict detected
+~~**[DECIDE]** 7 iCloud sync states~~ **Resolved R8** — UI-treatment table in `docs/technical-design.md §5` (no-indicator / blocking / banner / per-file as appropriate); per-file state sourced from `NSMetadataQuery`; conflicts resolved manually via `NSFileVersion` (no auto-merge). Writes gate on sync state per the locked sync-first write gate.
 
-**[DECIDE]** `manifest.json` per-file field set — which fields are stored per-file entry? Minimum candidate: path, domain classification, `schema_version`, SHA-256 hash, last-indexed timestamp, last validation result summary. Are per-file sync state or repair history included here, or tracked separately?
+~~**[DECIDE]** `manifest.json` per-file field set~~ **Resolved R8** — Device-local regenerable cache at `~/Library/Application Support/OpenFinance/<workspace_id>/manifest.json` (out of the synced container). Fields: `path, domain, subtype, schema_version, hash, modified_at, byte_size, row_count, last_indexed_at, validation_status`; top level `manifest_schema_version, app_version, workspace_id, last_indexed_at`. Sync state and repair history excluded. See `docs/technical-design.md §9`.
 
 ---
 
@@ -75,14 +65,12 @@ PRD non-goals says "AI model integrations to analyze performance" with no timeli
 
 ~~**[FIX – S2]** Add a `BusinessEngine` service description to §12, or remove it from §11~~ **Resolved R7** — `BusinessEngine.swift` removed from module layout; business P&L is part of `AccountEngine`. See [FIX-C3] resolution above.
 
-**[FIX – S6]** Add service descriptions for `FileCoordinatorService`, `ManifestStore`, and `SettingsStore`  
-All three appear in the Tech Design §11 module layout but have no entries in §12 service responsibilities. `FileCoordinatorService` wraps `NSFileCoordinator` for iCloud-safe reads and writes — non-trivial and needs a service spec. `ManifestStore` and `SettingsStore` are named in roadmap build tasks but have no §12 definition.
+~~**[FIX – S6]** Add service descriptions for `FileCoordinatorService`, `ManifestStore`, and `SettingsStore`~~ **Resolved R8** — All three added to `docs/architecture/core-domain.md §3`. `ManifestStore` reads/writes the device-local Application Support manifest and rebuilds from scan if missing.
 
 **[FIX – M1]** Align layer count across documents  
 PRD describes 4 layers, CLAUDE.md 5 layers, Tech Design 6 layers. These are different decompositions of the same architecture. Add a note to Tech Design §3 that the PRD 4-layer model is a simplified view, or update all documents to use the same count.
 
-**[FIX – M2]** Remove `ReportingEngine` from PRD core modules  
-PRD Technical Architecture lists `ReportingEngine` in the Domain Layer. It does not exist in Tech Design §11 or §12 — its functionality is covered by `ExportService` (Phase 6) and domain engine projections. Remove from PRD or replace with `ExportService`.
+~~**[FIX – M2]** Remove `ReportingEngine` from PRD core modules~~ **Resolved R7** — PRD §5 Technical Architecture no longer lists `ReportingEngine` (R7 changelog: removed, added Benchmark/TaxAdjustment/TaxPrep/Overview engines). Verified during R8.
 
 **[FIX – M3]** Reconcile PRD data model entities with Tech Design §10  
 ~13 PRD entities have no Tech Design §10 counterpart or use different names. Key examples:
@@ -113,9 +101,9 @@ Tech Design §10 and Roadmap Phase 1 list both `PersonalTransaction` and `Busine
 
 ~~**[DECIDE]** CI/CD pipeline~~ **Resolved R7** — GitHub Actions. Phase 1: SwiftLint on a standard Linux runner only (no Mac build CI). Full Mac build CI deferred to Phase 5. Code signing and entitlements are developer-machine only in Phase 1.
 
-**[DECIDE]** `FileWatcherService` implementation — `DispatchSource` (lower-level file descriptor watching) vs `NSFilePresenter` (higher-level, integrates with iCloud file coordination)?
+~~**[DECIDE]** `FileWatcherService` implementation~~ **Resolved R8** — `NSMetadataQuery` (iCloud provider; also yields per-file sync state) + FSEvents (local-folder provider). `DispatchSource` and hand-rolled `NSFilePresenter`-as-watcher rejected; `NSFileCoordinator`/`NSFilePresenter` are for read/write coordination only. See `docs/architecture/core-domain.md §3`.
 
-**[DECIDE]** `Account` model shape — single struct with optional investment fields, or a base `Account` type and an `InvestmentAccount` subtype that `PortfolioEngine` uses?
+~~**[DECIDE]** `Account` model shape~~ **Resolved R8** — Single struct with optional nested `InvestmentMetadata?`; no `InvestmentAccount` subtype. `PortfolioEngine` filters `account_group == .investment`. See `docs/technical-design.md §21` and `docs/architecture/core-domain.md §1`.
 
 ---
 
@@ -123,24 +111,15 @@ Tech Design §10 and Roadmap Phase 1 list both `PersonalTransaction` and `Busine
 
 ### Product
 
-**[FIX – S4]** Decide the purpose of `savings-goal-contributions.csv` or remove it  
-Tech Design §6 workspace folder structure lists `Budget/savings-goal-contributions.csv`. No §8 spec exists. It is not referenced in §12 service descriptions or §16 UI requirements. May be superseded by the `savings_goal_id` column on `Accounts/transactions/YYYY-MM.csv`. Either create a §8 spec defining its purpose and columns, or remove it from §6 and confirm `savings_goal_id` is the sole budget-to-goal linking mechanism.
+~~**[FIX – S4]** Decide the purpose of `savings-goal-contributions.csv` or remove it~~ **Resolved R8** — Removed. `savings_goal_id` on the unified transaction ledger is the sole budget-to-goal linking mechanism. Dropped from the folder structure in `docs/architecture/containers-and-budgets.md §1`.
 
-**[FIX – S7]** Define the savings goal `status` enum values  
-Tech Design §8.5 lists `status` as an `enum` column with no defined values. The Roadmap Phase 4 design task assumes an "archived" state. Without defined enum values, `SavingsGoalEngine` and `GoalsListView` cannot be built consistently. Add values to §8.5 — candidates: `active`, `paused`, `completed`, `archived`.
+~~**[FIX – S7]** Define the savings goal `status` enum values~~ **Resolved R8** — `status ∈ {active, archived}` (`completed` derived from progress ≥ target; `paused` not in v1). Reverses the earlier "lifecycle is V2" note. `goals.csv` spec updated; `SavingsGoalEngine` description updated.
 
-**[DECIDE]** CSV spec gaps — the 24 file specs in Tech Design §8 need the following completed before `CSVSchemaRegistry` can be built:
-- Enum value sets for `account_group`, `account_type`, `trade_type`, `frequency`, `deduction_type`, `status`
-- Which columns in each spec are required vs optional at parse time
-- Whether `schema_version` is a CSV comment row, a standard column, or manifest-only — one format, applied consistently
+**[DECIDE]** CSV spec gaps — **partially resolved R8.** Format/approach locked: `schema_version` is a leading `# schema_version: N` comment row (tolerant parser); the 28 specs are authored as machine-readable JSON in `.finance-meta/schemas/` as the single source of truth. **Still open:** enumerate the full enum value sets (`account_group`, `account_type`, `trade_type`, `frequency`, `adjustment_type`, `status`) and the required-vs-optional flag per column. Phase 2 work.
 
-**[DECIDE]** Validation rule catalog — all rules across three tiers (file-level, cross-file, domain) need: a rule ID, severity (error / warning / info), and repair classification (auto / manual / none). This catalog does not yet exist in any document and must be written before `RuleCatalog` can be implemented.
+**[DECIDE]** Validation rule catalog — **partially resolved R8.** Rule shape locked: `{ id VAL-<TIER>-<NNN>, tier, severity, repair_class, message_template, predicate }`, authored as data alongside the JSON schemas (`docs/architecture/rulesets-and-taxes.md`). **Still open:** enumerate the full per-rule catalog (one entry per condition).
 
-**[DECIDE]** Validation issue classification — for each rule, decide:
-- Is a missing optional column an error or a warning?
-- Is an unknown `category_id` reference an error or a warning?
-- Is an unknown `account_id` on a transaction row auto-repairable (prompt to add account) or manual-only?
-- Is a missing required folder auto-repairable (create it) or a blocking error?
+~~**[DECIDE]** Validation issue classification~~ **Resolved R8** — Defaults set in `docs/architecture/rulesets-and-taxes.md`: missing optional column → warning/auto; unknown `category_id` → warning/manual; unknown `account_id` on a transaction → error/manual (assisted create, no silent add); missing required folder → info/auto. Severity philosophy: errors block; warnings surface; info silent.
 
 ---
 
@@ -156,9 +135,9 @@ Tech Design §8.5 lists `status` as an `enum` column with no defined values. The
 
 ### Development
 
-**[DECIDE]** `schema_version` header format — stored as a CSV comment row (e.g. `# schema_version: 1`), as a dedicated first column on data rows, or tracked only in the manifest? `CSVParserService` and `CSVSchemaRegistry` must agree.
+~~**[DECIDE]** `schema_version` header format~~ **Resolved R8** — Leading CSV comment row `# schema_version: N` (line 1); `CSVParserService` tolerates and strips leading `#` lines; absent → current registry version + flag for repair. (Accepted tradeoff: Numbers/Excel show it as a junk first row.)
 
-**[DECIDE]** Import sign-flip detection — how does `CSVNormalizer` detect that a source file uses the opposite sign convention? Options: explicit user confirmation in the column-mapping step, a heuristic (if most expense amounts are positive, flip), or always ask the user to declare the source sign convention per import.
+~~**[DECIDE]** Import sign-flip detection~~ **Resolved R8** — Explicit per-import declaration in the column-mapping step, with a heuristic pre-fill the user confirms. Never silently flip. See `docs/architecture/data-pipelines.md §3.1`.
 
 **[FIX – R6-M1]** Apply R6 schema renames in `CSVSchemaRegistry`  
 Three file/column renames from Round 6 must be reflected in the schema registry before parsing can be built: `entities.csv` → `account-groups.csv` (FK column `entity_id` → `account_group_id`); `holdings.csv` → `assets.csv` (FK column `holding_id` → `asset_id`); `deductions.csv` → `tax-adjustments.csv` (FK column `deduction_id` → `tax_adjustment_id`). All specs are in `docs/architecture/containers-and-budgets.md §3`.
@@ -430,15 +409,17 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 
 | Phase | FIX open | FIX resolved | DECIDE open | DECIDE resolved | Total open |
 |---|---|---|---|---|---|
-| Phase 1 — Foundation | 10 | 6 | 9 | 4 | 19 |
-| Phase 2 — Parsing | 7 | 1 | 8 | 0 | 15 |
+| Phase 1 — Foundation | 5 | 11 | 4 | 9 | 9 |
+| Phase 2 — Parsing | 5 | 3 | 5 | 3 | 10 |
 | Phase 3 — Domain I | 1 | 0 | 13 | 1 | 14 |
 | Phase 4 — Domain II | 2 | 0 | 21 | 0 | 23 |
 | Phase 5 — Presentation | 1 | 0 | 11 | 0 | 12 |
 | Phase 6 — Write Flows | 0 | 0 | 14 | 0 | 14 |
 | Phase 7 — Polish | 0 | 0 | 6 | 0 | 6 |
-| **Total** | **21** | **7** | **82** | **5** | **103** |
+| **Total** | **14** | **14** | **74** | **13** | **88** |
+
+> **Round 8 (2026-06-26)** retired 15 open items (Phase 1: 5 FIX + 5 DECIDE; Phase 2: 2 FIX + 3 DECIDE). Two Phase 2 `[DECIDE]` items (CSV spec gaps, validation rule catalog) are **partially** resolved — format/structure locked, full enumeration still open — and remain counted as open. `R6-M1…M5` remain open as Phase 2 build tasks (specs are settled; realized by authoring the `.finance-meta/schemas/` JSON schemas).
 
 ---
 
-*Last updated: 2026-06-24 (Round 7 audit pass)*
+*Last updated: 2026-06-26 (Round 8 — foundation hardening)*

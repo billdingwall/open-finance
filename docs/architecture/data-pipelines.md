@@ -58,7 +58,9 @@ Because the source of truth is file-based, the project should include scripts fo
 #### `bootstrap-workspace`
 Purpose:
 - Create standard folder tree.
-- Create seed CSV/Markdown templates.
+- Create seed CSV/Markdown templates from the `.finance-meta/schemas/` JSON schemas
+  (single source of truth — same schemas drive the registry, validation, and
+  migrations), each with a leading `# schema_version: 1` comment row.
 - Create manifest.
 - Create default categories and budgets.
 - Seed six starter accounts in `Accounts/accounts.csv`: personal bank, personal credit card, business bank, business credit card, savings, investment.
@@ -133,7 +135,8 @@ CSVParserService
         │
         ▼
 CSVNormalizer
-  - Detect sign convention (user confirms or heuristic)
+  - Detect sign convention: explicit per-import declaration in the column-mapping
+    step, with a heuristic pre-fill the user confirms (never silently flip)
   - Flip signs if source uses opposite convention
   - Parse dates to ISO 8601
   - Parse amounts to Decimal
@@ -166,7 +169,8 @@ Atomic write
         │
         ▼
 FileIndexService
-  - Update manifest (hash, modified date, row count)
+  - Update manifest (hash, modified date, byte size, row count) — written to the
+    device-local manifest in Application Support, not the synced container
         │
         ▼
 Domain engines re-derive projections

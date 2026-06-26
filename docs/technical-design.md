@@ -200,6 +200,8 @@ In v1 the only supported backend is iCloud via the app-owned ubiquity container.
 
 `ICloudContainerService` is the v1 conforming implementation. `WorkspaceManager` resolves the workspace URL through the active provider rather than calling iCloud APIs directly.
 
+In **DEBUG builds the default `CloudStorageProvider` is a local-folder provider** rooted at `~/Finance-Dev/` (populated by the `fixture-generate` script). Live iCloud is exercised only in Release/TestFlight builds. This keeps the development loop free of entitlement and signing round-trips and lets workspace resolution run on CI. Dev-data isolation happens at the provider layer, not via a separate iCloud container.
+
 Minimum protocol surface:
 ```swift
 protocol CloudStorageProvider {
@@ -219,25 +221,45 @@ Providers planned for V2:
 Primary path pattern:
 ```swift
 FileManager.default
-  .url(forUbiquityContainerIdentifier: "OpenFinance")?
+  .url(forUbiquityContainerIdentifier: "iCloud.com.<org>.OpenFinance")?
   .appendingPathComponent("Documents")
   .appendingPathComponent("Finance")
 ```
 
-The container identifier is `OpenFinance`. This must match the `com.apple.developer.ubiquity-container-identifiers` entitlement value in the Xcode project.
+The container identifier must be the reverse-DNS, `iCloud.`-prefixed form (e.g.
+`iCloud.com.<org>.OpenFinance`) — **not** the bare string `OpenFinance`, which resolves
+to `nil` at runtime. This exact string is what populates the
+`com.apple.developer.ubiquity-container-identifiers` entitlement array in the Xcode
+project. One container identifier is used across both development and distribution
+(iCloud Documents storage has no dev/prod split).
 
 ### Sync considerations
 
 iCloud availability may vary by account state and entitlement setup, and container access can fail or return nil when configuration or account state is wrong. The app must surface this explicitly instead of assuming the workspace is always available.
 
-Required sync states:
-- Available
-- Not signed into iCloud
-- Container unavailable
-- Syncing
-- Local copy stale
-- File missing locally
-- Conflict detected
+Per-file sync state is sourced from **`NSMetadataQuery`** (scope
+`NSMetadataQueryUbiquitousDocumentsScope`) — its per-item attributes
+(`NSMetadataUbiquitousItemDownloadingStatusKey`, percent-downloaded,
+upload/download-in-progress, and conflict flags) yield the seven states directly,
+rather than being hand-tracked.
+
+Required sync states and their UI treatment:
+
+| State | UI treatment | Writes |
+|---|---|---|
+| Available | No indicator (subtle green header sync chip) | Enabled |
+| Not signed into iCloud | Full-screen blocking onboarding + offer local-folder fallback | — |
+| Container unavailable | Full-screen blocking + diagnostics + retry | — |
+| Syncing (workspace) | Persistent header chip "Syncing…" | Disabled (sync-first write gate) |
+| Local copy stale | Per-file row indicator + dismissible banner | Gated per-file |
+| File missing locally (placeholder) | Per-file indicator + download affordance (`startDownloadingUbiquitousItem`) | Gated |
+| Conflict detected | Banner + per-file indicator → resolution surface | Gated |
+
+### Conflict resolution (v1)
+
+v1 does **not** auto-merge. When iCloud reports an unresolved conflict, the app
+surfaces `NSFileVersion.unresolvedConflictVersions` with a "Keep mine / Keep iCloud /
+Keep both" choice. Finance files are never silently merged.
 
 ## 6. Workspace folder structure
 
@@ -262,7 +284,7 @@ Each file should have machine-readable metadata at one of three levels:
 
 | Attribute | Applies to | Purpose |
 |---|---|---|
-| schema_version | CSV, Markdown | Validation and migration. Increment on any breaking change. |
+| schema_version | CSV, Markdown | Validation and migration. Increment on any breaking change. Stored as a **leading comment row** `# schema_version: N` (line 1 of every managed CSV); `CSVParserService` tolerates and strips leading `#` comment lines. If absent, the registry's current version is assumed and the file is flagged for repair. (Accepted tradeoff: Numbers/Excel render the comment as a junk first row.) |
 | domain | All | budget, savings, investments, business, taxes, notes |
 | subtype | All | transactions, goals, note, budget, prices, etc. |
 | period | Monthly files | Time grouping |
@@ -289,7 +311,14 @@ When a breaking change is introduced:
 ### App-managed manifest
 
 Path:
-`.finance-meta/manifest.json`
+`~/Library/Application Support/OpenFinance/<workspace_id>/manifest.json`
+
+The manifest is a **device-local, regenerable cache** kept *out* of the synced iCloud
+container so it cannot conflict or go stale across machines (two Macs index on
+independent schedules). A missing or corrupt manifest triggers a rescan — never data
+loss. This is consistent with the Constitution (files are canonical; the read model is
+regenerable). With the manifest moved out, `.finance-meta/` in iCloud carries only
+`schemas/`, `backups/`, and `logs/`.
 
 Purpose:
 - current workspace snapshot
@@ -301,6 +330,8 @@ Purpose:
 Suggested shape:
 ```json
 {
+  "manifest_schema_version": 1,
+  "app_version": "1.0.0",
   "workspace_id": "finance-main",
   "last_indexed_at": "2026-05-10T11:00:00Z",
   "files": [
@@ -311,11 +342,18 @@ Suggested shape:
       "schema_version": 1,
       "hash": "sha256:...",
       "modified_at": "2026-05-10T10:55:00Z",
+      "byte_size": 18244,
+      "row_count": 142,
+      "last_indexed_at": "2026-05-10T11:00:00Z",
       "validation_status": "warning"
     }
   ]
 }
 ```
+
+Per-file **sync state** is *not* stored here — it is volatile and owned by the OS
+(`NSMetadataQuery`), held in memory. **Repair history** is not stored here either — it
+lives in `.finance-meta/logs/repair-log.csv`.
 
 ## 10. Internal data model
 
@@ -363,7 +401,7 @@ Recommended macOS commands:
 
 - Keep canonical data in files, not in a hidden DB.
 - Maintain an in-memory projection cache for UI speed.
-- Optionally persist non-authoritative cache artifacts in `.finance-meta/manifest.json`.
+- Optionally persist non-authoritative cache artifacts in the device-local manifest (`~/Library/Application Support/OpenFinance/<workspace_id>/manifest.json`), kept out of the synced container (§9).
 - Re-scan incrementally based on hash and modified date.
 - Debounce watcher-triggered refreshes.
 
@@ -421,7 +459,10 @@ These decisions are settled and should not be reopened for v1:
 
 - **Right panel default state — global closed** ✓ — Right pane is closed by default across all sections. It opens when the user interacts with content in the main panel (selection, KPI tap, row inspection). No section-specific auto-open exceptions in v1.
 
-- **iCloud container identifier** ✓ — Container is identified as `OpenFinance`.
+- **iCloud container identifier** ✓ — Container is identified by the reverse-DNS,
+  `iCloud.`-prefixed form `iCloud.com.<org>.OpenFinance` (corrected in Round 8 — the
+  bare `OpenFinance` value resolves to `nil` at runtime). One identifier across dev
+  and distribution.
 
 - **Workspace bootstrap seed accounts** ✓ — On first launch, bootstrap seeds six starter accounts in `Accounts/accounts.csv`: personal bank account, personal credit card, business bank account, business credit card, savings account, and investment account.
 
@@ -449,11 +490,37 @@ These decisions are settled and should not be reopened for v1:
 - **Performance baseline: Apple Silicon (M1+)** ✓ — Acceptance criteria are defined against M1-class hardware. Longer times on older Intel machines are acceptable.
 - **Tax module scope** ✓ — The tax module estimates payment obligations and organizes documents. It is not a tax computation engine. All tax figures are estimates. See `docs/product-requirements.md §8`.
 
+### Locked — 2026-06-26 (Round 8 — foundation hardening)
+
+- **Ubiquity container identifier format** ✓ — `iCloud.<bundle-id>` reverse-DNS form
+  (corrects the bare `OpenFinance` value). One container across dev and distribution.
+- **DEBUG default provider** ✓ — Local-folder provider rooted at `~/Finance-Dev/`;
+  live iCloud only in Release/TestFlight builds.
+- **Manifest location** ✓ — Device-local regenerable cache at
+  `~/Library/Application Support/OpenFinance/<workspace_id>/manifest.json`, kept out of
+  the synced container. Fields: `path, domain, subtype, schema_version, hash,
+  modified_at, byte_size, row_count, last_indexed_at, validation_status`; top level
+  `manifest_schema_version, app_version, workspace_id, last_indexed_at`. Sync state and
+  repair history are excluded (held in memory / `logs/repair-log.csv`).
+- **schema_version storage format** ✓ — Leading `# schema_version: N` comment row;
+  tolerant parser; absent → current version + flag for repair.
+- **File watching** ✓ — `NSMetadataQuery` (iCloud provider) + FSEvents (local-folder
+  provider). `DispatchSource` and hand-rolled `NSFilePresenter`-as-watcher rejected.
+  `NSFileCoordinator`/`NSFilePresenter` are for read/write coordination only.
+- **7 sync-state UI treatments + conflict UX** ✓ — Treatment table in §5; conflicts
+  resolved manually via `NSFileVersion.unresolvedConflictVersions` (no auto-merge).
+- **`Account` model shape** ✓ — Single struct with optional nested
+  `InvestmentMetadata?`; no `InvestmentAccount` subtype.
+
 ### Open decisions (pre-build)
 
-All Phase 1 architectural decisions were locked as of 2026-06-10. Remaining open decisions are tracked in `docs/project-management.md` by phase. Key open items that gate upcoming build phases:
+All Phase 1 architectural decisions were locked as of 2026-06-10 (foundation items
+hardened in Round 8). Remaining open decisions are tracked in
+`docs/project-management.md` by phase. Key open items that gate upcoming build phases:
 
-- `docs/project-management.md` Phase 1 `[DECIDE]`: iCloud entitlement strategy, 7 sync state UI treatments, manifest per-file field set
+- `docs/project-management.md` Phase 2 `[DECIDE]`: full per-file enum enumeration and
+  the complete validation rule catalog *(R8 locked the format/structure; enumeration
+  remains)*
 - `docs/project-management.md` Phase 6 `[DECIDE]`: V1 write scope, backup retention policy, export column inclusion *(delete-on-reference behavior locked Round 7: reassign)*
 
 ## 22. Recommended implementation stance
@@ -522,6 +589,17 @@ Left sidebar with collapsible navigation sections that open and close independen
 - `taxes-prep-checklist.svg` — Full-width prep checklist with educational content
 
 ## 24. Changelog
+
+### Round 8 — 2026-06-26
+Source: `docs/_refinement/r8-review.md` (foundation-hardening pass over Phase 1–2 open items; dispositions confirmed by principal)
+
+- **§5 — Container identifier corrected** to the `iCloud.<bundle-id>` reverse-DNS form; bare `OpenFinance` resolves to `nil`. One container across dev/distribution.
+- **§5 — DEBUG local-folder provider** (`~/Finance-Dev/`) is the default in debug builds; live iCloud only in Release/TestFlight.
+- **§5 — 7 sync-state UI treatment table** added; per-file state sourced from `NSMetadataQuery`. New **Conflict resolution (v1)** subsection: manual via `NSFileVersion`, no auto-merge.
+- **§9 — Manifest moved** to a device-local cache in Application Support (out of the synced container); field set defined; sync state + repair history excluded.
+- **§9 — schema_version format** locked: leading `# schema_version: N` comment row, tolerant parser.
+- **§21 — New Round 8 lock block** (container ID, DEBUG provider, manifest, schema_version, file-watching via `NSMetadataQuery`+FSEvents, sync-state/conflict UX, single `Account` struct). Open-decisions list updated.
+- Cascades to `docs/architecture/*` (core-domain services incl. `[FIX-S6]`, FileWatcher, Account shape, goal `status` enum; containers schema convention + `[FIX-S4/S7/S9]`; data-pipelines sign-flip; rulesets validation catalog), `docs/product-roadmap.md` (new Phase 0 track), `docs/product-requirements.md` (data-model cleanup), and `docs/project-management.md` (retirements).
 
 ### Round 7 — 2026-06-24
 Source: `docs/_refinement/r7-review.md` (Round 7 synthesis — MVP prep + direction decisions B1–C5)

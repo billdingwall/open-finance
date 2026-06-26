@@ -42,7 +42,7 @@
 
 ### Notes
 
-- `Account` is the master registry entity (all account groups, including investment). Investment-specific fields (`tax_treatment`, `performance_tracking`) are optional properties on `Account`, not a separate `InvestmentAccount` type. The `PortfolioEngine` filters to `account_group: investment` rows when building portfolio projections.
+- `Account` is the master registry entity (all account groups, including investment). It is a **single struct**; investment-specific fields (`tax_treatment`, `performance_tracking`, etc.) live in an optional nested `InvestmentMetadata?`, **not** a separate `InvestmentAccount` subtype (locked Round 8). The `PortfolioEngine` filters to `account_group: investment` rows when building portfolio projections.
 - `BenchmarkPeriod` models the discrete comparison windows (D, W, M, 3M, 6M, 1Y, 3Y, 5Y) used in the benchmark heat map.
 - `Liability` is a first-class peer of `Asset`, held within an account. Debt fields live on `Liability`, not as columns on `Account`.
 - `Portfolio` is the formal investment container above sleeves (Portfolio → Sleeve → Asset).
@@ -151,6 +151,7 @@ FinanceWorkspaceApp/
 - Defines the minimum interface all storage backends must implement: `resolveWorkspaceURL() async throws -> URL`, observable `syncState`, `isAvailable: Bool`.
 - `ICloudContainerService` is the v1 conforming implementation.
 - Additional backends (Google Drive, Dropbox, local folder) conform to this protocol in V2.
+- In **DEBUG builds the default provider is a local-folder provider** rooted at `~/Finance-Dev/` (populated by `fixture-generate`), so development needs no entitlement/signing round-trips and runs on CI. Live iCloud is exercised in Release/TestFlight builds. (Locked Round 8.)
 
 > **Design constraint:** `AccountEngine` must expose only read-only projection interfaces. It must not absorb domain logic from Tax or Investment engines. All other engines depend on `AccountEngine`; keeping it as a pure read model prevents it from becoming a monolithic bottleneck.
 
@@ -171,6 +172,21 @@ FinanceWorkspaceApp/
   - **On write attempt**: `WritePlanBuilder` queries `ICloudContainerService.syncState(for: targetFile)` before building the plan. If not `available`, the write is deferred and the user is notified inline (non-blocking banner, not a modal).
   - **On iCloud push** (external file change detected by `FileWatcherService`): the affected file is marked `downloading` in the sync state; write actions targeting it are disabled until re-index completes and the file returns to `available`.
   - **`NSFileCoordinator`**: all reads and writes on monitored files go through `FileCoordinatorService` / `NSFileCoordinator` to serialize concurrent access at the OS level. This is the primary technical guard against overwriting a file that iCloud is concurrently updating.
+  - **Sync-state source** (locked Round 8): the per-file sync state is derived from **`NSMetadataQuery`** (scope `NSMetadataQueryUbiquitousDocumentsScope`) attributes — `NSMetadataUbiquitousItemDownloadingStatusKey`, percent-downloaded, upload/download-in-progress, and conflict flags — not hand-tracked. Sync state is held in memory, never persisted to the manifest.
+  - **Conflict resolution** (locked Round 8): v1 does not auto-merge. Unresolved conflicts are surfaced from `NSFileVersion.unresolvedConflictVersions` with a "Keep mine / Keep iCloud / Keep both" choice.
+
+### FileCoordinatorService
+- Wraps `NSFileCoordinator` for iCloud-safe coordinated reads and writes.
+- Serializes concurrent access at the OS level so a write never clobbers a file iCloud is concurrently updating; used by every read/write on monitored files.
+
+### ManifestStore
+- Reads/writes the **device-local** manifest at `~/Library/Application Support/OpenFinance/<workspace_id>/manifest.json` (kept out of the synced container so it cannot conflict across machines).
+- Maintains the last-indexed snapshot and the per-file index + validation cache.
+- Rebuilds from a full scan if the manifest is missing or corrupt — never treats absence as data loss.
+
+### SettingsStore
+- Reads/writes `Taxes/settings.csv` (filing status, tax year, default currency, timezone).
+- Exposes a typed `WorkspaceSettings` observable to the UI.
 
 ### FileIndexService
 - Recursively scan `.csv` and `.md`.
@@ -180,7 +196,7 @@ FinanceWorkspaceApp/
 - Emit change events.
 
 ### FileWatcherService
-- Observe file changes.
+- Observe file changes. **Mechanism (locked Round 8):** `NSMetadataQuery` for the iCloud provider (it also yields the per-file sync state above) and **FSEvents** for the local-folder provider. `DispatchSource` (single-fd, doesn't scale to a tree, blind to iCloud placeholder transitions) and hand-rolled `NSFilePresenter`-as-watcher are rejected; `NSFilePresenter`/`NSFileCoordinator` are used only for read/write coordination.
 - Debounce rescans.
 - Notify dependent projections.
 
@@ -216,7 +232,7 @@ FinanceWorkspaceApp/
 
 - **`BudgetEngine`**: budget totals, category variance, 3-month trailing averages, contribution planning; resolves each Budget's scope (account-groups/accounts) over its allocations.
 
-- **`SavingsGoalEngine`**: goal progress, target gap, funding schedule. No goal lifecycle states in v1 — every goal in `goals.csv` is active; the engine does not branch on status.
+- **`SavingsGoalEngine`**: goal progress, target gap, funding schedule. Minimal goal lifecycle in v1: `status ∈ {active, archived}` (`completed` is derived from progress ≥ target; `paused` is not in v1). The engine branches only on `archived` (excluded from active views).
 
 - **`PortfolioEngine`**: assets, the Portfolio container and its sleeves, allocation, performance; reads investment trades as `type = trade` rows from the unified ledger.
 

@@ -79,17 +79,20 @@ and local-fallback modes.
   - One `Taxes/tax-adjustments.csv` with an `adjustment_type` column (Round 6 rename of `deductions.csv` / `deduction_type`)
   - Tax year-close is an explicit in-app action only
   - Right detail pane is closed by default globally, no per-section exceptions
-  - iCloud container identifier: `OpenFinance`
+  - iCloud container identifier: `iCloud.com.<org>.OpenFinance` (R8 — corrected from bare `OpenFinance`)
   - Bootstrap seeds: personal bank, personal credit card, business bank, business credit card, savings, investment
-- [ ] Finalize iCloud entitlement strategy for development and distribution (container: `OpenFinance`)
-- [ ] Document the 7 required iCloud sync states and define how each surfaces in the UI:
-  Available, Not signed in, Container unavailable, Syncing, Local copy stale, File missing locally,
-  Conflict detected
+- [x] Finalize iCloud entitlement strategy ✓ R8 — single `iCloud.<bundle-id>` container across
+  dev and distribution (corrected from the bare `OpenFinance` value); dev-data isolated via the
+  DEBUG local-folder provider, not a separate container
+- [x] Document the 7 required iCloud sync states and how each surfaces ✓ R8 — UI-treatment table in
+  `docs/technical-design.md §5`; state sourced from `NSMetadataQuery`; conflicts resolved manually
+  via `NSFileVersion`
 - [ ] Define the complete workspace folder structure and file naming conventions (confirm against
   `docs/technical-design.md §6`)
 - [ ] Document workspace bootstrap behavior: full sequence — folders created, seed files written,
   six starter accounts written to `Accounts/accounts.csv`, manifest created
-- [ ] Define the `.finance-meta/manifest.json` shape and update contract
+- [x] Define the manifest shape and update contract ✓ R8 — device-local cache in Application Support;
+  field set in `docs/technical-design.md §9`
 
 ### Design Tasks
 
@@ -104,6 +107,18 @@ and local-fallback modes.
 
 ### Development Tasks
 
+#### Phase 0 — Project & Environment Bootstrap (do first)
+> A lightweight pre-platform checklist (R8). The Phase 1 advancement gate — "workspace
+> URL resolves reliably in both iCloud and local-fallback modes" — is verified here.
+- [ ] Configure the ubiquity-container entitlement with the `iCloud.<bundle-id>` identifier; set up
+  local-dev code signing
+- [ ] Implement the DEBUG local-folder `CloudStorageProvider` rooted at `~/Finance-Dev/`
+- [ ] `fixture-generate` script — realistic 12-month dataset written to `~/Finance-Dev/`
+- [ ] Wire SwiftLint + GitHub Actions (Linux runner) and confirm green
+- [ ] Smoke test: workspace URL resolves in **both** iCloud and local-folder modes
+- [ ] Author the 28 file schemas as JSON in `.finance-meta/schemas/` (source of truth for registry,
+  validation, bootstrap, migration)
+
 #### Xcode Project Setup
 - [ ] Create `FinanceWorkspaceApp` Xcode project targeting macOS with SwiftUI lifecycle
 - [ ] Configure iCloud entitlement (`com.apple.developer.ubiquity-container-identifiers`) and
@@ -115,7 +130,9 @@ and local-fallback modes.
 
 #### Platform Layer
 - [ ] `CloudStorageProvider` protocol — define minimum interface: `resolveWorkspaceURL() async throws -> URL`, observable `syncState`, `isAvailable: Bool`; all storage backends conform to this protocol; `ICloudContainerService` is the v1 implementation
-- [ ] `ICloudContainerService` — conforms to `CloudStorageProvider`; resolve ubiquity container URL, expose availability state enum,
+- [ ] `ICloudContainerService` — conforms to `CloudStorageProvider`; resolve ubiquity container URL
+  (identifier `iCloud.<bundle-id>`), expose availability state enum, source per-file sync state from
+  `NSMetadataQuery`, resolve conflicts manually via `NSFileVersion` (no auto-merge),
   provide diagnostics for missing entitlements or nil container
 - [ ] `WorkspaceManager` — resolve workspace URL via the active `CloudStorageProvider`, create initial directory
   tree from templates, restore last active workspace path from `UserDefaults`, validate minimum
@@ -129,10 +146,13 @@ and local-fallback modes.
 - [ ] `FileIndexService` — recursively scan `.csv` and `.md` files, classify by folder path and
   filename, compute SHA-256 content hashes, detect additions/deletions/changes against prior manifest,
   emit `FileChangeEvent` notifications
-- [ ] `FileWatcherService` — use `DispatchSource` or `NSFilePresenter` to observe workspace
-  directory for file system events, debounce rapid changes, trigger incremental re-index
-- [ ] `ManifestStore` — read/write `.finance-meta/manifest.json`, maintain last-indexed snapshot,
-  cache classification results and validation status per file
+- [ ] `FileWatcherService` — `NSMetadataQuery` (iCloud provider; also yields per-file sync
+  state) + FSEvents (local-folder provider) to observe the workspace for file system events,
+  debounce rapid changes, trigger incremental re-index. (`DispatchSource` / `NSFilePresenter`-as-watcher rejected — R8.)
+- [ ] `ManifestStore` — read/write the **device-local** manifest at
+  `~/Library/Application Support/OpenFinance/<workspace_id>/manifest.json` (out of the synced
+  container), maintain last-indexed snapshot, cache classification results and validation status
+  per file, rebuild from scan if missing/corrupt
 
 #### Core Data Models
 - [ ] Define `Workspace`, `FileRecord`, `SyncStatus` models in `Platform/`
@@ -140,8 +160,10 @@ and local-fallback modes.
 - [ ] Define canonical entity models for all domains in `Domain/`:
   `Account`, `Liability`, `AccountRule`, `AccountEstimate`, `UnifiedTransaction`, `Category`,
   `Budget`, `BudgetAllocation`, `SavingsGoal`, `SavingsProgress`, `Asset`, `Trade`,
-  `PricePoint`, `BenchmarkPeriod`, `Portfolio`, `PortfolioSleeve`, `SleeveTarget`, `OwnerDistribution`,
+  `PricePoint`, `BenchmarkPeriod`, `Portfolio`, `PortfolioSleeve`, `SleeveTarget`,
   `EstimatedPayment`, `TaxAdjustment`, `TaxEstimate`, `TaxDocument`, `TaxArchiveYear`, `NoteDocument`
+  (`OwnerDistribution` removed in R8 — out of v1 scope). `Account` is a single struct with optional
+  nested `InvestmentMetadata?`.
   (Round 6: `UnifiedTransaction` carries multi-entry `group_id`/`group_role`, `sending_asset_id`/`receiving_asset_id`/`liability_id`, and `type = trade` rows that absorb the former investment ledger)
 - [ ] Define cross-domain projection models:
   `AccountSummaryCard`, `OverviewSummaryCard`, `MonthlySnapshot`, `GoalFundingLink`,
@@ -173,13 +195,18 @@ typed domain records. This is the prerequisite for every domain engine in Phase 
 
 ### Product Tasks
 
-- [ ] Finalize and document all 24 CSV file specifications (schemas, required vs optional columns,
-  enum value sets) — reference `docs/technical-design.md §8`
-- [ ] Define the complete validation rule catalog across three tiers:
+- [ ] Finalize and document all 28 CSV file specifications (schemas, required vs optional columns,
+  enum value sets) — authored as JSON in `.finance-meta/schemas/` (R8 source of truth); each managed
+  CSV carries a leading `# schema_version: N` comment row. *(R8 locked the format/approach; the full
+  per-file enum enumeration remains the open work here.)*
+- [ ] Define the complete validation rule catalog across three tiers, using the R8 rule shape
+  (`VAL-<TIER>-<NNN>`, tier, severity, repair_class, predicate — see
+  `docs/architecture/rulesets-and-taxes.md`):
   - File-level: missing required file, invalid CSV header, bad date, bad decimal, invalid enum
   - Cross-file: unknown account/category/entity/sleeve/goal reference, duplicate transaction ID
   - Domain: budget period without rows, holding without account, trade without valid ticker
-- [ ] For each validation issue, classify: error vs warning vs info, and repairable vs manual-only
+- [ ] For each validation issue, classify: error vs warning vs info, and repairable vs manual-only.
+  *(R8 set the classification defaults; enumerate the rest.)*
 - [x] Document amount sign conventions ✓ 2026-06-10 — negative = debit (money out), positive = credit (money in); applies to all transaction file types; `CSVNormalizer` flips signs from external sources during import
 - [x] Define `schema_version` migration policy ✓ 2026-06-10 — breaking change = any modification to a column or front matter field in use; repair path = migration script shipped with the release (`Scripts/migrate-{file-type}-v{old}-to-v{new}.swift`); `RepairService` detects version mismatches and prompts user to run script
 
@@ -203,7 +230,9 @@ typed domain records. This is the prerequisite for every domain engine in Phase 
   enum values) for all 24 file types; support `schema_version` lookup; expose schema for each
   file type by domain + subtype key
 - [ ] `CSVNormalizer` — normalize raw string values to Swift types: ISO 8601 dates, `Decimal`
-  amounts, `Bool`, enum cases; produce typed `NormalizationError` for invalid values
+  amounts, `Bool`, enum cases; produce typed `NormalizationError` for invalid values. Sign-convention
+  detection = explicit per-import declaration in the column-mapping step + heuristic pre-fill the user
+  confirms (never silently flip — R8)
 
 #### Markdown Parsing
 - [ ] `FrontMatterParser` — extract YAML front matter block between `---` delimiters, parse into
@@ -790,7 +819,7 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 | Round 6 object-model reconciliations | **Resolved (2026-06-23):** kept two-tier `account_group`+`account_type`; `status` canonical (`is_active` derived); categories add `parent_category_id`+`category_group_id`; assets add `security_class`; trades fold into the unified ledger; `adjustment_type` = union enum. |
 | Tax year-close trigger | Explicit in-app "Close Tax Year" action only. |
 | Right pane default-closed scope | Global — closed by default, opens on main-panel interaction, no section exceptions. |
-| iCloud container identifier | `OpenFinance` |
+| iCloud container identifier | `iCloud.com.<org>.OpenFinance` (R8 — corrected from bare `OpenFinance`) |
 | Workspace bootstrap seed accounts | Personal bank, personal credit card, business bank, business credit card, savings, investment |
 | Default delete behavior when an object is referenced | **Locked Round 7** — reassign: surface referencing rows, present per-collection reassignment picker, write delete + reassignments atomically. See `docs/product-requirements.md §12`. |
 
@@ -801,6 +830,15 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Round 8 — 2026-06-26
+Source: `docs/_refinement/r8-review.md` (foundation hardening — Phase 1–2 dev-env / storage / sync)
+
+- **New Phase 0 sub-track** (env bootstrap: entitlement, DEBUG local-folder provider, `fixture-generate`, CI smoke test for dual-mode workspace resolution, JSON schema authoring).
+- **Phase 1 Platform tasks** reworded: `ICloudContainerService` (NSMetadataQuery sync state, `NSFileVersion` conflicts, `iCloud.<bundle-id>` ID), `FileWatcherService` (NSMetadataQuery + FSEvents), `ManifestStore` (device-local Application Support location).
+- **Phase 1 Product tasks** for entitlement / 7 sync states / manifest shape marked resolved (R8).
+- **Core Data Models**: removed `OwnerDistribution`; `Account` = single struct + optional `InvestmentMetadata?`.
+- **Phase 2**: schema_version comment-row + JSON schemas as source of truth; sign-flip = explicit per-import declaration; validation rule-catalog shape + classification defaults adopted; `goals.csv status ∈ {active, archived}`; `savings-goal-contributions.csv` removed.
 
 ### Round 7 — 2026-06-24
 Source: `docs/_refinement/r7-review.md` (MVP prep — doc-sync debt + direction decisions B1–C5)

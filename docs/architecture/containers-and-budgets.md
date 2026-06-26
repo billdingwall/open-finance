@@ -40,7 +40,6 @@ Finance/
     categories.csv
     budgets.csv
     budget-allocations.csv
-    savings-goal-contributions.csv
   Savings/
     goals.csv
     progress.csv
@@ -119,6 +118,16 @@ Recommended UTType handling:
 ---
 
 ## 3. File specifications
+
+> **schema_version convention (Round 8):** every managed CSV begins with a leading
+> comment row `# schema_version: N` (line 1); `CSVParserService` strips leading `#`
+> comment lines. If absent, the registry's current version is assumed and the file is
+> flagged for repair.
+>
+> **Schemas as source of truth (Round 8):** these specs are authored as
+> machine-readable JSON schemas in `.finance-meta/schemas/` (one per file type),
+> driving `CSVSchemaRegistry`, `ValidationEngine`, bootstrap templates, and migrations.
+> The display-name ↔ enum mappings and required/optional flags below are encoded there.
 
 ### 3.1 Workspace.md
 
@@ -258,14 +267,25 @@ Required columns:
 | target_date | date |
 | monthly_target | decimal |
 | source_account_id | string |
+| status | enum |
 | linked_note_id | string |
+
+`status` enum values: `active | archived` (Round 8). `completed` is **derived** from
+progress ≥ target (not a stored value); `paused` is not in v1.
 
 Optional:
 - sleeve_id
 - priority
 - auto_fund_from_budget
 
-Goal lifecycle states (active/archived) are V2. In v1 every row in `goals.csv` is an active goal; the user adds and removes rows directly. No `status` column is read or written.
+Goal lifecycle in v1 is the minimal `active | archived`: archived goals are excluded
+from active views (satisfies the S&I active/archived tabs). This resolves `[FIX-S7]`
+and reverses the earlier "lifecycle is V2 / no status column" note.
+
+Budget-to-goal funding is linked **solely** via the `savings_goal_id` column on the
+unified transaction ledger (`[FIX-S4]`). There is no separate
+`Budget/savings-goal-contributions.csv` — it was removed to avoid duplicating
+derivable data.
 
 ### 3.6 Savings progress CSV
 
@@ -475,7 +495,7 @@ Required columns:
 | account_id | string | Stable unique ID referenced across all transaction files |
 | display_name | string | User-visible name |
 | institution | string | Bank, brokerage, employer, etc. |
-| account_group | enum | employment, business, credit_card, investment, savings, checking, loan (high-level classification; distinct from the Account-group object / `account_group_id`) |
+| account_group | enum | employment, business, credit_card, investment, savings, checking, loan (high-level classification; distinct from the Account-group object / `account_group_id`). **Display-name ↔ enum mapping (`[FIX-S9]`, encoded in the JSON schema):** "Everyday Banking" → `checking`, "Credit Cards" → `credit_card`, "Loans & Debt" → `loan`, "Savings" → `savings`, "Investments" → `investment`, "Employment" → `employment`, "Business" → `business`. |
 | account_type | string | Specific type within group (e.g. roth_ira, hysa, mortgage) |
 | status | enum | draft, active, frozen, closed (canonical lifecycle) |
 | is_active | boolean | Derived (`status == active`); retained for backward compatibility |
