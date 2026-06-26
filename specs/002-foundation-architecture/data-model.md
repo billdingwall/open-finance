@@ -14,9 +14,9 @@ strings.
 - Invariants: `requiredPaths` must all exist for the workspace to validate as complete.
 
 ### FileRecord
-- Fields: `path` (workspace-relative), `domain`, `subtype`, `schemaVersion: Int`, `hash` (sha256), `modifiedAt`, `byteSize`, `rowCount`, `lastIndexedAt`, `validationStatus` (ok | warning | error counts).
+- Fields: `path` (workspace-relative), `domain` (accounts | budget | savings | investments | taxes | notes | meta), `subtype`, `schemaVersion: Int`, `hash` (sha256), `modifiedAt`, `byteSize`, `rowCount`, `lastIndexedAt`, `validationStatus` (ok | warning | error | unvalidated).
 - Relationships: belongs to `Workspace`; aggregated into `Manifest`.
-- Invariants: `(path)` unique; `hash` recomputed on change; never authoritative over the file bytes.
+- Invariants: `(path)` unique; `hash` recomputed on change; never authoritative over the file bytes. Only files in the finance content tree + root `Workspace.md` are recorded (the `.finance-meta/` subtree is excluded). A file that cannot be read/hashed is still recorded, with `validationStatus = error`, so the failure is visible and the scan continues (FR-011a).
 
 ### Manifest
 - Fields: `manifestSchemaVersion`, `appVersion`, `workspaceId`, `lastIndexedAt`, `files: [FileRecord]`.
@@ -78,7 +78,7 @@ strings.
 - Fields: `type` (workspace, monthly-review, strategy, tax-note, …), front-matter metadata, `period?`, linked entity IDs. v1 parses front matter only (body rendering is V2).
 
 ### Cross-domain projection models (`Domain/CrossDomain/`)
-- `AccountSummaryCard`, `OverviewSummaryCard`, `MonthlySnapshot`, `GoalFundingLink`, `SleeveFundingLink`, `TaxPrepSummary`, `TaxDeductionSummary` — type definitions only in Phase 1 (populated by engines in Phase 3+).
+- `AccountSummaryCard`, `OverviewSummaryCard`, `MonthlySnapshot`, `GoalFundingLink`, `SleeveFundingLink`, `TaxPrepSummary`, `TaxDeductionSummary`, `BusinessMonthlySummary` — type definitions only in Phase 1 (populated by engines in Phase 3+).
 
 ## Relationships (summary)
 

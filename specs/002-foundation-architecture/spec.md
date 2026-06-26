@@ -7,6 +7,14 @@
 
 > **Context.** This is the foundation phase of the roadmap (`docs/product-roadmap.md` Phase 1, including the R8 "Phase 0" environment sub-track). Nothing is user-visible as a finished module yet — it builds the floor every later phase stands on. The app is an interface *over* plain CSV/Markdown files the user owns in iCloud Drive; it is not a database. All detailed technical decisions are locked in `docs/technical-design.md §21` and `docs/architecture/`, and the seven principles in `.specify/memory/constitution.md` govern this work. This spec states the *outcomes* required; the implementation mechanisms are fixed by those locked decisions.
 
+## Clarifications
+
+### Session 2026-06-26
+
+- Q: When `FileIndexService` can't read or hash an individual file during a scan, what happens? → A: Skip the failing file, record it in the manifest with an `error` status, log it, and continue indexing everything else (resilient per-file isolation).
+- Q: Does the file index include the app-managed `.finance-meta/` subtree (whose `logs/` are `.csv`)? → A: No — exclude the entire `.finance-meta/` subtree from indexing; the index covers the finance content tree plus the root `Workspace.md` descriptor.
+- Q: Where do foundation-level failures (workspace resolution, indexing, sync) get recorded? → A: The macOS unified log (`os.Logger`), surfaced coarsely (available/error) in the app shell; workspace `.finance-meta/logs/` files stay reserved for user-facing audit (repair/import).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - First-launch workspace provisioning (Priority: P1)
@@ -82,6 +90,7 @@ A developer can build, lint, run, and test the app against a local-folder worksp
 - **Partial/incomplete seed from a previous crashed first run**: re-launch completes provisioning idempotently without duplicating existing valid files.
 - **Workspace on a non-iCloud local folder** (dev/advanced): resolution and indexing behave identically through the storage-provider abstraction.
 - **Double bootstrap**: bootstrap is idempotent and does not overwrite user edits to seed files.
+- **Unreadable/unhashable file during scan** (permission error, truncated/locked file, undecodable bytes): the file is recorded with an `error` status and logged; the index pass continues over all other files (FR-011a).
 
 ## Requirements *(mandatory)*
 
@@ -98,15 +107,16 @@ A developer can build, lint, run, and test the app against a local-folder worksp
 
 **File indexing**
 
-- **FR-007**: The system MUST recursively discover all `.csv` and `.md` files in the workspace and classify each by domain and subtype using the path → filename → in-file ordering.
+- **FR-007**: The system MUST recursively discover all `.csv` and `.md` files in the finance content tree (`Accounts/`, `Budget/`, `Savings/`, `Investments/`, `Taxes/`, `Notes/`) plus the root `Workspace.md`, and classify each by domain and subtype using the path → filename → in-file ordering. The app-managed `.finance-meta/` subtree (schemas, backups, logs) MUST be excluded from this index to avoid cataloguing the app's own bookkeeping or triggering a re-index when a log is written.
 - **FR-008**: The system MUST compute a content hash for each file and record per-file metadata (path, domain, subtype, schema_version, hash, modified date, byte size, row count, last-indexed time, last validation summary).
 - **FR-009**: The system MUST detect additions, deletions, and modifications relative to the prior recorded snapshot and emit change events describing the delta.
 - **FR-010**: On file changes, the system MUST re-index incrementally (only affected files) rather than performing a full rescan, coalescing rapid successive changes.
 - **FR-011**: The index/manifest MUST be a device-local, regenerable cache stored outside the synced workspace; a missing or corrupt index MUST trigger a rebuild from the files with no data loss.
+- **FR-011a**: A file that cannot be read or hashed during a scan MUST be isolated, not fatal: the system records that file in the manifest with an `error` status, logs it (via the unified system log, `os.Logger`), and continues indexing all other files. One unreadable file MUST NOT abort the index pass.
 
 **Sync state & safety**
 
-- **FR-012**: The system MUST detect and expose the seven workspace/file sync states: Available, Not signed into iCloud, Container unavailable, Syncing, Local copy stale, File missing locally, Conflict detected.
+- **FR-012**: The system MUST detect and expose the seven workspace/file sync states: Available, Not signed into iCloud, Container unavailable, Syncing, Local copy stale, File missing locally, Conflict detected. (These states are specific to the iCloud provider; on the local-folder dev provider only `Available` / workspace-missing apply — the download/upload/stale/conflict/not-signed-in states do not arise.)
 - **FR-013**: The system MUST prevent writes to any file (or while the workspace) is in a syncing/downloading state, deferring the write until the file is fully available.
 - **FR-014**: On an unresolved iCloud conflict, the system MUST offer a non-destructive manual resolution (Keep mine / Keep iCloud / Keep both) and MUST NOT silently auto-merge or discard a version.
 - **FR-015**: All reads and writes on monitored files MUST be coordinated to serialize concurrent access and avoid clobbering files iCloud is concurrently updating.
@@ -125,6 +135,14 @@ A developer can build, lint, run, and test the app against a local-folder worksp
 - **FR-022**: The project MUST provide a fixture generator that populates a realistic multi-month local workspace for development and testing.
 - **FR-023**: Continuous integration MUST run style linting on every change, and a smoke test MUST verify workspace resolution in both iCloud and local-folder modes.
 
+**Application shell (minimal)**
+
+- **FR-024**: The app MUST launch into a minimal macOS window that hosts workspace resolution and surfaces workspace + sync state — including the unavailable / not-signed-in states and the loading/indexing state. This is a foundational launch surface only; the *finished* first-launch onboarding flow, sync-status indicators, and app-shell visual design are deferred to the Phase 1 Design `[DECIDE]` items and not built in this feature.
+
+**Observability & diagnostics**
+
+- **FR-025**: Foundation-level failures (workspace resolution, indexing, sync) MUST be recorded to the macOS unified log (`os.Logger`) and surfaced coarsely (available / error) in the app shell. The workspace `.finance-meta/logs/` files remain reserved for user-facing audit trails (repair, import) and are NOT used for platform diagnostics.
+
 ### Key Entities
 
 - **Workspace**: The user-owned `Finance/` file tree (location, identifier, required paths, availability state). The source of truth.
@@ -132,14 +150,14 @@ A developer can build, lint, run, and test the app against a local-folder worksp
 - **SyncStatus**: Per-file and workspace-level sync condition (one of the seven states).
 - **Manifest**: Device-local, regenerable snapshot of all FileRecords plus top-level workspace metadata (workspace id, app version, manifest schema version, last-indexed time).
 - **ValidationIssue / RepairAction**: Stubs of the issue/repair contract consumed in Phase 2.
-- **Canonical domain entities**: Account (+ optional InvestmentMetadata), Liability, AccountRule, AccountEstimate, Transaction (multi-entry group/role), Category, Budget, BudgetAllocation, SavingsGoal (status active|archived), SavingsProgress, Asset, Trade, PricePoint, BenchmarkPeriod, Portfolio, PortfolioSleeve, SleeveTarget, TaxAdjustment, TaxEstimate, TaxDocument, EstimatedPayment, TaxArchiveYear, NoteDocument, plus the cross-domain projection models (AccountSummaryCard, OverviewSummaryCard, MonthlySnapshot, GoalFundingLink, SleeveFundingLink, TaxPrepSummary, TaxDeductionSummary).
+- **Canonical domain entities**: Account (+ optional InvestmentMetadata), **AccountGroup** (first-class R6 object; `group_type` = personal/employment/business/custom; provides the `account_group_id` referenced by Account and Transaction), Liability, AccountRule, AccountEstimate, Transaction (unified ledger row with multi-entry group/role — Swift type `UnifiedTransaction`), Category, Budget, BudgetAllocation, SavingsGoal (status active|archived), SavingsProgress, Asset, Trade, PricePoint, BenchmarkPeriod, Portfolio, PortfolioSleeve, SleeveTarget, TaxAdjustment, TaxEstimate, TaxDocument, EstimatedPayment, TaxArchiveYear, NoteDocument, plus the cross-domain projection models (AccountSummaryCard, OverviewSummaryCard, MonthlySnapshot, GoalFundingLink, SleeveFundingLink, TaxPrepSummary, TaxDeductionSummary, BusinessMonthlySummary).
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: On first launch on a clean machine, the app produces a complete, internally consistent workspace (full folder tree, six seed accounts, seed categories, manifest) with zero manual steps.
-- **SC-002**: A workspace of a realistic size (12 months of transactions, multiple accounts) is fully scanned, classified, and hashed on cold launch within a few seconds on current Apple Silicon hardware, and the resulting index matches a byte-for-byte re-scan.
+- **SC-002**: A workspace of a realistic size (12 months of transactions, multiple accounts) is fully scanned, classified, and hashed on cold launch within a few seconds on current Apple Silicon hardware, and the resulting index matches a byte-for-byte re-scan. (Hard performance thresholds are set in Phase 7; Phase 1 targets responsive cold-launch indexing.)
 - **SC-003**: A single external file change is reflected in the index without a full rescan, and unrelated files are not re-processed.
 - **SC-004**: Deleting the manifest and relaunching reproduces an identical index with no loss of any user data.
 - **SC-005**: All seven sync states are each detectable and correctly reported in a controlled test, and no write is ever applied to a file that is mid-sync.
@@ -149,12 +167,12 @@ A developer can build, lint, run, and test the app against a local-folder worksp
 
 ## Assumptions
 
-- **No end-user module UI ships in Phase 1.** Surfacing of states (onboarding screens, sync indicators) is specified here as outcomes; their visual design is tracked separately as Phase 1 Design `[DECIDE]` items and not built as finished views in this feature.
+- **No finished end-user module UI ships in Phase 1.** A *minimal* app shell exists so the app can launch and surface workspace + sync state (FR-024); only the *finished* onboarding screens, sync-status indicators, and app-shell visual design are deferred and tracked as Phase 1 Design `[DECIDE]` items, not built as polished views in this feature.
 - **Locked technical decisions are authoritative.** The implementation mechanisms (ubiquity container identifier format `iCloud.<bundle-id>`; per-file sync state via the system metadata query; local change-watching via filesystem events; device-local manifest under Application Support; coordinated file access; conflict resolution via the OS file-version API) are fixed by `docs/technical-design.md §21` and `docs/architecture/`. This spec states *what* must hold, not *how*.
 - **Platform/toolchain**: macOS 15 (Sequoia) minimum, Xcode 16, Swift 6, Observation-based state. To be bumped to latest stable at build start if newer.
 - **Single, app-owned iCloud workspace in v1.** Multi-workspace and additional cloud backends (Google Drive, Dropbox) are V2; the storage-provider abstraction exists so they can be added without restructuring.
 - **Canonical schemas exist as data.** The file schemas are authored as machine-readable JSON in the workspace metadata folder (`.finance-meta/schemas/`) and drive bootstrap templates, the schema registry, and validation; full per-file enum enumeration is finalized in Phase 2. (The exact set of schema files is defined by the file specifications, not fixed at a specific count here.)
-- **Parsing/validation behavior is Phase 2.** Phase 1 indexes and classifies files and defines the ValidationIssue/RepairAction contract, but does not implement full CSV parsing or the validation rule catalog.
+- **Parsing/validation behavior is Phase 2.** Phase 1 only **discovers, classifies, and hashes** `.csv`/`.md` files and defines the ValidationIssue/RepairAction contract. It does not implement full CSV parsing, Markdown front-matter parsing, or the validation rule catalog (row counts come from line counting, not parsing).
 - **Constitution compliance** (aligned to `.specify/memory/constitution.md` v1.1.0): plain files remain canonical (no hidden database); the read model — including the device-local, regenerable manifest cache — is never authoritative over files; `schema_version` is a leading `# schema_version: N` comment row, not a column; transactions live in the unified `Accounts/transactions/YYYY-MM.csv` ledger (no `Personal/`/`Business/` folders); writes are backed up, atomic, previewable, and gated on sync state; iCloud conflicts are resolved by explicit user choice with no silent auto-merge; repairs are deterministic and user-confirmed.
 
 ## Dependencies

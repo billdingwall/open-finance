@@ -30,6 +30,9 @@ Finance/
 
 - **Manifest is NOT here** — it lives device-local in Application Support (see `manifest.schema.json`).
   `.finance-meta/` holds only `schemas/`, `backups/`, `logs/`.
+- **`.finance-meta/` is excluded from the file index** — `FileIndexService` indexes only the finance
+  content tree plus the root `Workspace.md` (the root descriptor is classified under the `meta`
+  domain). This avoids cataloguing app bookkeeping and a re-index loop when logs are written.
 - **Six seed accounts** in `Accounts/accounts.csv`: personal bank, personal credit card, business
   bank, business credit card, savings, investment.
 - **Default categories** seeded in `Budget/categories.csv`; standard tax-adjustment row seeded in

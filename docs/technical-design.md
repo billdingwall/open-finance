@@ -285,7 +285,7 @@ Each file should have machine-readable metadata at one of three levels:
 | Attribute | Applies to | Purpose |
 |---|---|---|
 | schema_version | CSV, Markdown | Validation and migration. Increment on any breaking change. Stored as a **leading comment row** `# schema_version: N` (line 1 of every managed CSV); `CSVParserService` tolerates and strips leading `#` comment lines. If absent, the registry's current version is assumed and the file is flagged for repair. (Accepted tradeoff: Numbers/Excel render the comment as a junk first row.) |
-| domain | All | budget, savings, investments, business, taxes, notes |
+| domain | All | accounts, budget, savings, investments, taxes, notes (plus `meta` for the root `Workspace.md` descriptor). The app-managed `.finance-meta/` subtree is **excluded from the file index**. Note: `business` is **not** a domain — business activity lives in the `Accounts/` tree as a `group_type`. |
 | subtype | All | transactions, goals, note, budget, prices, etc. |
 | period | Monthly files | Time grouping |
 | account_group_id | Account-group-scoped files | Account-group ownership (was `entity_id`) |
@@ -600,6 +600,7 @@ Source: `docs/_refinement/r8-review.md` (foundation-hardening pass over Phase 1�
 - **§9 — schema_version format** locked: leading `# schema_version: N` comment row, tolerant parser.
 - **§21 — New Round 8 lock block** (container ID, DEBUG provider, manifest, schema_version, file-watching via `NSMetadataQuery`+FSEvents, sync-state/conflict UX, single `Account` struct). Open-decisions list updated.
 - Cascades to `docs/architecture/*` (core-domain services incl. `[FIX-S6]`, FileWatcher, Account shape, goal `status` enum; containers schema convention + `[FIX-S4/S7/S9]`; data-pipelines sign-flip; rulesets validation catalog), `docs/product-roadmap.md` (new Phase 0 track), `docs/product-requirements.md` (data-model cleanup), and `docs/project-management.md` (retirements).
+- **Spec-review follow-up (2026-06-26):** §9 `domain` enum corrected — added `accounts` + `meta`, removed `business` (a `group_type`, not a domain folder); `AccountGroup` added as an explicit canonical entity in `docs/architecture/core-domain.md §1` (and the Phase 1 Core Data Models list). Surfaced during the `specs/002-foundation-architecture` review.
 
 ### Round 7 — 2026-06-24
 Source: `docs/_refinement/r7-review.md` (Round 7 synthesis — MVP prep + direction decisions B1–C5)

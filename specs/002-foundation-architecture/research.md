@@ -95,3 +95,34 @@ that drive the Phase 1 design. No open `NEEDS CLARIFICATION` remain.
 - **Rationale**: Locked in R7. Linux lint keeps CI cheap while the local-folder provider makes the
   core logic runnable without a Mac runner.
 - **Alternatives**: Mac CI runner now — deferred (cost; not needed until packaging).
+
+## R11 — Resilient indexing (clarify Session 2026-06-26, Q1)
+
+- **Decision**: A file that cannot be read or hashed during a scan is isolated, not fatal —
+  `FileIndexService` records it in the manifest with an `error` status, logs it via `os.Logger`,
+  and continues indexing every other file. One bad file never aborts the pass.
+- **Rationale**: Directly satisfies Constitution Principle II ("parsing failures in one file MUST NOT
+  block projections for unrelated domains") and keeps the index regenerable and trustworthy.
+- **Alternatives**: Abort the whole scan on first failure (rejected — brittle); skip silently
+  (rejected — hides corruption, untestable).
+
+## R12 — Index scope excludes `.finance-meta/` (clarify Session 2026-06-26, Q2)
+
+- **Decision**: The file index covers the finance content tree (`Accounts/`, `Budget/`, `Savings/`,
+  `Investments/`, `Taxes/`, `Notes/`) plus the root `Workspace.md` (classified under the `meta`
+  domain). The app-managed `.finance-meta/` subtree is excluded.
+- **Rationale**: `.finance-meta/logs/*.csv` are written by the app; indexing them would create a
+  re-index feedback loop and catalogue the app's own bookkeeping. Matches the constitution's
+  treatment of `.finance-meta/` as non-source-of-truth support data.
+- **Alternatives**: Index everything under a `meta` domain (rejected — feedback loop); partial
+  exclusion with suppressed events (rejected — added complexity for no benefit).
+
+## R13 — Foundation diagnostics via `os.Logger` (clarify Session 2026-06-26, Q3)
+
+- **Decision**: Foundation-level failures (workspace resolution, indexing, sync) are recorded to the
+  macOS unified log (`os.Logger`) and surfaced coarsely (available/error) in the app shell. Workspace
+  `.finance-meta/logs/` files stay reserved for user-facing audit (`repair-log.csv`, `import-log.csv`).
+- **Rationale**: Unified logging is the macOS-native diagnostic channel; keeps device-local
+  diagnostics out of the synced workspace; avoids over-building a bespoke logging subsystem.
+- **Alternatives**: A synced workspace diagnostic CSV (rejected — syncs noise across devices);
+  defer all diagnostics (rejected — failures would be undiagnosable in Phase 1).

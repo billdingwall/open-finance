@@ -34,6 +34,8 @@ swift Scripts/fixture-generate.swift --workspace ~/Finance-Dev --months 12
 | Regenerable index | Delete the manifest, relaunch | Identical index rebuilt from scan; no data loss (SC-004) |
 | Incremental re-index | Edit one CSV externally | Only that file re-hashed; a change event fires; others cached (SC-003) |
 | Idempotent bootstrap | Re-run bootstrap on a populated workspace | No file duplicated or overwritten (SC-008) |
+| Resilient indexing | Drop an unreadable/locked file into the workspace, re-scan | That file gets `error` status + an `os.Logger` entry; all other files index normally; scan does not abort (FR-011a) |
+| Index scope | Inspect the manifest | No `.finance-meta/` entries; `Workspace.md` present under the `meta` domain (FR-007); writing a repair/import log does not trigger a re-index |
 | Dual-mode resolution | Smoke test | Workspace URL resolves in both iCloud and local-folder modes (SC-007) |
 
 ## 4. iCloud path

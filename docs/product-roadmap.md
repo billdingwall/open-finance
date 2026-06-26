@@ -158,7 +158,7 @@ and local-fallback modes.
 - [ ] Define `Workspace`, `FileRecord`, `SyncStatus` models in `Platform/`
 - [ ] Define `ValidationIssue`, `RepairAction` models in `Validation/`
 - [ ] Define canonical entity models for all domains in `Domain/`:
-  `Account`, `Liability`, `AccountRule`, `AccountEstimate`, `UnifiedTransaction`, `Category`,
+  `Account`, `AccountGroup`, `Liability`, `AccountRule`, `AccountEstimate`, `UnifiedTransaction`, `Category`,
   `Budget`, `BudgetAllocation`, `SavingsGoal`, `SavingsProgress`, `Asset`, `Trade`,
   `PricePoint`, `BenchmarkPeriod`, `Portfolio`, `PortfolioSleeve`, `SleeveTarget`,
   `EstimatedPayment`, `TaxAdjustment`, `TaxEstimate`, `TaxDocument`, `TaxArchiveYear`, `NoteDocument`
@@ -167,7 +167,7 @@ and local-fallback modes.
   (Round 6: `UnifiedTransaction` carries multi-entry `group_id`/`group_role`, `sending_asset_id`/`receiving_asset_id`/`liability_id`, and `type = trade` rows that absorb the former investment ledger)
 - [ ] Define cross-domain projection models:
   `AccountSummaryCard`, `OverviewSummaryCard`, `MonthlySnapshot`, `GoalFundingLink`,
-  `SleeveFundingLink`, `TaxPrepSummary`, `TaxDeductionSummary`
+  `SleeveFundingLink`, `TaxPrepSummary`, `TaxDeductionSummary`, `BusinessMonthlySummary`
 
 #### Developer Script
 - [ ] `bootstrap-workspace.swift` — create standard folder tree (including `Accounts/account-groups.csv`,
@@ -839,6 +839,7 @@ Source: `docs/_refinement/r8-review.md` (foundation hardening — Phase 1–2 de
 - **Phase 1 Product tasks** for entitlement / 7 sync states / manifest shape marked resolved (R8).
 - **Core Data Models**: removed `OwnerDistribution`; `Account` = single struct + optional `InvestmentMetadata?`.
 - **Phase 2**: schema_version comment-row + JSON schemas as source of truth; sign-flip = explicit per-import declaration; validation rule-catalog shape + classification defaults adopted; `goals.csv status ∈ {active, archived}`; `savings-goal-contributions.csv` removed.
+- **Spec-review follow-up (2026-06-26):** Phase 1 Core Data Models gained `AccountGroup` (first-class R6 object, `account_group_id` FK) and the `BusinessMonthlySummary` cross-domain projection. Surfaced during the `specs/002-foundation-architecture` review.
 
 ### Round 7 — 2026-06-24
 Source: `docs/_refinement/r7-review.md` (MVP prep — doc-sync debt + direction decisions B1–C5)
