@@ -381,6 +381,8 @@ Requirements:
 - Writes must be atomic and reversible.
 - Repair actions must be previewable and recoverable.
 - **Sync-first write safety.** To minimize iCloud sync conflicts, the app must confirm that the local copy of a target file is fully synced before writing to it. Write actions are disabled while a file or the workspace is in a syncing or downloading state. See the proposed implementation approach in `docs/architecture/core-domain.md §3` (ICloudContainerService). Users will not lose changes made on another device because the app wrote over an unsynced file.
+- **Conflict resolution (R8).** When iCloud reports an unresolved conflict, the app surfaces it for manual resolution (`NSFileVersion`: Keep mine / Keep iCloud / Keep both). Finance files are never silently auto-merged.
+- **Regenerable index (R8).** The file index / manifest is a device-local cache (stored outside the synced workspace); losing it never means losing data — the workspace is re-scanned from the canonical files.
 
 ### Transparency
 
@@ -433,14 +435,16 @@ Recommended shell:
 
 | Domain | Entities |
 |---|---|
-| Accounts | Account-group[^group], Account, AccountType, Liability, AccountRule, AccountEstimate, OwnerDistribution |
+| Accounts | Account-group[^group], Account, AccountType, Liability, AccountRule, AccountEstimate |
 | Budget | Transaction, Category, Budget, BudgetAllocation, BudgetContribution, Merchant |
-| Savings & Investments | Portfolio, PortfolioSleeve, SleeveTarget, Asset, SavingsGoal, GoalContribution, GoalProgressSnapshot, Trade, Lot, Position, Dividend, PricePoint, BenchmarkSeries, BenchmarkPeriod |
+| Savings & Investments | Portfolio, PortfolioSleeve, SleeveTarget, Asset, SavingsGoal, GoalProgressSnapshot, Trade, Lot, Position, Dividend, PricePoint, BenchmarkSeries, BenchmarkPeriod |
 | Taxes | TaxSetting, RealizedGain, IncomeEvent, EstimatedPayment, TaxPrepIssue, Tax-adjustment, Tax-estimate, Tax-document, TaxArchiveYear |
 | Notes | NoteDocument, MonthlyReview, StrategyNote |
 | Platform | Workspace, FileRecord, ImportIssue, RepairAction, SchemaVersion, SyncStatus |
 
 [^group]: The model-level rename is applied in Round 6: `entity_id` → `account_group_id` (with `holding_id` → `asset_id` and `deduction_id` → `tax_adjustment_id`). The investment container is **Portfolio** (not "Strategy"); group nesting is not adopted. See `docs/_refinement/r6-update-technical-design.md`.
+
+> **Round 8:** `OwnerDistribution` removed (out of v1 scope) and `GoalContribution` removed — budget-to-goal funding is linked solely via the `savings_goal_id` column on the unified transaction ledger (no `savings-goal-contributions.csv`). `SavingsGoal` carries a `status ∈ {active, archived}` field. The remaining legacy entity-name reconciliation (e.g. `Lot`, `Position`, `BenchmarkSeries`, `RealizedGain`, `ImportIssue`) is still tracked open as `[FIX-M3]`/`[FIX-M6]`/`[FIX-C6]`; canonical names are in `docs/architecture/core-domain.md §1`.
 
 ### Internal architecture model
 
@@ -509,6 +513,12 @@ Presentation Layer
 ```
 
 ## Changelog
+
+### Round 8 — 2026-06-26
+Source: `docs/_refinement/r8-review.md` (foundation hardening — Phase 1–2)
+
+- Data model: removed `OwnerDistribution` (out of v1 scope, `[FIX-S5]`) and `GoalContribution` (`[FIX-S4]` — `savings_goal_id` is the sole budget-to-goal link); `SavingsGoal` gains `status ∈ {active, archived}` (`[FIX-S7]`). Remaining legacy entity-name reconciliation stays open as `[FIX-M3/M6/C6]`.
+- NFR Reliability: added manual conflict resolution (`NSFileVersion`, no auto-merge) and the regenerable device-local index/manifest guarantee.
 
 ### Round 7 — 2026-06-24
 Source: `docs/_refinement/r7-review.md` (MVP prep — direction decisions on B1–C5)
