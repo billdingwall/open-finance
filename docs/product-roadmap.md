@@ -116,7 +116,7 @@ and local-fallback modes.
 - [ ] `fixture-generate` script — realistic 12-month dataset written to `~/Finance-Dev/`
 - [ ] Wire SwiftLint + GitHub Actions (Linux runner) and confirm green
 - [ ] Smoke test: workspace URL resolves in **both** iCloud and local-folder modes
-- [ ] Author the 28 file schemas as JSON in `.finance-meta/schemas/` (source of truth for registry,
+- [ ] Author the file schemas (one JSON schema per managed file type) in `.finance-meta/schemas/` (source of truth for registry,
   validation, bootstrap, migration)
 
 #### Xcode Project Setup
@@ -195,7 +195,7 @@ typed domain records. This is the prerequisite for every domain engine in Phase 
 
 ### Product Tasks
 
-- [ ] Finalize and document all 28 CSV file specifications (schemas, required vs optional columns,
+- [ ] Finalize and document all CSV file specifications — one per managed file type (schemas, required vs optional columns,
   enum value sets) — authored as JSON in `.finance-meta/schemas/` (R8 source of truth); each managed
   CSV carries a leading `# schema_version: N` comment row. *(R8 locked the format/approach; the full
   per-file enum enumeration remains the open work here.)*
@@ -839,7 +839,7 @@ Source: `docs/_refinement/r8-review.md` (foundation hardening — Phase 1–2 de
 - **Phase 1 Product tasks** for entitlement / 7 sync states / manifest shape marked resolved (R8).
 - **Core Data Models**: removed `OwnerDistribution`; `Account` = single struct + optional `InvestmentMetadata?`.
 - **Phase 2**: schema_version comment-row + JSON schemas as source of truth; sign-flip = explicit per-import declaration; validation rule-catalog shape + classification defaults adopted; `goals.csv status ∈ {active, archived}`; `savings-goal-contributions.csv` removed.
-- **Spec-review follow-up (2026-06-26):** Phase 1 Core Data Models gained `AccountGroup` (first-class R6 object, `account_group_id` FK) and the `BusinessMonthlySummary` cross-domain projection. Surfaced during the `specs/002-foundation-architecture` review.
+- **Spec-review follow-up (2026-06-26):** Phase 1 Core Data Models gained `AccountGroup` (first-class R6 object, `account_group_id` FK) and the `BusinessMonthlySummary` cross-domain projection. Schema-count wording reconciled ("28" → one schema per managed file type). Surfaced during the `specs/002-foundation-architecture` review.
 
 ### Round 7 — 2026-06-24
 Source: `docs/_refinement/r7-review.md` (MVP prep — doc-sync debt + direction decisions B1–C5)

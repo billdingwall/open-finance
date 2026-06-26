@@ -180,11 +180,11 @@ A developer can build, lint, run, and test the app against a local-folder worksp
 - A valid Apple developer team and an iCloud container entitlement (`iCloud.<bundle-id>`) for the iCloud provider path; the local-folder provider removes this dependency for development.
 - The canonical specs and locked decisions in `docs/technical-design.md`, `docs/architecture/` (core-domain, containers-and-budgets, data-pipelines, rulesets-and-taxes), and `.specify/memory/constitution.md`.
 
-## Known Documentation Inconsistencies (to reconcile before/with planning)
+## Known Documentation Inconsistencies
 
-These do not change the requirements above (which follow the locked `§21` decisions), but should be fixed in the canonical docs so `/speckit-plan` reads a consistent source:
+All previously-tracked doc inconsistencies are now **resolved** (2026-06-26); the canonical docs are consistent with this spec and the locked `§21` decisions:
 
-1. **Manifest location**: `docs/architecture/containers-and-budgets.md §1` still lists `manifest.json` inside `.finance-meta/`, contradicting the R8 decision (`§9`/`§21`) and the constitution that the manifest is a device-local Application Support cache and `.finance-meta/` holds only `schemas/`, `backups/`, `logs/`.
-2. ~~**Constitution drift** (schema_version column, `Personal/`/`Business/` folders, Business-as-module)~~ **Resolved** — `.specify/memory/constitution.md` amended to v1.1.0 (2026-06-26) to match the R6–R8 locked decisions. The Constitution Check gate in `/speckit-plan` now reads a consistent source.
-3. **Schema count wording**: the roadmap's "28 file schemas" does not match the ~10 representative `*.schema.json` files in the §1 tree; reconcile the count or state it as "one schema per managed file type."
-4. **PRD goal-status** (tracked separately): `docs/product-requirements.md` Scope → Out-of-scope still lists goal active/archived as V2, contradicting the v1 `status ∈ {active, archived}` decision (`[FIX-S7]`) now in the architecture docs and constitution.
+1. ~~**Manifest location**: `containers-and-budgets.md §1` listed `manifest.json` inside `.finance-meta/`~~ **Resolved** — removed from the §1 tree; folder-design rule now states the manifest is the device-local Application Support cache and `.finance-meta/` is excluded from the index.
+2. ~~**Constitution drift** (schema_version column, `Personal/`/`Business/` folders, Business-as-module)~~ **Resolved** — `.specify/memory/constitution.md` amended to v1.1.0.
+3. ~~**Schema count wording** ("28 file schemas")~~ **Resolved** — roadmap reworded to "one schema per managed file type."
+4. ~~**PRD goal-status** (out-of-scope listed active/archived as V2)~~ **Resolved** — stale PRD bullet removed; the `active | archived` lifecycle is v1 (`[FIX-S7]`).

@@ -11,8 +11,7 @@
 ```text
 Finance/
   Workspace.md
-  .finance-meta/
-    manifest.json
+  .finance-meta/                         # synced support data — manifest is NOT here (device-local, R8)
     schemas/
       account.schema.json
       account-group.schema.json
@@ -80,7 +79,7 @@ Finance/
 - Folder path is the first classifier.
 - Filename is the second classifier.
 - Front matter or schema metadata is the third classifier.
-- `.finance-meta/` is app-managed support data, but not the source of truth for finance content.
+- `.finance-meta/` is app-managed support data, but not the source of truth for finance content. It holds only `schemas/`, `backups/`, and `logs/`. The **manifest is device-local** (`~/Library/Application Support/OpenFinance/<workspace_id>/manifest.json`), kept out of the synced container as a regenerable cache (R8 — see `docs/technical-design.md §9`). The `.finance-meta/` subtree is excluded from the file index.
 - Backups live inside `.finance-meta/backups/` and use timestamped copies.
 - `Accounts/accounts.csv` is the unified master account registry for all account types, including investment accounts. Investment-specific metadata (tax treatment, performance tracking) is stored as optional columns in this file. There is no separate `Investments/accounts.csv`.
 - `Personal/rules.csv` is not included in v1. Budget rules and recurring-rule automation are deferred post-MVP.
