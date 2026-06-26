@@ -1,16 +1,23 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version: 0.0.0 → 1.0.0
-Bump type: MAJOR — initial adoption; all template placeholders populated
+Version: 1.0.0 → 1.1.0
+Bump type: MINOR — convention corrections + added safety/scope guidance to align with
+Rounds 6–8 locked decisions (no core principle redefined)
 
-Modified principles: N/A (initial version)
+Modified principles: none redefined (Principle IV gains two sync-safety bullets)
 
-Added sections:
-  - Core Principles (7 principles derived from docs/product-requirements.md product principles)
-  - File & Schema Conventions
-  - V1 Scope Boundaries
-  - Governance
+Modified sections:
+  - Principle IV (Safe Writes Only) — added sync-state write gate + manual conflict resolution
+  - File & Schema Conventions — schema_version is a leading comment row (not a column);
+    unified Accounts/transactions/ ledger replaces Personal/ and Business/ paths; manifest is a
+    device-local regenerable cache; Markdown is front-matter-only in v1; migration-policy precision
+  - V1 Scope Boundaries — Business is an account-group type under Accounts (not a module);
+    added Overview + Settings; tax-module estimation guardrail
+  - Governance — reference documents expanded (architecture/, product-roadmap, CLAUDE.md)
+
+Rationale sources: docs/technical-design.md §4, §9, §21; docs/architecture/containers-and-budgets.md §1;
+docs/architecture/core-domain.md; CLAUDE.md
 
 Templates reviewed:
   - .specify/templates/plan-template.md  ✅ No changes required
@@ -20,7 +27,8 @@ Templates reviewed:
     (Path conventions are illustrative examples replaced by /speckit-tasks)
 
 Deferred placeholders: none
-Follow-up TODOs: none
+Follow-up TODOs: reconcile PRD out-of-scope goal-status bullet (active/archived is v1 per [FIX-S7],
+  PRD still lists it as V2) — tracked as a separate PRD edit, not part of this amendment
 -->
 
 # Open Finance Constitution
@@ -65,6 +73,10 @@ ambiguous mutations are prohibited.
 - The app MUST create a timestamped backup before any write or repair operation.
 - Every write flow MUST show the target file, affected rows, and backup behavior before applying.
 - Write failures MUST leave the file in its pre-write state (atomic writes required).
+- Writes MUST be gated on sync state: the app MUST NOT write to a file that is downloading or
+  uploading. Reads and writes on monitored files MUST be coordinated to serialize concurrent access.
+- iCloud conflicts MUST be resolved by explicit user choice (keep mine / keep iCloud / keep both).
+  The app MUST NOT silently auto-merge files.
 - Every repair action MUST be logged to `.finance-meta/logs/repair-log.csv`.
 
 ### V. Traceability Always
@@ -103,19 +115,26 @@ deterministic, previewable, and low risk.
 
 These rules govern how workspace files are named, structured, and versioned.
 
-- All CSV files MUST include a `schema_version` column or front matter field.
+- Every managed CSV MUST declare its `schema_version` as a leading comment row
+  (`# schema_version: N`, line 1); Markdown files declare it in front matter. The parser tolerates
+  and strips leading comment rows; CSVs do not carry a `schema_version` data column.
 - File classification follows a three-tier hierarchy: (1) folder path → (2) filename →
   (3) in-file metadata or column headers.
 - `account_id` references in any transaction file MUST resolve to a record in
   `Accounts/accounts.csv`.
-- Monthly personal transaction files MUST follow the `YYYY-MM.csv` naming pattern under
-  `Personal/transactions/`.
-- Business transaction files MUST follow the `{entity-slug}-YYYY-MM.csv` pattern under
-  `Business/transactions/`.
-- The `.finance-meta/` directory is app-managed support data only. It is not a source of truth
-  for finance content and MUST NOT be hand-edited by users.
-- Schema changes MUST increment `schema_version` and MUST be accompanied by a migration note
-  in `docs/technical-design.md`.
+- Transactions live in a single unified monthly ledger `Accounts/transactions/YYYY-MM.csv`. Personal
+  and business rows share this ledger, distinguished by `account_group_id` and a `BX-` ID prefix;
+  multi-entry transactions (transfers, paycheck splits) share a `group_id` connector. There are no
+  separate `Personal/` or `Business/` transaction folders.
+- In v1, Markdown files are parsed for front-matter metadata only; body rendering is V2.
+- The file index/manifest is a device-local, regenerable cache stored in Application Support, outside
+  the synced workspace, and is never authoritative over file content; if lost it is rebuilt by a full
+  scan. The synced `.finance-meta/` directory holds only `schemas/`, `backups/`, and `logs/`, is
+  app-managed support data, and MUST NOT be hand-edited as a source of truth.
+- A breaking schema change (renaming, removing, or retyping a column or enum, or adding a required
+  column) MUST increment `schema_version` and ship a migration script
+  (`Scripts/migrate-{file-type}-v{old}-to-v{new}.swift`); adding an optional column is not breaking.
+  Migrations MUST be recorded in `docs/technical-design.md`.
 
 ## V1 Scope Boundaries
 
@@ -124,7 +143,11 @@ Crossing a deferred boundary requires an explicit constitution amendment.
 
 **In scope for v1:**
 - App-owned iCloud ubiquity container (single workspace, single user)
-- Modules: Accounts, Budget, Savings & Investments, Business, Taxes
+- Modules: Overview (default dashboard), Accounts, Budget, Savings & Investments, Taxes — plus
+  Settings. Business is an account-group type *within* Accounts (handled by `AccountEngine`), not a
+  separate module.
+- The Tax module estimates payment obligations and organizes documents; it is not a tax computation
+  or filing engine. All tax figures are estimates.
 - File validation and issue reporting (surfaced in the Overview dashboard)
 - Guided creation of missing required files from templates
 - Deterministic repair flows only
@@ -165,7 +188,10 @@ It is the authoritative reference for project principles and prohibited patterns
 
 **Reference documents:**
 - Product requirements: `docs/product-requirements.md`
-- Technical architecture: `docs/technical-design.md`
+- Technical architecture: `docs/technical-design.md` (overview + locked decisions §21)
+- Detailed architecture specs: `docs/architecture/` (core-domain, containers-and-budgets, rulesets-and-taxes, data-pipelines)
+- Implementation roadmap: `docs/product-roadmap.md`
+- Agent/build context: `CLAUDE.md`
 - Review and update history: `docs/_refinement/`
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-08 | **Last Amended**: 2026-06-08
+**Version**: 1.1.0 | **Ratified**: 2026-06-08 | **Last Amended**: 2026-06-26
