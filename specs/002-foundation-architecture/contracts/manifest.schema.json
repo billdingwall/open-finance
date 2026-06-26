@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfinance.app/schemas/manifest.schema.json",
+  "title": "Workspace Manifest (device-local cache)",
+  "description": "Regenerable index cache stored at ~/Library/Application Support/OpenFinance/<workspace_id>/manifest.json. NOT stored in the synced container. Never authoritative over file content.",
+  "type": "object",
+  "required": ["manifest_schema_version", "app_version", "workspace_id", "last_indexed_at", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "manifest_schema_version": { "type": "integer", "minimum": 1 },
+    "app_version": { "type": "string" },
+    "workspace_id": { "type": "string" },
+    "last_indexed_at": { "type": "string", "format": "date-time" },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "domain", "subtype", "schema_version", "hash", "modified_at", "byte_size", "row_count", "last_indexed_at", "validation_status"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "description": "workspace-relative, e.g. Accounts/transactions/2026-05.csv" },
+          "domain": { "type": "string", "enum": ["accounts", "budget", "savings", "investments", "taxes", "notes", "meta"] },
+          "subtype": { "type": "string", "description": "transactions, goals, prices, note, etc." },
+          "schema_version": { "type": "integer", "minimum": 1 },
+          "hash": { "type": "string", "description": "sha256:<hex>" },
+          "modified_at": { "type": "string", "format": "date-time" },
+          "byte_size": { "type": "integer", "minimum": 0 },
+          "row_count": { "type": "integer", "minimum": 0 },
+          "last_indexed_at": { "type": "string", "format": "date-time" },
+          "validation_status": { "type": "string", "enum": ["ok", "warning", "error", "unvalidated"] }
+        }
+      }
+    }
+  },
+  "$comment": "Excludes per-file sync state (volatile; owned by NSMetadataQuery in memory) and repair history (lives in .finance-meta/logs/repair-log.csv)."
+}

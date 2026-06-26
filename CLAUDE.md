@@ -126,6 +126,12 @@ Features are developed using the Spec Kit workflow. Commands in order:
 
 Feature branches follow the `NNN-feature-name` naming convention (created by `/speckit-git-feature`).
 
+<!-- SPECKIT START -->
+**Active feature**: `002-foundation-architecture` (Phase 1 — Foundation & Architecture)
+Plan: `specs/002-foundation-architecture/plan.md` · Spec: `specs/002-foundation-architecture/spec.md`
+Artifacts: `research.md`, `data-model.md`, `contracts/`, `quickstart.md`
+<!-- SPECKIT END -->
+
 ## Doc update workflow (product refinement loop)
 
 The project-level docs are living documents updated after each prototype review round
