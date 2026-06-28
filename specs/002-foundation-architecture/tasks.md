@@ -101,14 +101,14 @@ description: "Task list for Foundation & Architecture (Phase 1)"
 
 **Independent Test**: Drive each of the seven states and confirm detection/reporting + write gating; force a two-device conflict and resolve via keep mine/iCloud/both with no version lost.
 
-- [ ] T035 [P] [US3] Controlled test: each of the 7 sync states is detected/reported; no write occurs while a file is mid-sync (SC-005) in `FinanceWorkspaceAppTests/SyncStateTests.swift`
-- [ ] T036 [P] [US3] Integration test: simulated conflict resolvable via keep mine/iCloud/both, neither version lost (SC-006) in `FinanceWorkspaceAppTests/ConflictResolutionTests.swift`
-- [ ] T037 [US3] Implement `ICloudContainerService` (resolve ubiquity container `iCloud.<bundle-id>`, availability state, per-file sync state from `NSMetadataQuery`) conforming to `CloudStorageProvider` in `FinanceWorkspaceApp/Platform/ICloudContainerService.swift`
-- [ ] T038 [US3] Implement the 7-state detection + workspace/file `SyncStatus` mapping from `NSMetadataQuery` attributes
-- [ ] T039 [US3] Extend `FileWatcherService` with the `NSMetadataQuery` watcher for the iCloud provider in `FinanceWorkspaceApp/Platform/FileWatcherService.swift`
-- [ ] T040 [US3] Implement the sync-state write gate (block writes to syncing/downloading files; defer and surface inline) (FR-013, FR-015)
-- [ ] T041 [US3] Implement manual conflict resolution via `NSFileVersion.unresolvedConflictVersions` (keep mine/iCloud/both) (FR-014)
-- [ ] T042 [US3] Surface the sync states + conflict prompt in the app shell (FR-012, FR-024)
+- [X] T035 [P] [US3] Controlled test: each of the 7 sync states is detected/reported; no write occurs while a file is mid-sync (SC-005) in `FinanceWorkspaceAppTests/SyncStateTests.swift`
+- [X] T036 [P] [US3] Integration test: simulated conflict resolvable via keep mine/iCloud/both, neither version lost (SC-006) in `FinanceWorkspaceAppTests/ConflictResolutionTests.swift`
+- [X] T037 [US3] Implement `ICloudContainerService` (resolve ubiquity container `iCloud.<bundle-id>`, availability state, per-file sync state from `NSMetadataQuery`) conforming to `CloudStorageProvider` in `FinanceWorkspaceApp/Platform/ICloudContainerService.swift`
+- [X] T038 [US3] Implement the 7-state detection + workspace/file `SyncStatus` mapping from `NSMetadataQuery` attributes
+- [X] T039 [US3] Extend `FileWatcherService` with the `NSMetadataQuery` watcher for the iCloud provider in `FinanceWorkspaceApp/Platform/FileWatcherService.swift`
+- [X] T040 [US3] Implement the sync-state write gate (block writes to syncing/downloading files; defer and surface inline) (FR-013, FR-015)
+- [X] T041 [US3] Implement manual conflict resolution via `NSFileVersion.unresolvedConflictVersions` (keep mine/iCloud/both) (FR-014)
+- [X] T042 [US3] Surface the sync states + conflict prompt in the app shell (FR-012, FR-024)
 
 **Checkpoint**: Multi-device data integrity is protected before any write flow ships.
 

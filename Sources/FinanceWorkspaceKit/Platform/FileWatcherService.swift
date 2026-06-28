@@ -59,3 +59,35 @@ public final class FileWatcherService: @unchecked Sendable {
 
     deinit { stop() }
 }
+
+// T039 — iCloud-provider watcher: NSMetadataQuery over the ubiquitous documents scope. It is also
+// the source of per-file sync state (SyncStateMapper). Runtime requires the entitlement + run loop.
+public final class MetadataChangeWatcher: NSObject, @unchecked Sendable {
+    private let query = NSMetadataQuery()
+    private let onChange: @Sendable () -> Void
+
+    public init(onChange: @escaping @Sendable () -> Void) {
+        self.onChange = onChange
+        super.init()
+    }
+
+    public func start() {
+        query.searchScopes = [NSMetadataQueryUbiquitousDocumentsScope]
+        query.predicate = NSPredicate(format: "%K LIKE %@", NSMetadataItemFSNameKey, "*")
+        let center = NotificationCenter.default
+        center.addObserver(self, selector: #selector(changed),
+                           name: .NSMetadataQueryDidFinishGathering, object: query)
+        center.addObserver(self, selector: #selector(changed),
+                           name: .NSMetadataQueryDidUpdate, object: query)
+        query.start()
+    }
+
+    public func stop() {
+        query.stop()
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func changed() { onChange() }
+
+    deinit { stop() }
+}

@@ -1,6 +1,11 @@
 import SwiftUI
 import FinanceWorkspaceKit
 
+enum AppConfig {
+    // Reverse-DNS, iCloud.-prefixed ubiquity container identifier (must match the entitlement).
+    static let iCloudContainerIdentifier = "iCloud.app.openfinance.FinanceWorkspace"
+}
+
 // T020 — Minimal app shell + active-provider selection (FR-021, FR-024, FR-025).
 // DEBUG defaults to LocalFolderProvider so the app runs with no iCloud.
 // Release wires ICloudContainerService once it lands in US3.
@@ -22,8 +27,7 @@ final class AppState {
         #if DEBUG
         provider = LocalFolderProvider()
         #else
-        // ICloudContainerService is wired here in US3; LocalFolderProvider is the safe default until then.
-        provider = LocalFolderProvider()
+        provider = ICloudContainerService(containerIdentifier: AppConfig.iCloudContainerIdentifier)
         #endif
         manager = WorkspaceManager(provider: provider)
     }
