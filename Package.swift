@@ -25,6 +25,10 @@ let package = Package(
             name: "fixture-generate",
             dependencies: ["FinanceWorkspaceKit"]
         ),
+        .executableTarget(
+            name: "index-check",
+            dependencies: ["FinanceWorkspaceKit"]
+        ),
         .testTarget(
             name: "FinanceWorkspaceKitTests",
             dependencies: ["FinanceWorkspaceKit"]

@@ -82,14 +82,14 @@ description: "Task list for Foundation & Architecture (Phase 1)"
 
 **Independent Test**: Index a populated workspace; delete the manifest → identical rebuild; edit one file → only that file re-indexes; drop an unreadable file → it's flagged and the scan continues.
 
-- [ ] T027 [P] [US2] Integration test: scan classifies/hashes the finance tree + `Workspace.md` and excludes `.finance-meta/` (FR-007) in `FinanceWorkspaceAppTests/IndexScopeTests.swift`
-- [ ] T028 [P] [US2] Integration test: manifest delete → byte-identical rebuild from scan (SC-004); single external edit → incremental re-index only (SC-003) in `FinanceWorkspaceAppTests/IndexRebuildTests.swift`
-- [ ] T029 [P] [US2] Integration test: unreadable/locked file → `error` status + `os.Logger` entry + scan continues over all others (FR-011a) in `FinanceWorkspaceAppTests/IndexResilienceTests.swift`
-- [ ] T030 [US2] Implement `ManifestStore` (read/write the device-local Application Support manifest per `contracts/manifest.schema.json`; rebuild-from-scan when missing/corrupt) in `FinanceWorkspaceApp/Persistence/ManifestStore.swift`
-- [ ] T031 [US2] Implement `FileIndexService` (recursive discovery scoped to the finance tree + `Workspace.md`, excluding `.finance-meta/`; three-tier classification; SHA-256 hashing; per-file resilient error handling FR-011a; emit `FileChangeEvent`) in `FinanceWorkspaceApp/Platform/FileIndexService.swift`
-- [ ] T032 [US2] Implement incremental change detection (hash + modified-date vs prior manifest) and delta events in `FileIndexService`
-- [ ] T033 [US2] Implement the `FileWatcherService` FSEvents path (local-folder provider) with debounce + incremental re-index in `FinanceWorkspaceApp/Platform/FileWatcherService.swift`
-- [ ] T034 [US2] Wire `os.Logger` diagnostics for indexing failures (FR-025) in `FileIndexService`
+- [X] T027 [P] [US2] Integration test: scan classifies/hashes the finance tree + `Workspace.md` and excludes `.finance-meta/` (FR-007) in `FinanceWorkspaceAppTests/IndexScopeTests.swift`
+- [X] T028 [P] [US2] Integration test: manifest delete → byte-identical rebuild from scan (SC-004); single external edit → incremental re-index only (SC-003) in `FinanceWorkspaceAppTests/IndexRebuildTests.swift`
+- [X] T029 [P] [US2] Integration test: unreadable/locked file → `error` status + `os.Logger` entry + scan continues over all others (FR-011a) in `FinanceWorkspaceAppTests/IndexResilienceTests.swift`
+- [X] T030 [US2] Implement `ManifestStore` (read/write the device-local Application Support manifest per `contracts/manifest.schema.json`; rebuild-from-scan when missing/corrupt) in `FinanceWorkspaceApp/Persistence/ManifestStore.swift`
+- [X] T031 [US2] Implement `FileIndexService` (recursive discovery scoped to the finance tree + `Workspace.md`, excluding `.finance-meta/`; three-tier classification; SHA-256 hashing; per-file resilient error handling FR-011a; emit `FileChangeEvent`) in `FinanceWorkspaceApp/Platform/FileIndexService.swift`
+- [X] T032 [US2] Implement incremental change detection (hash + modified-date vs prior manifest) and delta events in `FileIndexService`
+- [X] T033 [US2] Implement the `FileWatcherService` FSEvents path (local-folder provider) with debounce + incremental re-index in `FinanceWorkspaceApp/Platform/FileWatcherService.swift`
+- [X] T034 [US2] Wire `os.Logger` diagnostics for indexing failures (FR-025) in `FileIndexService`
 
 **Checkpoint**: The index is correct, incremental, regenerable, and resilient.
 
