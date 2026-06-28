@@ -113,7 +113,7 @@ A spreadsheet-driven personal finance user who wants better dashboards and valid
 - Budget rules and automation (post-MVP).
 - Alternative cloud storage providers: Google Drive, Dropbox, local-folder-only mode (V2).
 - xlsx and other file format ingestion and export (V2).
-- Savings goal lifecycle states — active/archived (V2, general configurable dashboard). In v1 every listed goal is active; the user adds and removes goals directly.
+- A general configurable dashboard for savings goals (V2). The minimal `active | archived` goal lifecycle **is in v1** (`status` enum, `[FIX-S7]`); only the broader configurable-dashboard layer is deferred.
 - Dedicated sleeves screen (V2, general configurable dashboard). The sleeve table lives at the bottom of the Portfolio overview in v1.
 - Dedicated benchmark screen. The benchmark heat map is a view toggle on the holdings table in v1.
 - Dedicated estimated payments, gains & income, and deductions screens. Their content surfaces within the Current Tax Year view in v1.
@@ -519,6 +519,7 @@ Source: `docs/_refinement/r8-review.md` (foundation hardening — Phase 1–2)
 
 - Data model: removed `OwnerDistribution` (out of v1 scope, `[FIX-S5]`) and `GoalContribution` (`[FIX-S4]` — `savings_goal_id` is the sole budget-to-goal link); `SavingsGoal` gains `status ∈ {active, archived}` (`[FIX-S7]`). Remaining legacy entity-name reconciliation stays open as `[FIX-M3/M6/C6]`.
 - NFR Reliability: added manual conflict resolution (`NSFileVersion`, no auto-merge) and the regenerable device-local index/manifest guarantee.
+- **Spec-review follow-up (2026-06-26):** removed the stale Scope → Out-of-scope bullet that listed savings-goal active/archived as V2 — the minimal `active | archived` lifecycle is v1 (`[FIX-S7]`); only a general configurable-dashboard layer remains V2. Surfaced during the `specs/002-foundation-architecture` review.
 
 ### Round 7 — 2026-06-24
 Source: `docs/_refinement/r7-review.md` (MVP prep — direction decisions on B1–C5)

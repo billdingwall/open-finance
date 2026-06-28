@@ -1,0 +1,23 @@
+name: CI (macOS)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Builds the package and runs the test suite on a macOS runner (full Xcode toolchain),
+# since XCTest / Swift Testing are not available on the Linux SwiftLint runner or a
+# Command-Line-Tools-only machine. Full app packaging / signing CI remains a Phase 5 concern.
+jobs:
+  build-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.app || true
+      - name: Swift version
+        run: swift --version
+      - name: Build
+        run: swift build
+      - name: Test
+        run: swift test

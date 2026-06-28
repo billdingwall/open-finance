@@ -1,2 +1,19 @@
 .DS_Store
 **/.DS_Store
+
+# Swift / SwiftPM
+.build/
+DerivedData/
+*.swiftpm/
+Packages/
+Package.resolved
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Dev workspace (local-folder provider root)
+Finance-Dev/
+
+# Misc
+*.log
+*.tmp
+*.swp

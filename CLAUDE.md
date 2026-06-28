@@ -4,9 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Pre-build. This repository currently contains design and planning documents only — no Swift source code exists yet. The Xcode project (`FinanceWorkspaceApp`) will be created in Phase 1 of the roadmap.
+Phase 1 (Foundation & Architecture) is **in build** on branch `002-foundation-architecture`. The app is scaffolded as a **Swift Package** (`Package.swift`), not a hand-authored `.xcodeproj` — the build environment is Command-Line-Tools-only (no Xcode GUI / `xcodegen`), so SwiftPM keeps the foundation buildable and CI-friendly. An Xcode app target + iCloud entitlements are added when UI/packaging/signing is needed (later phase). Architecture module folders map to `Sources/FinanceWorkspaceKit/{Platform,Domain,Validation,Persistence}/`.
 
-When the Swift project exists, build/test commands will be added here. Until then, work in this repo means reading, authoring, and updating documents.
+Implemented so far: Setup + Foundational (models, `CloudStorageProvider`/`LocalFolderProvider`, file-safety primitives), US1 provisioning, US2 file index, US3 sync-state/conflict logic. See `specs/002-foundation-architecture/tasks.md` for status.
+
+### Build & test
+
+```bash
+swift build                 # build all targets (library, app, scripts)
+swift test                  # run the suite (Swift Testing) — needs full Xcode; runs in macOS CI
+swift run bootstrap-workspace --workspace <path>/Finance   # provision a workspace
+swift run fixture-generate  --workspace ~/Finance-Dev --months 12   # dev fixture data
+swift run index-check       --workspace ~/Finance-Dev/Finance       # scan + print index summary
+```
+
+> Note: `swift test` requires a full Xcode toolchain (XCTest/Swift Testing); a CLT-only machine can `swift build` and run the executables but not `swift test`. CI: SwiftLint on Linux + `swift build`/`swift test` on a macOS runner (`.github/workflows/`).
 
 ## What this project is
 
@@ -125,6 +137,12 @@ Features are developed using the Spec Kit workflow. Commands in order:
 ```
 
 Feature branches follow the `NNN-feature-name` naming convention (created by `/speckit-git-feature`).
+
+<!-- SPECKIT START -->
+**Active feature**: `002-foundation-architecture` (Phase 1 — Foundation & Architecture)
+Plan: `specs/002-foundation-architecture/plan.md` · Spec: `specs/002-foundation-architecture/spec.md`
+Artifacts: `research.md`, `data-model.md`, `contracts/`, `quickstart.md`
+<!-- SPECKIT END -->
 
 ## Doc update workflow (product refinement loop)
 

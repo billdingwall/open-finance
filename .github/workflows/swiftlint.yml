@@ -1,0 +1,18 @@
+name: SwiftLint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Phase 1 CI: SwiftLint on a standard Linux runner (no Mac build runner required).
+# Full Mac build CI is deferred to Phase 5.
+jobs:
+  swiftlint:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/realm/swiftlint:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run SwiftLint
+        run: swiftlint lint --strict --reporter github-actions-logging

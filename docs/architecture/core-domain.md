@@ -15,6 +15,7 @@
 - ValidationIssue
 - RepairAction
 - Account
+- AccountGroup *(first-class object; `group_type` = personal/employment/business/custom; provides the `account_group_id` referenced by Account and Transaction)*
 - Liability
 - AccountRule
 - AccountEstimate
