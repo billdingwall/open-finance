@@ -24,10 +24,10 @@ public struct BackupService: Sendable {
     }
 
     static func timestamp() -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyyMMdd-HHmmss-SSS"
-        f.timeZone = TimeZone(identifier: "UTC")
-        return f.string(from: Date())
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd-HHmmss-SSS"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        return formatter.string(from: Date())
     }
 }

@@ -4,7 +4,8 @@ import Foundation
 // (no InvestmentAccount subtype); investment fields live in optional InvestmentMetadata.
 
 public enum AccountGroupClass: String, Codable, Sendable, CaseIterable {
-    case employment, business, credit_card, investment, savings, checking, loan
+    case employment, business, investment, savings, checking, loan
+    case creditCard = "credit_card"
 }
 
 public enum AccountStatus: String, Codable, Sendable, CaseIterable {

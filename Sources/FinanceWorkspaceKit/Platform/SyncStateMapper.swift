@@ -29,10 +29,10 @@ public enum SyncStateMapper {
     }
 
     /// Per-file sync state. Conflict takes precedence; then in-flight transfer; then local freshness.
-    public static func fileState(_ s: ItemStatus) -> FileSyncState {
-        if s.hasUnresolvedConflicts { return .conflictDetected }
-        if s.isDownloading || s.isUploading { return .syncing }
-        switch s.downloadingStatus {
+    public static func fileState(_ item: ItemStatus) -> FileSyncState {
+        if item.hasUnresolvedConflicts { return .conflictDetected }
+        if item.isDownloading || item.isUploading { return .syncing }
+        switch item.downloadingStatus {
         case .notDownloaded: return .fileMissingLocally
         case .downloaded:    return .localCopyStale
         case .current:       return .available

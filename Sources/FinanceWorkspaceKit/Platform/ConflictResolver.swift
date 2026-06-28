@@ -10,7 +10,7 @@ public enum ConflictChoice: String, Sendable, CaseIterable {
     case keepBoth
 }
 
-public struct ConflictResolutionPlan: Sendable, Equatable {
+public struct ConflictResolutionPlan: Sendable, Equatable, Hashable {
     public var keepCurrent: Bool        // keep the local current version as the file
     public var promoteOther: Bool       // promote the other (iCloud) version to be current
     public var preserveOtherAsCopy: Bool // keep the other version as a "(conflicted copy)" sibling
@@ -55,8 +55,8 @@ public enum ConflictResolver {
         let conflicts = NSFileVersion.unresolvedConflictVersionsOfItem(at: url) ?? []
 
         if plan.preserveOtherAsCopy {
-            for (i, version) in conflicts.enumerated() {
-                _ = try version.replaceItem(at: conflictedCopyURL(for: url, index: i), options: [])
+            for (index, version) in conflicts.enumerated() {
+                _ = try version.replaceItem(at: conflictedCopyURL(for: url, index: index), options: [])
             }
         }
         if plan.promoteOther, let latest = conflicts.max(by: {

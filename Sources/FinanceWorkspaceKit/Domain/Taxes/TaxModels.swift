@@ -3,9 +3,9 @@ import Foundation
 // T012 — Taxes domain models. The tax module estimates obligations; it is not a computation engine.
 
 public enum TaxAdjustmentType: String, Codable, Sendable, CaseIterable {
-    case standard, above_the_line, itemized
+    case standard, itemized, credit, liability
+    case aboveTheLine = "above_the_line"
     case businessExpense = "business-expense"
-    case credit, liability
 }
 
 public struct TaxAdjustment: Codable, Equatable, Sendable, Identifiable {

@@ -3,6 +3,12 @@ excluded:
   - DerivedData
   - Tests
 
+disabled_rules:
+  # Trailing commas in multiline literals are intentional (diff-friendly, idiomatic Swift).
+  - trailing_comma
+  # Lifecycle types legitimately remove their observer in stop(), not only deinit.
+  - notification_center_detachment
+
 opt_in_rules:
   - empty_count
   - explicit_init
@@ -13,6 +19,10 @@ line_length:
   warning: 140
   error: 200
   ignores_comments: true
+
+function_body_length:
+  warning: 90
+  error: 130
 
 identifier_name:
   min_length: 2

@@ -15,8 +15,8 @@ var args = Array(CommandLine.arguments.dropFirst())
 while let arg = args.first {
     args.removeFirst()
     switch arg {
-    case "--workspace": if let v = args.first { workspacePath = v; args.removeFirst() }
-    case "--months": if let v = args.first, let n = Int(v) { months = n; args.removeFirst() }
+    case "--workspace": if let value = args.first { workspacePath = value; args.removeFirst() }
+    case "--months": if let value = args.first, let parsed = Int(value) { months = parsed; args.removeFirst() }
     case "-h", "--help": usage()
     default: break
     }
