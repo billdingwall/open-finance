@@ -120,9 +120,9 @@ description: "Task list for Foundation & Architecture (Phase 1)"
 
 **Independent Test**: DEBUG build resolves `~/Finance-Dev`, provisions + indexes a fixture workspace end-to-end; CI lint passes; the dual-mode resolution smoke test passes.
 
-- [ ] T043 [US4] Verify the DEBUG build (provider selection wired in T020) resolves, provisions, and indexes `~/Finance-Dev` end-to-end with no iCloud configured (FR-021)
-- [ ] T044 [P] [US4] Dual-mode workspace-resolution smoke test (iCloud + local-folder) in `FinanceWorkspaceAppTests/WorkspaceResolutionSmokeTests.swift` (FR-023)
-- [ ] T045 [US4] Confirm CI runs SwiftLint to green on the Linux runner and the fixture → provision → index path runs end-to-end in DEBUG (SC-007)
+- [X] T043 [US4] Verify the DEBUG build (provider selection wired in T020) resolves, provisions, and indexes `~/Finance-Dev` end-to-end with no iCloud configured (FR-021)
+- [X] T044 [P] [US4] Dual-mode workspace-resolution smoke test (iCloud + local-folder) in `FinanceWorkspaceAppTests/WorkspaceResolutionSmokeTests.swift` (FR-023)
+- [X] T045 [US4] Confirm CI runs SwiftLint to green on the Linux runner and the fixture → provision → index path runs end-to-end in DEBUG (SC-007)
 
 **Checkpoint**: The development loop is solid and CI-enforced.
 
@@ -130,11 +130,11 @@ description: "Task list for Foundation & Architecture (Phase 1)"
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T046 [P] Run the `quickstart.md` verification table end-to-end in both modes
-- [ ] T047 [P] Unit tests for hashing, classification, manifest round-trip, and sync-state mapping in `FinanceWorkspaceAppTests/Unit/`
-- [ ] T048 Responsive cold-launch indexing sanity check on the fixture workspace (SC-002 soft target; hard thresholds deferred to Phase 7 of the roadmap)
-- [ ] T049 [P] Update `CLAUDE.md` with build/test commands now that the Xcode project exists
-- [ ] T050 Confirm the Milestone 1 gate: launch → resolve workspace (both modes) → provision on first run → scan + hash → persist manifest → detect/expose the 7 sync states → bootstrap produces a valid scannable workspace
+- [X] T046 [P] Run the `quickstart.md` verification table end-to-end in both modes
+- [X] T047 [P] Unit tests for hashing, classification, manifest round-trip, and sync-state mapping in `FinanceWorkspaceAppTests/Unit/`
+- [X] T048 Responsive cold-launch indexing sanity check on the fixture workspace (SC-002 soft target; hard thresholds deferred to Phase 7 of the roadmap)
+- [X] T049 [P] Update `CLAUDE.md` with build/test commands now that the Xcode project exists
+- [X] T050 Confirm the Milestone 1 gate: launch → resolve workspace (both modes) → provision on first run → scan + hash → persist manifest → detect/expose the 7 sync states → bootstrap produces a valid scannable workspace
 
 ---
 
