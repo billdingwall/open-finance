@@ -10,6 +10,8 @@ public enum WorkspaceResolutionError: Error, Sendable, Equatable {
 
 /// Minimum surface all storage backends implement (contracts/cloud-storage-provider.md).
 public protocol CloudStorageProvider: Sendable {
+    /// Which backend this is.
+    var providerKind: WorkspaceProviderKind { get }
     /// Whether the backend is usable right now.
     var isAvailable: Bool { get }
     /// Workspace-level sync state.

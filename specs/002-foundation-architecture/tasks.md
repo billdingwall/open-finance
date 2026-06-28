@@ -65,12 +65,12 @@ description: "Task list for Foundation & Architecture (Phase 1)"
 
 **Independent Test**: Launch against an empty location → full tree + six seed accounts + default categories + `Workspace.md` + manifest exist; re-launch preserves files (idempotent).
 
-- [ ] T021 [P] [US1] Integration test: first-launch provisioning yields the full tree + 6 seed accounts + categories + `Workspace.md` + manifest (SC-001) in `FinanceWorkspaceAppTests/ProvisioningTests.swift`
-- [ ] T022 [P] [US1] Integration test: idempotent bootstrap preserves existing files (SC-008) in `FinanceWorkspaceAppTests/ProvisioningTests.swift`
-- [ ] T023 [US1] Implement `WorkspaceManager` (resolve via active `CloudStorageProvider`, create initial tree, validate minimum required paths, restore last workspace from `UserDefaults`, expose observable `WorkspaceState`) in `FinanceWorkspaceApp/Platform/WorkspaceManager.swift`
-- [ ] T024 [US1] Implement `Scripts/bootstrap-workspace.swift`: create the folder tree, seed templates from the JSON schemas (each with a leading `# schema_version: 1`), seed six starter accounts + default categories + the standard tax-adjustment row + `Workspace.md`, per `contracts/workspace-layout.md`
-- [ ] T025 [US1] Implement idempotent provisioning and missing-required-path reporting (distinct from "unavailable") in `WorkspaceManager` (FR-004, FR-005)
-- [ ] T026 [US1] Surface provisioning/availability state in the app shell (FR-024)
+- [X] T021 [P] [US1] Integration test: first-launch provisioning yields the full tree + 6 seed accounts + categories + `Workspace.md` + manifest (SC-001) in `FinanceWorkspaceAppTests/ProvisioningTests.swift`
+- [X] T022 [P] [US1] Integration test: idempotent bootstrap preserves existing files (SC-008) in `FinanceWorkspaceAppTests/ProvisioningTests.swift`
+- [X] T023 [US1] Implement `WorkspaceManager` (resolve via active `CloudStorageProvider`, create initial tree, validate minimum required paths, restore last workspace from `UserDefaults`, expose observable `WorkspaceState`) in `FinanceWorkspaceApp/Platform/WorkspaceManager.swift`
+- [X] T024 [US1] Implement `Scripts/bootstrap-workspace.swift`: create the folder tree, seed templates from the JSON schemas (each with a leading `# schema_version: 1`), seed six starter accounts + default categories + the standard tax-adjustment row + `Workspace.md`, per `contracts/workspace-layout.md`
+- [X] T025 [US1] Implement idempotent provisioning and missing-required-path reporting (distinct from "unavailable") in `WorkspaceManager` (FR-004, FR-005)
+- [X] T026 [US1] Surface provisioning/availability state in the app shell (FR-024)
 
 **Checkpoint**: A valid, scannable workspace is produced on first run — this is the MVP.
 

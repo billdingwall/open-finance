@@ -11,9 +11,12 @@ final class AppState {
     var availability: WorkspaceAvailability = .available
     var syncState: SyncState = .available
     var workspaceURL: URL?
+    var didProvision = false
+    var missingPaths: [String] = []
     var lastError: String?
 
     let provider: any CloudStorageProvider
+    private let manager: WorkspaceManager
 
     init() {
         #if DEBUG
@@ -22,17 +25,22 @@ final class AppState {
         // ICloudContainerService is wired here in US3; LocalFolderProvider is the safe default until then.
         provider = LocalFolderProvider()
         #endif
+        manager = WorkspaceManager(provider: provider)
     }
 
-    func resolveWorkspace() async {
+    /// Resolve + provision-on-first-run + validate (FR-002/004/005/024).
+    func openWorkspace() async {
         do {
-            workspaceURL = try await provider.resolveWorkspaceURL()
+            let state = try await manager.openWorkspace()
+            workspaceURL = state.workspace?.rootURL
+            availability = state.availability
             syncState = provider.syncState
-            Diagnostics.workspace.info("Resolved workspace at \(self.workspaceURL?.path ?? "nil", privacy: .public)")
+            didProvision = state.didProvision
+            missingPaths = state.missingPaths
         } catch {
             lastError = String(describing: error)
             availability = .containerUnavailable
-            Diagnostics.workspace.error("Workspace resolution failed: \(self.lastError ?? "", privacy: .public)")
+            Diagnostics.workspace.error("openWorkspace failed: \(self.lastError ?? "", privacy: .public)")
         }
     }
 }
@@ -45,7 +53,7 @@ struct FinanceWorkspaceApp: App {
         WindowGroup("Finance Dashboard") {
             ContentView()
                 .environment(state)
-                .task { await state.resolveWorkspace() }
+                .task { await state.openWorkspace() }
         }
     }
 }
@@ -59,6 +67,12 @@ struct ContentView: View {
             LabeledContent("Availability", value: state.availability.rawValue)
             LabeledContent("Sync state", value: state.syncState.rawValue)
             LabeledContent("Workspace", value: state.workspaceURL?.path ?? "—")
+            if state.didProvision {
+                Text("Provisioned a new workspace on first launch.").font(.caption).foregroundStyle(.secondary)
+            }
+            if !state.missingPaths.isEmpty {
+                Text("Missing: \(state.missingPaths.joined(separator: ", "))").font(.caption).foregroundStyle(.orange)
+            }
             if let err = state.lastError {
                 Text(err).foregroundStyle(.red).font(.caption)
             }

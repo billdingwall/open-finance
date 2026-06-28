@@ -15,6 +15,8 @@ public struct LocalFolderProvider: CloudStorageProvider {
         self.root = root
     }
 
+    public var providerKind: WorkspaceProviderKind { .localFolder }
+
     public var isAvailable: Bool { true }
 
     /// A local folder is always "available" — the iCloud-only states do not arise here.
