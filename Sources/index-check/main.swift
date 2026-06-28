@@ -10,11 +10,13 @@ func usage() -> Never {
 }
 
 var workspacePath: String?
+var save = false
 var args = Array(CommandLine.arguments.dropFirst())
 while let arg = args.first {
     args.removeFirst()
     switch arg {
     case "--workspace": workspacePath = args.first; if workspacePath != nil { args.removeFirst() }
+    case "--save": save = true
     default: break
     }
 }
@@ -32,4 +34,15 @@ print(".finance-meta entries (must be 0): \(metaLeaks.count)")
 print("error records: \(errors.count)\(errors.isEmpty ? "" : " -> " + errors.map(\.path).joined(separator: ", "))")
 if let accounts = manifest.files.first(where: { $0.path == "Accounts/accounts.csv" }) {
     print("Accounts/accounts.csv: rows=\(accounts.rowCount) schema_version=\(accounts.schemaVersion) hash=\(accounts.hash.prefix(20))…")
+}
+
+if save {
+    let store = ManifestStore()
+    do {
+        try store.save(manifest)
+        print("manifest saved: \(store.manifestURL(workspaceId: manifest.workspaceId).path)")
+    } catch {
+        FileHandle.standardError.write(Data("failed to save manifest: \(error)\n".utf8))
+        exit(1)
+    }
 }
