@@ -17,15 +17,17 @@ description: "Task list for Foundation & Architecture (Phase 1)"
 - **[Story]**: US1–US4 maps to the spec's user stories
 - Paths are relative to repo root. App code lives under `FinanceWorkspaceApp/`; tests under `FinanceWorkspaceAppTests/`.
 
+> **Implementation note (2026-06-28):** scaffolded as a **Swift Package** (`Package.swift`) rather than a hand-authored `.xcodeproj` — the environment has Swift 6.3 + Command Line Tools but no Xcode GUI / `xcodegen`, so SwiftPM is the buildable, CI-friendly choice. Architecture folders map to `Sources/FinanceWorkspaceKit/{Platform,Domain,Validation,...}`; the app is the `FinanceWorkspaceApp` executable; scripts are `bootstrap-workspace` / `fixture-generate` executables; tests use **Swift Testing** (`import Testing`). An Xcode app target + entitlements (T004) is deferred to when UI/packaging/iCloud signing is needed (the iCloud provider lands in US3). `swift build` passes; `swift test` runs in CI (XCTest/Testing are absent from the local CLT-only toolchain).
+
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
 
 **Purpose**: Project initialization and structure (the Phase 0 toolchain layer).
 
-- [ ] T001 Create the `FinanceWorkspaceApp` Xcode project (macOS, SwiftUI lifecycle, Swift 6, deployment target macOS 15)
-- [ ] T002 Establish the module folder structure (`App/`, `Platform/`, `Parsing/`, `Domain/{Accounts,Budget,Savings,Investments,Taxes,CrossDomain}/`, `Validation/`, `Persistence/`, `UI/Shared/`, `Scripts/`) and the `FinanceWorkspaceAppTests/` target
-- [ ] T003 [P] Add `.swiftlint.yml` and `.github/workflows/swiftlint.yml` (SwiftLint on a Linux runner)
+- [X] T001 Create the `FinanceWorkspaceApp` Xcode project (macOS, SwiftUI lifecycle, Swift 6, deployment target macOS 15)
+- [X] T002 Establish the module folder structure (`App/`, `Platform/`, `Parsing/`, `Domain/{Accounts,Budget,Savings,Investments,Taxes,CrossDomain}/`, `Validation/`, `Persistence/`, `UI/Shared/`, `Scripts/`) and the `FinanceWorkspaceAppTests/` target
+- [X] T003 [P] Add `.swiftlint.yml` and `.github/workflows/swiftlint.yml` (SwiftLint on a Linux runner)
 - [ ] T004 [P] Configure the iCloud ubiquity-container entitlement (`iCloud.<bundle-id>`) and capabilities (developer-machine only)
 
 ---
@@ -36,22 +38,22 @@ description: "Task list for Foundation & Architecture (Phase 1)"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 [P] Define platform models (`Workspace`, `FileRecord`, `SyncStatus`, `Manifest`) in `FinanceWorkspaceApp/Platform/PlatformModels.swift`
-- [ ] T006 [P] Define validation model stubs (`ValidationIssue`, `RepairAction`) in `FinanceWorkspaceApp/Validation/ValidationModels.swift`
-- [ ] T007 [P] Define Accounts models (`Account` + nested `InvestmentMetadata?`, `AccountGroup`, `Liability`, `AccountRule`, `AccountEstimate`) in `FinanceWorkspaceApp/Domain/Accounts/AccountModels.swift`
-- [ ] T008 [P] Define `UnifiedTransaction` (multi-entry `group_id`/`group_role`, `sending_asset_id`/`receiving_asset_id`/`liability_id`, `type`) in `FinanceWorkspaceApp/Domain/Accounts/TransactionModels.swift`
-- [ ] T009 [P] Define Budget models (`Category`, `Budget`, `BudgetAllocation`) in `FinanceWorkspaceApp/Domain/Budget/BudgetModels.swift`
-- [ ] T010 [P] Define Savings models (`SavingsGoal` with `status` active|archived, `SavingsProgress`) in `FinanceWorkspaceApp/Domain/Savings/SavingsModels.swift`
-- [ ] T011 [P] Define Investments models (`Asset`, `Trade`, `PricePoint`, `BenchmarkPeriod`, `Portfolio`, `PortfolioSleeve`, `SleeveTarget`) in `FinanceWorkspaceApp/Domain/Investments/InvestmentModels.swift`
-- [ ] T012 [P] Define Taxes models (`TaxAdjustment`, `TaxEstimate`, `TaxDocument`, `EstimatedPayment`, `TaxArchiveYear`) in `FinanceWorkspaceApp/Domain/Taxes/TaxModels.swift`
-- [ ] T013 [P] Define `NoteDocument` + cross-domain projections (`AccountSummaryCard`, `OverviewSummaryCard`, `MonthlySnapshot`, `GoalFundingLink`, `SleeveFundingLink`, `TaxPrepSummary`, `TaxDeductionSummary`, `BusinessMonthlySummary`) in `FinanceWorkspaceApp/Domain/CrossDomain/CrossDomainModels.swift`
-- [ ] T014 Define the `CloudStorageProvider` protocol + `SyncState`/`FileSyncState` enums in `FinanceWorkspaceApp/Platform/CloudStorageProvider.swift` (per `contracts/cloud-storage-provider.md`)
-- [ ] T015 Implement `LocalFolderProvider` (DEBUG default, rooted at `~/Finance-Dev/`) conforming to `CloudStorageProvider` in `FinanceWorkspaceApp/Platform/LocalFolderProvider.swift` (depends on T014)
-- [ ] T016 [P] Author the canonical JSON schemas (one per managed file type) in the workspace template `.finance-meta/schemas/` per `contracts/workspace-layout.md`
-- [ ] T017 [P] Implement `FileCoordinatorService` (`NSFileCoordinator` wrapper) in `FinanceWorkspaceApp/Platform/FileCoordinatorService.swift`
-- [ ] T018 [P] Implement `BackupService` (timestamped copies → `.finance-meta/backups/`) in `FinanceWorkspaceApp/Platform/BackupService.swift`
-- [ ] T019 [P] Implement `Scripts/fixture-generate.swift` (≥12-month dataset → `~/Finance-Dev/`) per `contracts/cli-scripts.md`
-- [ ] T020 Implement the minimal app shell + active-provider selection (window + `AppState` surfacing workspace/sync state; **DEBUG defaults to `LocalFolderProvider`**, Release wires `ICloudContainerService` once it lands in US3; `os.Logger` diagnostics setup) in `FinanceWorkspaceApp/App/` (FR-021, FR-024, FR-025). Wiring the DEBUG default here keeps US1–US3 runnable without iCloud.
+- [X] T005 [P] Define platform models (`Workspace`, `FileRecord`, `SyncStatus`, `Manifest`) in `FinanceWorkspaceApp/Platform/PlatformModels.swift`
+- [X] T006 [P] Define validation model stubs (`ValidationIssue`, `RepairAction`) in `FinanceWorkspaceApp/Validation/ValidationModels.swift`
+- [X] T007 [P] Define Accounts models (`Account` + nested `InvestmentMetadata?`, `AccountGroup`, `Liability`, `AccountRule`, `AccountEstimate`) in `FinanceWorkspaceApp/Domain/Accounts/AccountModels.swift`
+- [X] T008 [P] Define `UnifiedTransaction` (multi-entry `group_id`/`group_role`, `sending_asset_id`/`receiving_asset_id`/`liability_id`, `type`) in `FinanceWorkspaceApp/Domain/Accounts/TransactionModels.swift`
+- [X] T009 [P] Define Budget models (`Category`, `Budget`, `BudgetAllocation`) in `FinanceWorkspaceApp/Domain/Budget/BudgetModels.swift`
+- [X] T010 [P] Define Savings models (`SavingsGoal` with `status` active|archived, `SavingsProgress`) in `FinanceWorkspaceApp/Domain/Savings/SavingsModels.swift`
+- [X] T011 [P] Define Investments models (`Asset`, `Trade`, `PricePoint`, `BenchmarkPeriod`, `Portfolio`, `PortfolioSleeve`, `SleeveTarget`) in `FinanceWorkspaceApp/Domain/Investments/InvestmentModels.swift`
+- [X] T012 [P] Define Taxes models (`TaxAdjustment`, `TaxEstimate`, `TaxDocument`, `EstimatedPayment`, `TaxArchiveYear`) in `FinanceWorkspaceApp/Domain/Taxes/TaxModels.swift`
+- [X] T013 [P] Define `NoteDocument` + cross-domain projections (`AccountSummaryCard`, `OverviewSummaryCard`, `MonthlySnapshot`, `GoalFundingLink`, `SleeveFundingLink`, `TaxPrepSummary`, `TaxDeductionSummary`, `BusinessMonthlySummary`) in `FinanceWorkspaceApp/Domain/CrossDomain/CrossDomainModels.swift`
+- [X] T014 Define the `CloudStorageProvider` protocol + `SyncState`/`FileSyncState` enums in `FinanceWorkspaceApp/Platform/CloudStorageProvider.swift` (per `contracts/cloud-storage-provider.md`)
+- [X] T015 Implement `LocalFolderProvider` (DEBUG default, rooted at `~/Finance-Dev/`) conforming to `CloudStorageProvider` in `FinanceWorkspaceApp/Platform/LocalFolderProvider.swift` (depends on T014)
+- [X] T016 [P] Author the canonical JSON schemas (one per managed file type) in the workspace template `.finance-meta/schemas/` per `contracts/workspace-layout.md`
+- [X] T017 [P] Implement `FileCoordinatorService` (`NSFileCoordinator` wrapper) in `FinanceWorkspaceApp/Platform/FileCoordinatorService.swift`
+- [X] T018 [P] Implement `BackupService` (timestamped copies → `.finance-meta/backups/`) in `FinanceWorkspaceApp/Platform/BackupService.swift`
+- [X] T019 [P] Implement `Scripts/fixture-generate.swift` (≥12-month dataset → `~/Finance-Dev/`) per `contracts/cli-scripts.md`
+- [X] T020 Implement the minimal app shell + active-provider selection (window + `AppState` surfacing workspace/sync state; **DEBUG defaults to `LocalFolderProvider`**, Release wires `ICloudContainerService` once it lands in US3; `os.Logger` diagnostics setup) in `FinanceWorkspaceApp/App/` (FR-021, FR-024, FR-025). Wiring the DEBUG default here keeps US1–US3 runnable without iCloud.
 
 **Checkpoint**: Models compile; the local provider resolves a workspace; primitives and schemas exist — story work can begin.
 

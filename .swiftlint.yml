@@ -1,0 +1,24 @@
+excluded:
+  - .build
+  - DerivedData
+  - Tests
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - first_where
+  - sorted_first_last
+
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+
+identifier_name:
+  min_length: 2
+  excluded: [id, m, n, fm]
+
+type_name:
+  min_length: 3
+
+todo: warning

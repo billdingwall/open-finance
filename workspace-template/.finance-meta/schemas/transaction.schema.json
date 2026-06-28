@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfinance.app/schemas/transaction.schema.json",
+  "title": "Unified Transaction (Accounts/transactions/YYYY-MM.csv)",
+  "schema_version": 1,
+  "file": "Accounts/transactions/YYYY-MM.csv",
+  "domain": "accounts",
+  "subtype": "transactions",
+  "notes": "Sign convention: negative = debit (out), positive = credit (in). Business rows use a BX- id prefix.",
+  "columns": {
+    "transaction_id": { "type": "string", "required": true },
+    "account_id": { "type": "string", "required": true, "references": "Accounts/accounts.csv#account_id" },
+    "date": { "type": "date", "required": true },
+    "amount": { "type": "decimal", "required": true },
+    "type": { "type": "enum", "required": false, "values": ["standard", "trade", "transfer"] },
+    "category_id": { "type": "string", "required": false },
+    "savings_goal_id": { "type": "string", "required": false },
+    "group_id": { "type": "string", "required": false },
+    "group_role": { "type": "enum", "required": false, "values": ["gross", "net", "withholding", "credit", "debit"] },
+    "sending_asset_id": { "type": "string", "required": false },
+    "receiving_asset_id": { "type": "string", "required": false },
+    "liability_id": { "type": "string", "required": false }
+  }
+}
