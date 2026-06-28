@@ -51,7 +51,7 @@ description: "Task list for Foundation & Architecture (Phase 1)"
 - [ ] T017 [P] Implement `FileCoordinatorService` (`NSFileCoordinator` wrapper) in `FinanceWorkspaceApp/Platform/FileCoordinatorService.swift`
 - [ ] T018 [P] Implement `BackupService` (timestamped copies → `.finance-meta/backups/`) in `FinanceWorkspaceApp/Platform/BackupService.swift`
 - [ ] T019 [P] Implement `Scripts/fixture-generate.swift` (≥12-month dataset → `~/Finance-Dev/`) per `contracts/cli-scripts.md`
-- [ ] T020 Implement the minimal app shell (window + `AppState` surfacing workspace/sync state; `os.Logger` diagnostics setup) in `FinanceWorkspaceApp/App/` (FR-024, FR-025)
+- [ ] T020 Implement the minimal app shell + active-provider selection (window + `AppState` surfacing workspace/sync state; **DEBUG defaults to `LocalFolderProvider`**, Release wires `ICloudContainerService` once it lands in US3; `os.Logger` diagnostics setup) in `FinanceWorkspaceApp/App/` (FR-021, FR-024, FR-025). Wiring the DEBUG default here keeps US1–US3 runnable without iCloud.
 
 **Checkpoint**: Models compile; the local provider resolves a workspace; primitives and schemas exist — story work can begin.
 
@@ -118,7 +118,7 @@ description: "Task list for Foundation & Architecture (Phase 1)"
 
 **Independent Test**: DEBUG build resolves `~/Finance-Dev`, provisions + indexes a fixture workspace end-to-end; CI lint passes; the dual-mode resolution smoke test passes.
 
-- [ ] T043 [US4] Wire DEBUG builds to default to `LocalFolderProvider` (provider selection in `WorkspaceManager`/`AppState`) and confirm the app runs with no iCloud configured (FR-021)
+- [ ] T043 [US4] Verify the DEBUG build (provider selection wired in T020) resolves, provisions, and indexes `~/Finance-Dev` end-to-end with no iCloud configured (FR-021)
 - [ ] T044 [P] [US4] Dual-mode workspace-resolution smoke test (iCloud + local-folder) in `FinanceWorkspaceAppTests/WorkspaceResolutionSmokeTests.swift` (FR-023)
 - [ ] T045 [US4] Confirm CI runs SwiftLint to green on the Linux runner and the fixture → provision → index path runs end-to-end in DEBUG (SC-007)
 

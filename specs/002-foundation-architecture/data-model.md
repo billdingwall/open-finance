@@ -23,6 +23,9 @@ strings.
 - Location: device-local, `~/Library/Application Support/OpenFinance/<workspace_id>/manifest.json`.
 - Invariants: a **regenerable cache** — a missing/corrupt manifest triggers a full rescan; never stored in the synced container; excludes per-file sync state and repair history.
 
+### FileChangeEvent
+- Emitted by `FileIndexService` on each detected delta. Fields: `kind` (added | changed | deleted), `path`, `fileRecord?` (nil for `deleted`). Transient (not persisted); consumed by dependent projections in later phases.
+
 ### SyncStatus
 - Enum (per-file and workspace-level): `available | notSignedIn | containerUnavailable | syncing | localCopyStale | fileMissingLocally | conflictDetected`.
 - Source: derived from `NSMetadataQuery`; held in memory, never persisted to the manifest.
