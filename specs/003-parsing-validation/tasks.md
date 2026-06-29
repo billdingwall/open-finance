@@ -55,10 +55,10 @@ description: "Task list for Parsing, Validation & Infrastructure (Phase 2)"
 
 **Independent Test**: Parse a realistic fixture → every managed file type yields typed records with `source_file`/`source_row`; a bad date/decimal/enum becomes a flagged partial record + warning; every note yields front-matter metadata.
 
-- [ ] T009 [P] [US1] Test: every managed file type in a valid fixture parses into typed records with provenance, zero crashes (SC-001) in `Tests/FinanceWorkspaceKitTests/ParsingTests.swift`
-- [ ] T010 [P] [US1] Test: an unconvertible date/decimal/enum yields a **partial record** (field nulled+flagged, row retained) plus a warning naming file/row/column (FR-004a, SC-009) in `Tests/FinanceWorkspaceKitTests/NormalizationTests.swift`
-- [ ] T011 [P] [US1] Test: case/whitespace-variant headers map to canonical columns; leading `#`/`# schema_version` row stripped; RFC-4180 quoted fields with embedded commas/newlines (FR-001) in `Tests/FinanceWorkspaceKitTests/CSVParserTests.swift`
-- [ ] T012 [P] [US1] Test: Markdown front matter → typed `NoteRecord`; missing/malformed front matter handled gracefully (FR-006, FR-007, SC-002) in `Tests/FinanceWorkspaceKitTests/MarkdownParsingTests.swift`
+- [X] T009 [P] [US1] Test: every managed file type in a valid fixture parses into typed records with provenance, zero crashes (SC-001) in `Tests/FinanceWorkspaceKitTests/ParsingTests.swift`
+- [X] T010 [P] [US1] Test: an unconvertible date/decimal/enum yields a **partial record** (field nulled+flagged, row retained) plus a warning naming file/row/column (FR-004a, SC-009) in `Tests/FinanceWorkspaceKitTests/NormalizationTests.swift`
+- [X] T011 [P] [US1] Test: case/whitespace-variant headers map to canonical columns; leading `#`/`# schema_version` row stripped; RFC-4180 quoted fields with embedded commas/newlines (FR-001) in `Tests/FinanceWorkspaceKitTests/CSVParserTests.swift`
+- [X] T012 [P] [US1] Test: Markdown front matter → typed `NoteRecord`; missing/malformed front matter handled gracefully (FR-006, FR-007, SC-002) in `Tests/FinanceWorkspaceKitTests/MarkdownParsingTests.swift`
 - [X] T013 [US1] Implement `CSVSchemaRegistry` — load bundled schemas via `Bundle.module`; classify by path→filename→header; resolve `schema_version` and route older versions to migration/repair; missing marker → current + flag (FR-002, FR-005) in `Sources/FinanceWorkspaceKit/Parsing/CSVSchemaRegistry.swift`
 - [X] T014 [US1] Implement `CSVParserService` — RFC-4180 parsing, leading-`#` tolerance, case-insensitive/trimmed header mapping, `source_file`/`source_row` provenance, resilient per-row (FR-001, FR-003, SC-009) in `Sources/FinanceWorkspaceKit/Parsing/CSVParserService.swift`
 - [X] T015 [US1] Implement `CSVNormalizer` — `Decimal`/`Date`(ISO 8601)/`Bool`/`Int`/enum conversion; **partial record** on failure; blank-field handling; never flips amount signs (FR-004, FR-004a) in `Sources/FinanceWorkspaceKit/Parsing/CSVNormalizer.swift`
