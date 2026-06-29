@@ -112,8 +112,8 @@ description: "Task list for Parsing, Validation & Infrastructure (Phase 2)"
 
 **Independent Test**: Read typed settings from a fixture; delete the file → typed defaults; change a setting → backed-up atomic write → re-reads identically.
 
-- [ ] T033 [P] [US4] Test: settings round-trip — read typed; missing file → typed defaults; change re-reads identically (SC-006) in `Tests/FinanceWorkspaceKitTests/SettingsStoreTests.swift`
-- [ ] T034 [US4] Implement `SettingsStore` — read/write `Taxes/settings.csv` → `@Observable WorkspaceSettings` (filing status, tax year, currency, timezone); typed defaults when absent; backed-up, atomic, sync-gated write (FR-017) in `Sources/FinanceWorkspaceKit/Persistence/SettingsStore.swift`
+- [X] T033 [P] [US4] Test: settings round-trip — read typed; missing file → typed defaults; change re-reads identically (SC-006) in `Tests/FinanceWorkspaceKitTests/SettingsStoreTests.swift`
+- [X] T034 [US4] Implement `SettingsStore` — read/write `Taxes/settings.csv` → `@Observable WorkspaceSettings` (filing status, tax year, currency, timezone); typed defaults when absent; backed-up, atomic, sync-gated write (FR-017) in `Sources/FinanceWorkspaceKit/Persistence/SettingsStore.swift`
 
 **Checkpoint**: Typed, observable settings available to downstream phases.
 
