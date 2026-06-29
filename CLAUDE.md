@@ -140,7 +140,8 @@ Feature branches follow the `NNN-feature-name` naming convention (created by `/s
 
 <!-- SPECKIT START -->
 **Active feature**: `003-parsing-validation` (Phase 2 — Parsing, Validation & Infrastructure)
-Spec: `specs/003-parsing-validation/spec.md`
+Plan: `specs/003-parsing-validation/plan.md` · Spec: `specs/003-parsing-validation/spec.md`
+Artifacts: `research.md`, `data-model.md`, `contracts/`, `quickstart.md`
 Previous: `002-foundation-architecture` (Phase 1) — complete, merged to `main` (PR #15)
 <!-- SPECKIT END -->
 
