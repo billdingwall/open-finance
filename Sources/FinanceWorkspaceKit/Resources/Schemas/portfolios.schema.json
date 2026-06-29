@@ -1,0 +1,12 @@
+{
+  "title": "Portfolio (Investments/portfolios.csv)",
+  "schema_version": 1,
+  "file": "Investments/portfolios.csv",
+  "domain": "investments",
+  "subtype": "portfolios",
+  "columns": {
+    "portfolio_id": { "type": "string", "required": true },
+    "name": { "type": "string", "required": true },
+    "account_id": { "type": "string", "required": false, "references": "Accounts/accounts.csv#account_id" }
+  }
+}

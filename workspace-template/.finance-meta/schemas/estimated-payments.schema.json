@@ -1,0 +1,14 @@
+{
+  "title": "Estimated Payment (Taxes/estimated-payments.csv)",
+  "schema_version": 1,
+  "file": "Taxes/estimated-payments.csv",
+  "domain": "taxes",
+  "subtype": "estimated-payments",
+  "columns": {
+    "payment_id": { "type": "string", "required": true },
+    "tax_year": { "type": "integer", "required": true },
+    "quarter": { "type": "integer", "required": true },
+    "amount": { "type": "decimal", "required": true },
+    "paid": { "type": "boolean", "required": false }
+  }
+}

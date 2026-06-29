@@ -1,0 +1,14 @@
+{
+  "title": "Tax Document (Taxes/documents.csv)",
+  "schema_version": 1,
+  "file": "Taxes/documents.csv",
+  "domain": "taxes",
+  "subtype": "tax-documents",
+  "columns": {
+    "document_id": { "type": "string", "required": true },
+    "tax_year": { "type": "integer", "required": true },
+    "kind": { "type": "string", "required": true },
+    "label": { "type": "string", "required": false },
+    "linked_path": { "type": "string", "required": false }
+  }
+}

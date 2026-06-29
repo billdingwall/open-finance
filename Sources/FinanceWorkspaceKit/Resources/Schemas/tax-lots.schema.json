@@ -1,0 +1,14 @@
+{
+  "title": "Tax Lot (Investments/tax-lots.csv)",
+  "schema_version": 1,
+  "file": "Investments/tax-lots.csv",
+  "domain": "investments",
+  "subtype": "tax-lots",
+  "columns": {
+    "lot_id": { "type": "string", "required": true },
+    "asset_id": { "type": "string", "required": true, "references": "Investments/assets.csv#asset_id" },
+    "acquired_date": { "type": "date", "required": true },
+    "quantity": { "type": "decimal", "required": true },
+    "cost_basis": { "type": "decimal", "required": true }
+  }
+}

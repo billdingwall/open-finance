@@ -1,0 +1,16 @@
+{
+  "title": "Asset (Investments/assets.csv)",
+  "schema_version": 1,
+  "file": "Investments/assets.csv",
+  "domain": "investments",
+  "subtype": "assets",
+  "columns": {
+    "asset_id": { "type": "string", "required": true },
+    "ticker": { "type": "string", "required": false },
+    "name": { "type": "string", "required": true },
+    "security_class": { "type": "enum", "required": false,
+      "values": ["equity", "etf", "mutual_fund", "bond", "crypto", "cash", "other"] },
+    "account_id": { "type": "string", "required": false, "references": "Accounts/accounts.csv#account_id" },
+    "currency": { "type": "string", "required": false }
+  }
+}

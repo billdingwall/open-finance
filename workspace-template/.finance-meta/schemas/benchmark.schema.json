@@ -1,0 +1,11 @@
+{
+  "title": "Benchmark Series (Investments/benchmarks/sp500.csv)",
+  "schema_version": 1,
+  "file": "Investments/benchmarks/sp500.csv",
+  "domain": "investments",
+  "subtype": "benchmark-series",
+  "columns": {
+    "date": { "type": "date", "required": true },
+    "close": { "type": "decimal", "required": true }
+  }
+}

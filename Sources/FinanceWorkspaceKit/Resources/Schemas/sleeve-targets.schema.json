@@ -1,0 +1,12 @@
+{
+  "title": "Sleeve Target (Investments/sleeve-targets.csv)",
+  "schema_version": 1,
+  "file": "Investments/sleeve-targets.csv",
+  "domain": "investments",
+  "subtype": "sleeve-targets",
+  "columns": {
+    "target_id": { "type": "string", "required": true },
+    "sleeve_id": { "type": "string", "required": true, "references": "Investments/sleeves.csv#sleeve_id" },
+    "target_weight": { "type": "decimal", "required": true }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Portfolio Sleeve (Investments/sleeves.csv)",
+  "schema_version": 1,
+  "file": "Investments/sleeves.csv",
+  "domain": "investments",
+  "subtype": "sleeves",
+  "columns": {
+    "sleeve_id": { "type": "string", "required": true },
+    "portfolio_id": { "type": "string", "required": true, "references": "Investments/portfolios.csv#portfolio_id" },
+    "name": { "type": "string", "required": true }
+  }
+}

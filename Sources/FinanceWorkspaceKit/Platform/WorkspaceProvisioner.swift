@@ -42,6 +42,18 @@ public struct WorkspaceProvisioner: Sendable {
             createdFiles.append(relativePath)
         }
 
+        // Mirror the bundled canonical schemas into the workspace for transparency/repair.
+        // The bundled copy stays authoritative at runtime (CSVSchemaRegistry); this is a readable copy.
+        let schemasDir = workspaceURL.appendingPathComponent(".finance-meta/schemas", isDirectory: true)
+        if let schemaURLs = Bundle.module.urls(forResourcesWithExtension: "json", subdirectory: "Schemas") {
+            for source in schemaURLs {
+                let dest = schemasDir.appendingPathComponent(source.lastPathComponent)
+                guard !fm.fileExists(atPath: dest.path) else { continue }   // idempotent
+                try fm.copyItem(at: source, to: dest)
+                createdFiles.append(".finance-meta/schemas/\(source.lastPathComponent)")
+            }
+        }
+
         return Outcome(createdFolders: createdFolders, createdFiles: createdFiles)
     }
 }
