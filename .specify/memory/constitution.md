@@ -1,34 +1,43 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version: 1.0.0 → 1.1.0
-Bump type: MINOR — convention corrections + added safety/scope guidance to align with
-Rounds 6–8 locked decisions (no core principle redefined)
+Version: 1.1.0 → 1.1.1
+Bump type: PATCH — wording refinement of the migration-script clause to match the SwiftPM packaging
+reality and release-scoped migrations (no principle added, removed, or redefined)
 
-Modified principles: none redefined (Principle IV gains two sync-safety bullets)
+Modified principles: none
 
 Modified sections:
-  - Principle IV (Safe Writes Only) — added sync-state write gate + manual conflict resolution
-  - File & Schema Conventions — schema_version is a leading comment row (not a column);
-    unified Accounts/transactions/ ledger replaces Personal/ and Business/ paths; manifest is a
-    device-local regenerable cache; Markdown is front-matter-only in v1; migration-policy precision
-  - V1 Scope Boundaries — Business is an account-group type under Accounts (not a module);
-    added Overview + Settings; tax-module estimation guardrail
-  - Governance — reference documents expanded (architecture/, product-roadmap, CLAUDE.md)
+  - File & Schema Conventions — migration-script clause: migrations are SwiftPM executable targets
+    (run via `swift run <name>`), allowing both per-file (`migrate-{file-type}-v{old}-to-v{new}`)
+    and release-scoped multi-file migrations (e.g. `migrate-r6`); replaces the prior mandate of
+    `Scripts/migrate-{file-type}-v{old}-to-v{new}.swift`. The "Migrations MUST be recorded in
+    docs/technical-design.md" requirement is unchanged.
 
-Rationale sources: docs/technical-design.md §4, §9, §21; docs/architecture/containers-and-budgets.md §1;
-docs/architecture/core-domain.md; CLAUDE.md
+Rationale: the project is built as a Swift Package (no `Scripts/*.swift` run target), and the R6
+rename spans three interdependent files that must migrate atomically as one release migration — both
+realities postdate the original clause. Surfaced by /speckit-analyze (finding C1) on the
+003-parsing-validation feature. See docs/technical-design.md §9 (already reconciled).
 
 Templates reviewed:
-  - .specify/templates/plan-template.md  ✅ No changes required
-    (Constitution Check gate is generic; /speckit-plan reads this file at runtime)
+  - .specify/templates/plan-template.md  ✅ No changes required (Constitution Check gate is generic)
   - .specify/templates/spec-template.md  ✅ No changes required
-  - .specify/templates/tasks-template.md ✅ No changes required
-    (Path conventions are illustrative examples replaced by /speckit-tasks)
+  - .specify/templates/tasks-template.md ✅ No changes required (no migration-naming reference)
+
+Dependent docs:
+  - docs/technical-design.md §9 ✅ already updated to the SwiftPM-executable wording (prior step)
+  - specs/003-parsing-validation/plan.md ✅ Complexity Tracking row references this PATCH
 
 Deferred placeholders: none
-Follow-up TODOs: reconcile PRD out-of-scope goal-status bullet (active/archived is v1 per [FIX-S7],
-  PRD still lists it as V2) — tracked as a separate PRD edit, not part of this amendment
+
+--- Prior amendment (1.0.0 → 1.1.0, MINOR, 2026-06-26) ---
+Convention corrections + safety/scope guidance for Rounds 6–8: Principle IV gained the sync-state
+write gate + manual conflict resolution; File & Schema Conventions gained the leading-comment-row
+schema_version, the unified Accounts/transactions/ ledger, the device-local manifest, and
+Markdown-front-matter-only v1; V1 Scope Boundaries set Business as an account-group type and added
+Overview + Settings + the tax-estimation guardrail; Governance reference docs expanded.
+Follow-up TODO (still open): reconcile the PRD out-of-scope goal-status bullet (active/archived is v1
+per [FIX-S7]; PRD still lists it as V2) — a separate PRD edit.
 -->
 
 # Open Finance Constitution
@@ -132,8 +141,10 @@ These rules govern how workspace files are named, structured, and versioned.
   scan. The synced `.finance-meta/` directory holds only `schemas/`, `backups/`, and `logs/`, is
   app-managed support data, and MUST NOT be hand-edited as a source of truth.
 - A breaking schema change (renaming, removing, or retyping a column or enum, or adding a required
-  column) MUST increment `schema_version` and ship a migration script
-  (`Scripts/migrate-{file-type}-v{old}-to-v{new}.swift`); adding an optional column is not breaking.
+  column) MUST increment `schema_version` and ship a migration. Migrations are SwiftPM executable
+  targets run via `swift run <name>`: a per-file change uses `migrate-{file-type}-v{old}-to-v{new}`;
+  a release-scoped change spanning interdependent files (renames that must apply atomically together)
+  uses a single release migration, e.g. `migrate-r6`. Adding an optional column is not breaking.
   Migrations MUST be recorded in `docs/technical-design.md`.
 
 ## V1 Scope Boundaries
@@ -194,4 +205,4 @@ It is the authoritative reference for project principles and prohibited patterns
 - Agent/build context: `CLAUDE.md`
 - Review and update history: `docs/_refinement/`
 
-**Version**: 1.1.0 | **Ratified**: 2026-06-08 | **Last Amended**: 2026-06-26
+**Version**: 1.1.1 | **Ratified**: 2026-06-08 | **Last Amended**: 2026-06-29
