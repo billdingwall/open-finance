@@ -125,10 +125,10 @@ description: "Task list for Parsing, Validation & Infrastructure (Phase 2)"
 
 **Independent Test**: Synthetic pre-R6 fixture → preview shows a full change plan (no writes) → apply renames files/columns, folds investment transactions into the unified ledger as `trade` rows, seeds new files, bumps `schema_version`, updates manifest → re-run is a no-op.
 
-- [ ] T035 [P] [US5] Test: synthetic pre-R6 fixture migrates losslessly (renames, ledger fold to `trade` rows, seeds, version bump, manifest update); re-run is a no-op (SC-008) in `Tests/FinanceWorkspaceKitTests/MigrationTests.swift`
-- [ ] T036 [US5] Add a synthetic **pre-R6** fixture path (legacy `entities`/`holdings`/`deductions` names + a separate `Investments/transactions.csv`) to `fixture-generate` or a test fixture builder
-- [ ] T037 [US5] Implement `migrate-r6` executable — detect pre-R6; `--dry-run` change plan; `--apply` atomic+backed-up renames (`entities`→`account-groups`/`entity_id`→`account_group_id`, `holdings`→`assets`/`holding_id`→`asset_id`, `deductions`→`tax-adjustments`/`deduction_id`→`tax_adjustment_id`), fold `Investments/transactions.csv` → unified ledger `type = trade` rows by date, seed new files, bump `schema_version`, update manifest; no-op on R6-native (FR-020), per `contracts/cli-scripts.md`, in `Sources/migrate-r6/main.swift` (resolves R6-M5)
-- [ ] T038 [US5] Wire **detect-and-prompt** into the app shell — surface pre-R6 detection and offer the previewable migration; never auto-apply (FR-020a) in `Sources/FinanceWorkspaceApp/`
+- [X] T035 [P] [US5] Test: synthetic pre-R6 fixture migrates losslessly (renames, ledger fold to `trade` rows, seeds, version bump, manifest update); re-run is a no-op (SC-008) in `Tests/FinanceWorkspaceKitTests/MigrationTests.swift`
+- [X] T036 [US5] Add a synthetic **pre-R6** fixture path (legacy `entities`/`holdings`/`deductions` names + a separate `Investments/transactions.csv`) to `fixture-generate` or a test fixture builder
+- [X] T037 [US5] Implement `migrate-r6` executable — detect pre-R6; `--dry-run` change plan; `--apply` atomic+backed-up renames (`entities`→`account-groups`/`entity_id`→`account_group_id`, `holdings`→`assets`/`holding_id`→`asset_id`, `deductions`→`tax-adjustments`/`deduction_id`→`tax_adjustment_id`), fold `Investments/transactions.csv` → unified ledger `type = trade` rows by date, seed new files, bump `schema_version`, update manifest; no-op on R6-native (FR-020), per `contracts/cli-scripts.md`, in `Sources/migrate-r6/main.swift` (resolves R6-M5)
+- [X] T038 [US5] Wire **detect-and-prompt** into the app shell — surface pre-R6 detection and offer the previewable migration; never auto-apply (FR-020a) in `Sources/FinanceWorkspaceApp/`
 
 **Checkpoint**: Prototype-era workspaces can be migrated; fresh workspaces are unaffected.
 
