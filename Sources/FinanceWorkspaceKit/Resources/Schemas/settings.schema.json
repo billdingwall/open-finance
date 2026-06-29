@@ -1,0 +1,12 @@
+{
+  "title": "Workspace Settings (Taxes/settings.csv)",
+  "schema_version": 1,
+  "file": "Taxes/settings.csv",
+  "domain": "taxes",
+  "subtype": "settings",
+  "notes": "Key/value shape: one setting per row. Known keys: filing_status, tax_year, default_currency, timezone.",
+  "columns": {
+    "key": { "type": "string", "required": true },
+    "value": { "type": "string", "required": true }
+  }
+}

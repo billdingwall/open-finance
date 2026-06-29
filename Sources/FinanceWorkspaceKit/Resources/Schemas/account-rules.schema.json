@@ -1,0 +1,13 @@
+{
+  "title": "Account Rule (Accounts/account-rules.csv)",
+  "schema_version": 1,
+  "file": "Accounts/account-rules.csv",
+  "domain": "accounts",
+  "subtype": "account-rules",
+  "columns": {
+    "rule_id": { "type": "string", "required": true },
+    "account_id": { "type": "string", "required": true, "references": "Accounts/accounts.csv#account_id" },
+    "kind": { "type": "string", "required": true },
+    "value": { "type": "string", "required": false }
+  }
+}

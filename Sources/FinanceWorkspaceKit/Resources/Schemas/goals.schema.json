@@ -1,0 +1,17 @@
+{
+  "title": "Savings Goal (Savings/goals.csv)",
+  "schema_version": 1,
+  "file": "Savings/goals.csv",
+  "domain": "savings",
+  "subtype": "goals",
+  "columns": {
+    "goal_id": { "type": "string", "required": true },
+    "name": { "type": "string", "required": true },
+    "target_amount": { "type": "decimal", "required": true },
+    "target_date": { "type": "date", "required": false },
+    "monthly_target": { "type": "decimal", "required": false },
+    "source_account_id": { "type": "string", "required": false, "references": "Accounts/accounts.csv#account_id" },
+    "status": { "type": "enum", "required": true, "values": ["active", "archived"] },
+    "linked_note_id": { "type": "string", "required": false }
+  }
+}

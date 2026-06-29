@@ -25,9 +25,9 @@ description: "Task list for Parsing, Validation & Infrastructure (Phase 2)"
 
 **Purpose**: Wire the SwiftPM package for bundled schema resources, the new executables, and the `Parsing/` source folder.
 
-- [ ] T001 [P] Add `Sources/FinanceWorkspaceKit/Resources/Schemas/` and declare `resources: [.copy("Resources/Schemas")]` on the `FinanceWorkspaceKit` target in `Package.swift` (enables `Bundle.module` schema loading)
-- [ ] T002 [P] Add three executable targets — `validate-workspace`, `repair-workspace`, `migrate-r6` — each with a `Sources/<exe>/main.swift` stub depending on `FinanceWorkspaceKit`, in `Package.swift`
-- [ ] T003 [P] Create the `Sources/FinanceWorkspaceKit/Parsing/` folder and confirm `Validation/` + `Persistence/` exist
+- [X] T001 [P] Add `Sources/FinanceWorkspaceKit/Resources/Schemas/` and declare `resources: [.copy("Resources/Schemas")]` on the `FinanceWorkspaceKit` target in `Package.swift` (enables `Bundle.module` schema loading)
+- [X] T002 [P] Add three executable targets — `validate-workspace`, `repair-workspace`, `migrate-r6` — each with a `Sources/<exe>/main.swift` stub depending on `FinanceWorkspaceKit`, in `Package.swift`
+- [X] T003 [P] Create the `Sources/FinanceWorkspaceKit/Parsing/` folder and confirm `Validation/` + `Persistence/` exist
 
 **Checkpoint**: `swift build` succeeds with empty stubs; `Bundle.module` resolves the (empty) Schemas resource.
 
@@ -41,9 +41,9 @@ description: "Task list for Parsing, Validation & Infrastructure (Phase 2)"
 
 - [ ] T004 Author the bundled canonical JSON schemas — **one per managed file type** (account-groups, accounts, liabilities, account-rules, transactions, categories, budgets, budget-allocations, goals, savings-progress, assets, prices, dividends, tax-lots, portfolios, sleeves, sleeve-targets, benchmark-series, tax-adjustments, tax-estimates, tax-documents, estimated-payments, settings) including full enum value sets (`account_group`, `account_type`, `trade_type`, `frequency`, `adjustment_type`, `status`) and required/optional flags — in `Sources/FinanceWorkspaceKit/Resources/Schemas/` per `contracts/csv-schema-registry.md` and `docs/architecture/containers-and-budgets.md §3` (extends the Phase 1 `account`/`transaction` starters; resolves R6-M1…M4)
 - [ ] T005 Mirror the bundled schema set into `workspace-template/.finance-meta/schemas/` and confirm `bootstrap-workspace` seeds the full set with `# schema_version: 1`
-- [ ] T006 [P] Define parsing model types (`ColumnType`, `ColumnDefinition`, `CSVSchema`, `FieldValue`, `ParsedRecord`, `ParseWarning`/`NormalizationError`, `CSVParseResult`, `FrontMatterValue`, `FrontMatter`, `NoteRecord`) in `Sources/FinanceWorkspaceKit/Parsing/ParsingModels.swift` per `data-model.md`
-- [ ] T007 [P] Make the Phase 1 stubs concrete — enums `RuleTier`/`Severity`/`RepairClass`, `ValidationRule`, `ValidationIssue`, `ValidationResult`, `RepairAction`, `RepairPlan`, `RowDiff`, `RepairLogEntry` — in `Sources/FinanceWorkspaceKit/Validation/ValidationModels.swift` per `data-model.md`
-- [ ] T008 Define `WorkspaceContext` (aggregate of parsed `CSVParseResult`s + `NoteRecord`s + resolved id registries for cross-file lookups) in `Sources/FinanceWorkspaceKit/Validation/WorkspaceContext.swift`
+- [X] T006 [P] Define parsing model types (`ColumnType`, `ColumnDefinition`, `CSVSchema`, `FieldValue`, `ParsedRecord`, `ParseWarning`/`NormalizationError`, `CSVParseResult`, `FrontMatterValue`, `FrontMatter`, `NoteRecord`) in `Sources/FinanceWorkspaceKit/Parsing/ParsingModels.swift` per `data-model.md`
+- [X] T007 [P] Make the Phase 1 stubs concrete — enums `RuleTier`/`Severity`/`RepairClass`, `ValidationRule`, `ValidationIssue`, `ValidationResult`, `RepairAction`, `RepairPlan`, `RowDiff`, `RepairLogEntry` — in `Sources/FinanceWorkspaceKit/Validation/ValidationModels.swift` per `data-model.md`
+- [X] T008 Define `WorkspaceContext` (aggregate of parsed `CSVParseResult`s + `NoteRecord`s + resolved id registries for cross-file lookups) in `Sources/FinanceWorkspaceKit/Validation/WorkspaceContext.swift`
 
 **Checkpoint**: Schemas exist as bundled resources; shared types compile — story work can begin.
 
@@ -59,12 +59,12 @@ description: "Task list for Parsing, Validation & Infrastructure (Phase 2)"
 - [ ] T010 [P] [US1] Test: an unconvertible date/decimal/enum yields a **partial record** (field nulled+flagged, row retained) plus a warning naming file/row/column (FR-004a, SC-009) in `Tests/FinanceWorkspaceKitTests/NormalizationTests.swift`
 - [ ] T011 [P] [US1] Test: case/whitespace-variant headers map to canonical columns; leading `#`/`# schema_version` row stripped; RFC-4180 quoted fields with embedded commas/newlines (FR-001) in `Tests/FinanceWorkspaceKitTests/CSVParserTests.swift`
 - [ ] T012 [P] [US1] Test: Markdown front matter → typed `NoteRecord`; missing/malformed front matter handled gracefully (FR-006, FR-007, SC-002) in `Tests/FinanceWorkspaceKitTests/MarkdownParsingTests.swift`
-- [ ] T013 [US1] Implement `CSVSchemaRegistry` — load bundled schemas via `Bundle.module`; classify by path→filename→header; resolve `schema_version` and route older versions to migration/repair; missing marker → current + flag (FR-002, FR-005) in `Sources/FinanceWorkspaceKit/Parsing/CSVSchemaRegistry.swift`
-- [ ] T014 [US1] Implement `CSVParserService` — RFC-4180 parsing, leading-`#` tolerance, case-insensitive/trimmed header mapping, `source_file`/`source_row` provenance, resilient per-row (FR-001, FR-003, SC-009) in `Sources/FinanceWorkspaceKit/Parsing/CSVParserService.swift`
-- [ ] T015 [US1] Implement `CSVNormalizer` — `Decimal`/`Date`(ISO 8601)/`Bool`/`Int`/enum conversion; **partial record** on failure; blank-field handling; never flips amount signs (FR-004, FR-004a) in `Sources/FinanceWorkspaceKit/Parsing/CSVNormalizer.swift`
-- [ ] T016 [US1] Implement `FrontMatterParser` — extract the `---` block into flat metadata; graceful on missing/malformed (FR-006) in `Sources/FinanceWorkspaceKit/Parsing/FrontMatterParser.swift`
-- [ ] T017 [US1] Implement `MarkdownParserService` — produce `NoteRecord` (classify by `type` + folder; linked IDs/period/tax year; body preserved, unrendered) (FR-007) in `Sources/FinanceWorkspaceKit/Parsing/MarkdownParserService.swift`
-- [ ] T018 [US1] Implement `WorkspaceParser` — workspace-wide parse pass (read via `FileCoordinatorService`, resilient per-file) producing the parsed set that feeds `WorkspaceContext` in `Sources/FinanceWorkspaceKit/Parsing/WorkspaceParser.swift`
+- [X] T013 [US1] Implement `CSVSchemaRegistry` — load bundled schemas via `Bundle.module`; classify by path→filename→header; resolve `schema_version` and route older versions to migration/repair; missing marker → current + flag (FR-002, FR-005) in `Sources/FinanceWorkspaceKit/Parsing/CSVSchemaRegistry.swift`
+- [X] T014 [US1] Implement `CSVParserService` — RFC-4180 parsing, leading-`#` tolerance, case-insensitive/trimmed header mapping, `source_file`/`source_row` provenance, resilient per-row (FR-001, FR-003, SC-009) in `Sources/FinanceWorkspaceKit/Parsing/CSVParserService.swift`
+- [X] T015 [US1] Implement `CSVNormalizer` — `Decimal`/`Date`(ISO 8601)/`Bool`/`Int`/enum conversion; **partial record** on failure; blank-field handling; never flips amount signs (FR-004, FR-004a) in `Sources/FinanceWorkspaceKit/Parsing/CSVNormalizer.swift`
+- [X] T016 [US1] Implement `FrontMatterParser` — extract the `---` block into flat metadata; graceful on missing/malformed (FR-006) in `Sources/FinanceWorkspaceKit/Parsing/FrontMatterParser.swift`
+- [X] T017 [US1] Implement `MarkdownParserService` — produce `NoteRecord` (classify by `type` + folder; linked IDs/period/tax year; body preserved, unrendered) (FR-007) in `Sources/FinanceWorkspaceKit/Parsing/MarkdownParserService.swift`
+- [X] T018 [US1] Implement `WorkspaceParser` — workspace-wide parse pass (read via `FileCoordinatorService`, resilient per-file) producing the parsed set that feeds `WorkspaceContext` in `Sources/FinanceWorkspaceKit/Parsing/WorkspaceParser.swift`
 
 **Checkpoint**: Files become typed records — the Phase 2 MVP. Every Phase 3/4 engine can now read data.
 

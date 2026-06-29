@@ -1,0 +1,14 @@
+{
+  "title": "Liability (Accounts/liabilities.csv)",
+  "schema_version": 1,
+  "file": "Accounts/liabilities.csv",
+  "domain": "accounts",
+  "subtype": "liabilities",
+  "columns": {
+    "liability_id": { "type": "string", "required": true },
+    "account_id": { "type": "string", "required": true, "references": "Accounts/accounts.csv#account_id" },
+    "principal_balance": { "type": "decimal", "required": false },
+    "interest_rate": { "type": "decimal", "required": false },
+    "term_months": { "type": "integer", "required": false }
+  }
+}

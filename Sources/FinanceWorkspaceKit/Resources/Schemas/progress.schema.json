@@ -1,0 +1,13 @@
+{
+  "title": "Savings Progress (Savings/progress.csv)",
+  "schema_version": 1,
+  "file": "Savings/progress.csv",
+  "domain": "savings",
+  "subtype": "savings-progress",
+  "columns": {
+    "progress_id": { "type": "string", "required": true },
+    "goal_id": { "type": "string", "required": true, "references": "Savings/goals.csv#goal_id" },
+    "as_of": { "type": "date", "required": true },
+    "balance": { "type": "decimal", "required": true }
+  }
+}
