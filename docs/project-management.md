@@ -1,9 +1,21 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
-**Last updated**: 2026-06-26 (Round 8 — foundation hardening for Phases 1–2: iCloud entitlement/container-ID, manifest location + field set, schema_version format, FileWatcher mechanism, 7 sync-state UI + conflict UX, Account model shape, validation classification, sign-flip, S4/S5/S6/S7/S9 resolved; 15 items retired)  
+**Last updated**: 2026-06-28 (Phase 1 build complete & merged — PR #15; Phase 2 build started on `003-parsing-validation`)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
+
+> **Build status (2026-06-28):** **Phase 1 is complete and merged to `main`** (spec
+> `002-foundation-architecture`, PR #15). The foundation was built as a **Swift Package**
+> (`Sources/FinanceWorkspaceKit/{Platform,Domain,Validation,Persistence,Parsing}/` + the
+> `FinanceWorkspaceApp`/`bootstrap-workspace`/`fixture-generate`/`index-check` executables), not a
+> hand-authored `.xcodeproj`. macOS build/test CI (`ci-macos.yml`) landed in Phase 1. The one
+> deferred Phase 1 item is the iCloud ubiquity-container **entitlement** + dev code signing (needs
+> the Xcode app target). The implemented domain models settle several Phase 1 doc-naming FIX items
+> in code — `UnifiedTransaction` (M6), `AccountGroup` (C6/S9), single `Account` + optional
+> `InvestmentMetadata` (C1) — though the architecture-doc text for M1/M3/M4 may still warrant a
+> consistency pass in a future round. **Phase 2 (Parsing, Validation & Infrastructure) is now in
+> build.**
 
 ---
 

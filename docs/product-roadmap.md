@@ -3,7 +3,7 @@
 **Project**: Personal Finance Workspace for macOS
 **Scope**: v1 as defined in `docs/product-requirements.md` and `docs/technical-design.md`
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
-**Last updated**: 2026-06-24
+**Last updated**: 2026-06-28 (Phase 1 build complete — see Phase 1 status banner & changelog)
 
 ---
 
@@ -70,6 +70,28 @@ every subsequent layer stands on.
 **⚠️ Critical dependency**: All later phases depend on `WorkspaceManager` and `FileIndexService`
 being stable. Do not advance to Phase 2 until the workspace URL resolves reliably in both iCloud
 and local-fallback modes.
+
+> **✅ Status (2026-06-28): COMPLETE — merged to `main` via PR #15.** Delivered as spec
+> `specs/002-foundation-architecture` (49 of 50 tasks done). All four user stories shipped:
+> US1 provisioning, US2 file index, US3 sync-state/conflict handling, US4 dev-env + CI. The
+> Development tasks below are all implemented; the unchecked `[ ]` boxes are retained for
+> historical task detail.
+>
+> **Packaging reality:** the foundation was built as a **Swift Package** (`Package.swift`) — a
+> `FinanceWorkspaceKit` library target plus `FinanceWorkspaceApp` and the `bootstrap-workspace` /
+> `fixture-generate` / `index-check` executables — *not* a hand-authored `.xcodeproj`. The
+> CLT-only build environment (no Xcode GUI / `xcodegen`) made SwiftPM the buildable, CI-friendly
+> choice. Architecture module folders map to `Sources/FinanceWorkspaceKit/{Platform,Domain,Validation,Persistence,Parsing}/`.
+> The "Xcode Project Setup" sub-section below was realized through SwiftPM equivalents.
+>
+> **Deferred:** the iCloud ubiquity-container **entitlement** (and developer-machine code
+> signing) is the one outstanding Phase 1 item — it needs the Xcode app target, added when
+> UI/packaging/signing is required (later phase). The `ICloudContainerService` code path itself
+> is implemented.
+>
+> **CI note:** macOS build/test CI (`.github/workflows/ci-macos.yml`) landed in Phase 1
+> alongside the Linux SwiftLint runner — the "full Mac build CI deferred to Phase 5" intent below
+> is superseded.
 
 ### Product Tasks
 
@@ -830,6 +852,23 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Build-status sync — 2026-06-28
+Not a refinement round — a doc-to-repo alignment recorded as Phase 2 begins.
+
+- **Phase 1 marked COMPLETE** (merged to `main`, PR #15; spec `002-foundation-architecture`, 49/50
+  tasks). Added a status banner at the top of Phase 1.
+- **Packaging reality recorded:** foundation built as a **Swift Package** (`FinanceWorkspaceKit`
+  library + `FinanceWorkspaceApp`/`bootstrap-workspace`/`fixture-generate`/`index-check`
+  executables), not a hand-authored `.xcodeproj`; module folders map to
+  `Sources/FinanceWorkspaceKit/{Platform,Domain,Validation,Persistence,Parsing}/`. The "Xcode
+  Project Setup" tasks were realized via SwiftPM.
+- **macOS CI landed early:** `ci-macos.yml` (`swift build`/`swift test`) shipped in Phase 1
+  alongside the Linux SwiftLint runner; supersedes the "full Mac build CI deferred to Phase 5"
+  note.
+- **One Phase 1 item deferred:** the iCloud ubiquity-container entitlement + dev code signing
+  (needs the Xcode app target).
+- **Phase 2 started** on branch `003-parsing-validation` (spec `specs/003-parsing-validation`).
 
 ### Round 8 — 2026-06-26
 Source: `docs/_refinement/r8-review.md` (foundation hardening — Phase 1–2 dev-env / storage / sync)

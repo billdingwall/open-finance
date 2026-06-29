@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Phase 1 (Foundation & Architecture) is **in build** on branch `002-foundation-architecture`. The app is scaffolded as a **Swift Package** (`Package.swift`), not a hand-authored `.xcodeproj` — the build environment is Command-Line-Tools-only (no Xcode GUI / `xcodegen`), so SwiftPM keeps the foundation buildable and CI-friendly. An Xcode app target + iCloud entitlements are added when UI/packaging/signing is needed (later phase). Architecture module folders map to `Sources/FinanceWorkspaceKit/{Platform,Domain,Validation,Persistence}/`.
+Phase 1 (Foundation & Architecture, spec `002-foundation-architecture`) is **complete and merged to `main`** (PR #15). **Phase 2 (Parsing, Validation & Infrastructure) is now active** on branch `003-parsing-validation` — spec `specs/003-parsing-validation/`. The app is scaffolded as a **Swift Package** (`Package.swift`), not a hand-authored `.xcodeproj` — the build environment is Command-Line-Tools-only (no Xcode GUI / `xcodegen`), so SwiftPM keeps the foundation buildable and CI-friendly. An Xcode app target + iCloud entitlements are added when UI/packaging/signing is needed (later phase). Architecture module folders map to `Sources/FinanceWorkspaceKit/{Platform,Domain,Validation,Persistence,Parsing}/`.
 
-Implemented so far: Setup + Foundational (models, `CloudStorageProvider`/`LocalFolderProvider`, file-safety primitives), US1 provisioning, US2 file index, US3 sync-state/conflict logic. See `specs/002-foundation-architecture/tasks.md` for status.
+Phase 1 delivered (all four user stories): platform + domain models, `CloudStorageProvider`/`LocalFolderProvider`/`ICloudContainerService`, file-safety primitives (`BackupService`, `FileCoordinatorService`, `WriteGate`), US1 provisioning (`WorkspaceProvisioner`/`WorkspaceManager`), US2 file index (`FileIndexService`/`FileWatcherService`/`ManifestStore`), US3 sync-state/conflict logic (`SyncStateMapper`/`ConflictResolver`), US4 dev-env + CI. The only deferred Phase 1 task is the iCloud ubiquity-container entitlement (T004 — needs the Xcode app target). See `specs/002-foundation-architecture/tasks.md` for the full record.
 
 ### Build & test
 
@@ -18,7 +18,7 @@ swift run fixture-generate  --workspace ~/Finance-Dev --months 12   # dev fixtur
 swift run index-check       --workspace ~/Finance-Dev/Finance       # scan + print index summary
 ```
 
-> Note: `swift test` requires a full Xcode toolchain (XCTest/Swift Testing); a CLT-only machine can `swift build` and run the executables but not `swift test`. CI: SwiftLint on Linux + `swift build`/`swift test` on a macOS runner (`.github/workflows/`).
+> Note: `swift test` requires a full Xcode toolchain (XCTest/Swift Testing); a CLT-only machine can `swift build` and run the executables but not `swift test`. CI: `.github/workflows/swiftlint.yml` (SwiftLint on a Linux runner) + `.github/workflows/ci-macos.yml` (`swift build`/`swift test` on a macOS runner). The macOS build/test CI landed in Phase 1 — earlier docs that say "full Mac build CI deferred to Phase 5" are superseded.
 
 ## What this project is
 
@@ -139,9 +139,9 @@ Features are developed using the Spec Kit workflow. Commands in order:
 Feature branches follow the `NNN-feature-name` naming convention (created by `/speckit-git-feature`).
 
 <!-- SPECKIT START -->
-**Active feature**: `002-foundation-architecture` (Phase 1 — Foundation & Architecture)
-Plan: `specs/002-foundation-architecture/plan.md` · Spec: `specs/002-foundation-architecture/spec.md`
-Artifacts: `research.md`, `data-model.md`, `contracts/`, `quickstart.md`
+**Active feature**: `003-parsing-validation` (Phase 2 — Parsing, Validation & Infrastructure)
+Spec: `specs/003-parsing-validation/spec.md`
+Previous: `002-foundation-architecture` (Phase 1) — complete, merged to `main` (PR #15)
 <!-- SPECKIT END -->
 
 ## Doc update workflow (product refinement loop)
