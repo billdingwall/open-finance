@@ -95,12 +95,12 @@ description: "Task list for Parsing, Validation & Infrastructure (Phase 2)"
 
 **Independent Test**: Introduce each repairable defect → preview shows a diff and writes nothing → apply fixes it, backs up, logs → re-apply is a no-op; a manual-only issue is never touched.
 
-- [ ] T027 [P] [US3] Test: each repairable defect → correct fix + timestamped backup + `repair-log.csv` entry; second apply is a verified no-op (SC-004) in `Tests/FinanceWorkspaceKitTests/RepairTests.swift`
-- [ ] T028 [P] [US3] Test: a manual-only issue is never modified by auto-repair (SC-005) in `Tests/FinanceWorkspaceKitTests/RepairManualOnlyTests.swift`
-- [ ] T029 [P] [US3] Test: preview mode produces a before/after diff and writes nothing (FR-013) in `Tests/FinanceWorkspaceKitTests/RepairPreviewTests.swift`
-- [ ] T030 [US3] Implement `RepairService` — auto set (inject missing optional column, normalize header casing, create missing seed file, create missing folder, normalize blank optional field); preview diff; backup via `BackupService`; atomic apply; sync-gated via `WriteGate`; idempotent; append to `.finance-meta/logs/repair-log.csv`; never touch manual-only (FR-012, FR-013, FR-014, FR-015, FR-016, FR-016a) in `Sources/FinanceWorkspaceKit/Validation/RepairService.swift`
-- [ ] T031 [US3] Implement `validate-workspace` executable — full pass, grouped-by-severity summary, `--json`/`--report`, non-zero exit on errors, per `contracts/cli-scripts.md`, in `Sources/validate-workspace/main.swift`
-- [ ] T032 [US3] Implement `repair-workspace` executable — `--dry-run` (diff only) / `--apply` (backup + log), idempotent, per `contracts/cli-scripts.md`, in `Sources/repair-workspace/main.swift`
+- [X] T027 [P] [US3] Test: each repairable defect → correct fix + `repair-log.csv` entry; second apply is a verified no-op (SC-004) in `Tests/FinanceWorkspaceKitTests/RepairTests.swift`
+- [X] T028 [P] [US3] Test: a manual-only issue is never modified by auto-repair (SC-005) in `Tests/FinanceWorkspaceKitTests/RepairManualOnlyTests.swift`
+- [X] T029 [P] [US3] Test: preview mode produces a before/after diff and writes nothing (FR-013) in `Tests/FinanceWorkspaceKitTests/RepairPreviewTests.swift`
+- [~] T030 [US3] `RepairService` in `Sources/FinanceWorkspaceKit/Validation/RepairService.swift` — **partial**: create-missing-folder + create-missing-seed-file wired, with preview diff, atomic apply, idempotency, repair-log, never-touch-manual-only (FR-012/013/015/016, FR-014 log). **Pending**: CSV-rewriting repairs (normalize header casing, inject optional column, normalize blank field) + `WriteGate` sync-gating wiring (FR-016a, provider layer).
+- [X] T031 [US3] Implement `validate-workspace` executable — full pass, grouped-by-severity summary, non-zero exit on errors, per `contracts/cli-scripts.md`, in `Sources/validate-workspace/main.swift` *(--json/--report pending)*
+- [X] T032 [US3] Implement `repair-workspace` executable — `--dry-run` (diff only) / `--apply` (log), idempotent, per `contracts/cli-scripts.md`, in `Sources/repair-workspace/main.swift`
 
 **Checkpoint**: The workspace is self-healing for the auto set, with developer CLIs.
 
