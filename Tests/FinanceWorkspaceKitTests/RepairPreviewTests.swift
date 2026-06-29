@@ -16,7 +16,7 @@ import Foundation
         let fm = FileManager.default
         try fm.removeItem(at: ws.appendingPathComponent("Budget/categories.csv"))
 
-        let plan = RepairService().plan(workspaceURL: ws)
+        let plan = try RepairService().plan(workspaceURL: ws)
         #expect(!plan.actions.isEmpty)
         #expect(plan.requiresConfirmation)
         #expect(plan.diffs.contains { $0.filePath == "Budget/categories.csv" && $0.before == "(absent)" })

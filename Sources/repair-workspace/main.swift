@@ -24,9 +24,9 @@ while let arg = args.first {
 }
 guard let workspacePath else { usage() }
 let root = URL(fileURLWithPath: workspacePath, isDirectory: true)
-let service = RepairService()
 
 do {
+    let service = try RepairService()
     if apply {
         let entries = try service.apply(workspaceURL: root)
         if entries.isEmpty {
@@ -36,7 +36,7 @@ do {
             for e in entries { print("  [\(e.result.rawValue)] \(e.actionKind): \(e.targetFile)") }
         }
     } else {
-        let plan = service.plan(workspaceURL: root)
+        let plan = try service.plan(workspaceURL: root)
         if plan.actions.isEmpty {
             print("repair-workspace (dry-run): nothing to repair ✓")
         } else {
