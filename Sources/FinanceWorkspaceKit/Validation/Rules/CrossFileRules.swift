@@ -53,6 +53,25 @@ enum CrossFileRules {
             }
         }
 
+        // Orphan note links (VAL-CROSS-011): a note's linked IDs that resolve to nothing.
+        if let rule = RuleCatalog.rule("VAL-CROSS-011") {
+            let accountIDs = idSetCache["registry"]
+                ?? context.identifierSet(fileTypeKey: "registry", column: "account_id")
+            let groupIDs = context.identifierSet(fileTypeKey: "account-groups", column: "account_group_id")
+            let sleeveIDs = context.identifierSet(fileTypeKey: "sleeves", column: "sleeve_id")
+            for note in context.notes {
+                for id in note.linkedAccountIDs where !id.isEmpty && !accountIDs.contains(id) {
+                    issues.append(rule.makeIssue(file: note.sourceFile, detail: "note links unknown account '\(id)'"))
+                }
+                for id in note.linkedEntityIDs where !id.isEmpty && !groupIDs.contains(id) {
+                    issues.append(rule.makeIssue(file: note.sourceFile, detail: "note links unknown account-group '\(id)'"))
+                }
+                for id in note.linkedSleeveIDs where !id.isEmpty && !sleeveIDs.contains(id) {
+                    issues.append(rule.makeIssue(file: note.sourceFile, detail: "note links unknown sleeve '\(id)'"))
+                }
+            }
+        }
+
         // Duplicate transaction ID (VAL-CROSS-010).
         if let rule = RuleCatalog.rule("VAL-CROSS-010") {
             var seen = Set<String>()

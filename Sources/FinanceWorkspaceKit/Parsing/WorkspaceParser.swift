@@ -22,12 +22,13 @@ public struct WorkspaceParser: Sendable {
     public func parse(workspaceURL: URL) -> WorkspaceContext {
         var parseResults: [CSVParseResult] = []
         var notes: [NoteRecord] = []
+        var unrecognized: [String] = []
 
         for relativePath in Self.discover(in: workspaceURL) {
             let url = workspaceURL.appendingPathComponent(relativePath)
             if relativePath.hasSuffix(".csv") {
                 guard let schema = registry.schema(forRelativePath: relativePath) else {
-                    // Unknown managed file type — recorded at validation time (US2); skip parsing.
+                    unrecognized.append(relativePath)   // unknown file type → VAL-FILE-002 at validation
                     continue
                 }
                 do {
@@ -46,7 +47,8 @@ public struct WorkspaceParser: Sendable {
             }
         }
 
-        return WorkspaceContext(workspaceURL: workspaceURL, parseResults: parseResults, notes: notes)
+        return WorkspaceContext(workspaceURL: workspaceURL, parseResults: parseResults,
+                                notes: notes, unrecognizedFiles: unrecognized)
     }
 
     /// Workspace-relative paths of managed `.csv`/`.md` files, excluding the `.finance-meta/` subtree.

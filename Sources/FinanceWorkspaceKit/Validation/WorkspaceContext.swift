@@ -7,11 +7,15 @@ public struct WorkspaceContext: Sendable {
     public let workspaceURL: URL
     public let parseResults: [CSVParseResult]
     public let notes: [NoteRecord]
+    /// Discovered `.csv` files that did not classify to any managed schema (VAL-FILE-002).
+    public let unrecognizedFiles: [String]
 
-    public init(workspaceURL: URL, parseResults: [CSVParseResult], notes: [NoteRecord]) {
+    public init(workspaceURL: URL, parseResults: [CSVParseResult], notes: [NoteRecord],
+                unrecognizedFiles: [String] = []) {
         self.workspaceURL = workspaceURL
         self.parseResults = parseResults
         self.notes = notes
+        self.unrecognizedFiles = unrecognizedFiles
     }
 
     /// All parse/normalization warnings across every file (lifted into the issue stream in US2).

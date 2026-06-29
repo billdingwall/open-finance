@@ -16,6 +16,31 @@ enum DomainRules {
     static func evaluate(_ context: WorkspaceContext) -> [ValidationIssue] {
         var issues: [ValidationIssue] = []
 
+        // VAL-DOMAIN-003 — asset without an owning account.
+        if let rule = RuleCatalog.rule("VAL-DOMAIN-003") {
+            for asset in context.records(ofType: "assets") {
+                let accountID: String
+                if case let .string(value)? = asset.fields["account_id"]?.typed { accountID = value } else { accountID = "" }
+                if accountID.isEmpty {
+                    issues.append(rule.makeIssue(file: asset.sourceFile, row: asset.sourceRow,
+                        column: "account_id", detail: "asset has no owning account_id"))
+                }
+            }
+        }
+
+        // VAL-DOMAIN-004 — a trade transaction with neither a sending nor a receiving asset.
+        if let rule = RuleCatalog.rule("VAL-DOMAIN-004") {
+            for txn in context.records(ofType: "transactions") {
+                guard case let .string(type)? = txn.fields["type"]?.typed, type == "trade" else { continue }
+                let sending = string(txn, "sending_asset_id")
+                let receiving = string(txn, "receiving_asset_id")
+                if sending.isEmpty && receiving.isEmpty {
+                    issues.append(rule.makeIssue(file: txn.sourceFile, row: txn.sourceRow,
+                        detail: "trade has neither a sending nor a receiving asset"))
+                }
+            }
+        }
+
         // Group transaction rows by group_id.
         var groups: [String: [GroupRow]] = [:]
         for record in context.records(ofType: "transactions") {
@@ -62,4 +87,9 @@ enum DomainRules {
     }
 
     private static func abs(_ d: Decimal) -> Decimal { d < 0 ? -d : d }
+
+    private static func string(_ record: ParsedRecord, _ column: String) -> String {
+        if case let .string(value)? = record.fields[column]?.typed { return value }
+        return ""
+    }
 }
