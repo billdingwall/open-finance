@@ -103,8 +103,10 @@ Features are built with Spec Kit, in order:
 Branches: `NNN-feature-name` (via `/speckit-git-feature`).
 
 <!-- SPECKIT START -->
-**Active feature**: none — Phase 2 (`003-parsing-validation`) complete & merged (PR #16).
-**Next**: Phase 3 — Domain Layer I (Accounts, Budget, Overview).
+**Active feature**: Phase 3 — Domain Layer I (`004-domain-accounts-budget-overview`), planning
+complete. Plan: [`specs/004-domain-accounts-budget-overview/plan.md`](specs/004-domain-accounts-budget-overview/plan.md)
+(AccountEngine → BudgetEngine → Linking/OverviewEngine + record-mapping seam + seed data + 3 CLIs).
+**Next**: `/speckit-tasks` then `/speckit-implement`.
 **Previous**: `003-parsing-validation` (Phase 2), `002-foundation-architecture` (Phase 1).
 <!-- SPECKIT END -->
 
