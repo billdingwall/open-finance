@@ -33,7 +33,7 @@ do {
             print("repair-workspace: nothing to repair ✓")
         } else {
             print("repair-workspace: applied \(entries.count) repair(s)")
-            for e in entries { print("  [\(e.result.rawValue)] \(e.actionKind): \(e.targetFile)") }
+            for entry in entries { print("  [\(entry.result.rawValue)] \(entry.actionKind): \(entry.targetFile)") }
         }
     } else {
         let plan = try service.plan(workspaceURL: root)
@@ -41,7 +41,7 @@ do {
             print("repair-workspace (dry-run): nothing to repair ✓")
         } else {
             print("repair-workspace (dry-run): \(plan.actions.count) repair(s) — no files written")
-            for d in plan.diffs { print("  \(d.filePath): \(d.before) → \(d.after)") }
+            for diff in plan.diffs { print("  \(diff.filePath): \(diff.before) → \(diff.after)") }
             print("Re-run with --apply to perform these repairs.")
         }
     }

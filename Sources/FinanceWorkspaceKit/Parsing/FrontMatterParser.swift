@@ -44,7 +44,7 @@ public struct FrontMatterParser: Sendable {
             return .list(items)
         }
         if raw == "true" || raw == "false" { return .bool(raw == "true") }
-        if let n = Double(raw) { return .number(n) }
+        if let number = Double(raw) { return .number(number) }
         let unquoted = raw.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
         return .string(unquoted)
     }

@@ -81,7 +81,8 @@ struct ContentView: View {
                 Text("Missing: \(state.missingPaths.joined(separator: ", "))").font(.caption).foregroundStyle(.orange)
             }
             if state.needsR6Migration {
-                Text("Pre-R6 workspace detected — migration available. Review and run it explicitly (migrate-r6); it is never applied automatically.")
+                Text("Pre-R6 workspace detected — migration available. Review and run it "
+                     + "explicitly (migrate-r6); it is never applied automatically.")
                     .font(.caption).foregroundStyle(.orange)
             }
             if let err = state.lastError {

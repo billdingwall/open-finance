@@ -31,10 +31,10 @@ public struct CSVParserService: Sendable {
             warnings.append(.init(file: relativePath, row: nil, column: nil,
                                   kind: .missingSchemaVersion,
                                   message: "no `# schema_version` marker; assuming current"))
-        } else if let v = schemaVersion, v != schema.schemaVersion {
+        } else if let version = schemaVersion, version != schema.schemaVersion {
             warnings.append(.init(file: relativePath, row: nil, column: nil,
                                   kind: .schemaVersionMismatch,
-                                  message: "schema_version \(v) != registry \(schema.schemaVersion); route to migration"))
+                                  message: "schema_version \(version) != registry \(schema.schemaVersion); route to migration"))
         }
 
         // 2. Tokenize body into records (RFC-4180).
@@ -102,8 +102,8 @@ public struct CSVParserService: Sendable {
             // e.g. "# schema_version: 1"
             let stripped = trimmed.drop(while: { $0 == "#" }).trimmingCharacters(in: .whitespaces)
             let parts = stripped.split(separator: ":", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
-            if parts.count == 2, parts[0].lowercased() == "schema_version", let v = Int(parts[1]) {
-                version = v
+            if parts.count == 2, parts[0].lowercased() == "schema_version", let parsed = Int(parts[1]) {
+                version = parsed
             }
             idx += 1
         }
@@ -117,29 +117,27 @@ public struct CSVParserService: Sendable {
         var field = ""
         var inQuotes = false
         let chars = Array(text)
-        var i = 0
-        while i < chars.count {
-            let c = chars[i]
+        var index = 0
+        while index < chars.count {
+            let char = chars[index]
             if inQuotes {
-                if c == "\"" {
-                    if i + 1 < chars.count, chars[i + 1] == "\"" { field.append("\""); i += 2; continue }
-                    inQuotes = false; i += 1
+                if char == "\"" {
+                    if index + 1 < chars.count, chars[index + 1] == "\"" { field.append("\""); index += 2; continue }
+                    inQuotes = false; index += 1
                 } else {
-                    field.append(c); i += 1
+                    field.append(char); index += 1
                 }
             } else {
-                switch c {
-                case "\"": inQuotes = true; i += 1
-                case ",": record.append(field); field = ""; i += 1
-                case "\r":
+                switch char {
+                case "\"": inQuotes = true; index += 1
+                case ",": record.append(field); field = ""; index += 1
+                // Note: Swift treats CRLF as a single grapheme `Character` ("\r\n"), so all three
+                // line-ending forms must be matched as record terminators.
+                case "\n", "\r\n", "\r":
                     record.append(field); field = ""
                     records.append(record); record = []
-                    i += (i + 1 < chars.count && chars[i + 1] == "\n") ? 2 : 1
-                case "\n":
-                    record.append(field); field = ""
-                    records.append(record); record = []
-                    i += 1
-                default: field.append(c); i += 1
+                    index += 1
+                default: field.append(char); index += 1
                 }
             }
         }

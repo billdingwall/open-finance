@@ -27,11 +27,11 @@ public struct ColumnDefinition: Codable, Sendable {
     private enum CodingKeys: String, CodingKey { case type, required, values, references }
 
     public init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        self.type = try c.decode(ColumnType.self, forKey: .type)
-        self.required = try c.decodeIfPresent(Bool.self, forKey: .required) ?? false
-        self.values = try c.decodeIfPresent([String].self, forKey: .values)
-        self.references = try c.decodeIfPresent(String.self, forKey: .references)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.type = try container.decode(ColumnType.self, forKey: .type)
+        self.required = try container.decodeIfPresent(Bool.self, forKey: .required) ?? false
+        self.values = try container.decodeIfPresent([String].self, forKey: .values)
+        self.references = try container.decodeIfPresent(String.self, forKey: .references)
     }
 }
 

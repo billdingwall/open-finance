@@ -134,8 +134,10 @@ public struct RepairService: Sendable {
         try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
 
         let iso = ISO8601DateFormatter()
-        var lines = entries.map { e in
-            "\(iso.string(from: e.timestamp)),\(e.targetFile),\(e.actionKind),\(e.backupPath ?? ""),\(e.result.rawValue)"
+        var lines = entries.map { entry in
+            let fields = [iso.string(from: entry.timestamp), entry.targetFile, entry.actionKind,
+                          entry.backupPath ?? "", entry.result.rawValue]
+            return fields.joined(separator: ",")
         }
         if fm.fileExists(atPath: url.path) {
             let existing = try String(contentsOf: url, encoding: .utf8)
@@ -156,7 +158,7 @@ public struct RepairService: Sendable {
     static func headerCasingFix(text: String, schema: CSVSchema) -> HeaderFix? {
         var lines = text.components(separatedBy: "\n")
         guard let headerIdx = lines.firstIndex(where: {
-            let t = $0.trimmingCharacters(in: .whitespaces); return !t.hasPrefix("#") && !t.isEmpty
+            let trimmed = $0.trimmingCharacters(in: .whitespaces); return !trimmed.hasPrefix("#") && !trimmed.isEmpty
         }) else { return nil }
 
         let oldHeader = lines[headerIdx]
@@ -165,10 +167,10 @@ public struct RepairService: Sendable {
 
         var newCells = cells
         var changed = false
-        for i in cells.indices {
-            let key = cells[i].trimmingCharacters(in: .whitespaces).lowercased()
-            if let canonical = canonicalByLower[key], cells[i] != canonical {
-                newCells[i] = canonical
+        for index in cells.indices {
+            let key = cells[index].trimmingCharacters(in: .whitespaces).lowercased()
+            if let canonical = canonicalByLower[key], cells[index] != canonical {
+                newCells[index] = canonical
                 changed = true
             }
         }

@@ -2,7 +2,8 @@ import Foundation
 import FinanceWorkspaceKit
 
 // T031 — Parse the workspace, run the full ValidationEngine pass, print issues grouped by
-// severity. Exit non-zero when any error-severity issue is present. (--json/--report: TODO.)
+// severity. Exit non-zero when any error-severity issue is present.
+// (--json / --report machine-readable output is a follow-up.)
 
 func usage() -> Never {
     FileHandle.standardError.write(Data("usage: validate-workspace --workspace <path>\n".utf8))

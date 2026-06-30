@@ -52,7 +52,8 @@ public struct MigrationService: Sendable {
         let fm = FileManager.default
         var steps: [String] = []
         for spec in Self.renames where fm.fileExists(atPath: workspaceURL.appendingPathComponent(spec.oldFile).path) {
-            steps.append("rename \(spec.oldFile) → \(spec.newFile) (columns: \(spec.columns.map { "\($0)→\($1)" }.sorted().joined(separator: ", ")))")
+            let cols = spec.columns.map { "\($0)→\($1)" }.sorted().joined(separator: ", ")
+            steps.append("rename \(spec.oldFile) → \(spec.newFile) (columns: \(cols))")
         }
         if Self.hasLegacyColumn(workspaceURL: workspaceURL) {
             steps.append("rename column entity_id → account_group_id in Accounts/accounts.csv")
@@ -60,7 +61,8 @@ public struct MigrationService: Sendable {
         let ledger = workspaceURL.appendingPathComponent(Self.investmentLedger)
         if fm.fileExists(atPath: ledger.path),
            let text = try? String(contentsOf: ledger, encoding: .utf8) {
-            let rows = CSVParserService.tokenize(CSVParserService.stripLeadingComments(text).body).filter { !($0.count == 1 && $0[0].isEmpty) }
+            let body = CSVParserService.stripLeadingComments(text).body
+            let rows = CSVParserService.tokenize(body).filter { !($0.count == 1 && $0[0].isEmpty) }
             let dataCount = max(0, rows.count - 1)
             steps.append("fold \(dataCount) row(s) from \(Self.investmentLedger) into the unified ledger as type=trade")
         }
@@ -117,8 +119,8 @@ public struct MigrationService: Sendable {
         let idx = Dictionary(uniqueKeysWithValues: header.enumerated().map { ($1.trimmingCharacters(in: .whitespaces), $0) })
 
         func value(_ row: [String], _ col: String) -> String {
-            guard let i = idx[col], i < row.count else { return "" }
-            return row[i]
+            guard let index = idx[col], index < row.count else { return "" }
+            return row[index]
         }
 
         // Group folded rows by month (YYYY-MM from the date column).
@@ -166,7 +168,7 @@ public struct MigrationService: Sendable {
     private static func headerContainsAny(text: String, columns: [String]) -> Bool {
         let lines = text.components(separatedBy: "\n")
         guard let header = lines.first(where: {
-            let t = $0.trimmingCharacters(in: .whitespaces); return !t.hasPrefix("#") && !t.isEmpty
+            let trimmed = $0.trimmingCharacters(in: .whitespaces); return !trimmed.hasPrefix("#") && !trimmed.isEmpty
         }) else { return false }
         let cells = Set((CSVParserService.tokenize(header).first ?? []).map { $0.trimmingCharacters(in: .whitespaces) })
         return columns.contains { cells.contains($0) }
@@ -174,15 +176,15 @@ public struct MigrationService: Sendable {
 
     static func renameHeaderColumns(text: String, map: [String: String]) -> String {
         var lines = text.components(separatedBy: "\n")
-        guard let hi = lines.firstIndex(where: {
-            let t = $0.trimmingCharacters(in: .whitespaces); return !t.hasPrefix("#") && !t.isEmpty
+        guard let headerIdx = lines.firstIndex(where: {
+            let trimmed = $0.trimmingCharacters(in: .whitespaces); return !trimmed.hasPrefix("#") && !trimmed.isEmpty
         }) else { return text }
-        var cells = CSVParserService.tokenize(lines[hi]).first ?? []
-        for i in cells.indices {
-            let key = cells[i].trimmingCharacters(in: .whitespaces)
-            if let renamed = map[key] { cells[i] = renamed }
+        var cells = CSVParserService.tokenize(lines[headerIdx]).first ?? []
+        for index in cells.indices {
+            let key = cells[index].trimmingCharacters(in: .whitespaces)
+            if let renamed = map[key] { cells[index] = renamed }
         }
-        lines[hi] = cells.map(RepairService.csvEscape).joined(separator: ",")
+        lines[headerIdx] = cells.map(RepairService.csvEscape).joined(separator: ",")
         return lines.joined(separator: "\n")
     }
 }

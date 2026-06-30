@@ -13,11 +13,11 @@ public struct CSVNormalizer: Sendable {
     // Formatters are constructed per call (Foundation formatters are not Sendable / not
     // thread-safe to share). Parsing is sequential per file, so the cost is negligible.
     private static func parseDate(_ value: String) -> Date? {
-        let f = DateFormatter()
-        f.locale = posix
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        if let d = f.date(from: value) { return d }
+        let formatter = DateFormatter()
+        formatter.locale = posix
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let date = formatter.date(from: value) { return date }
         return ISO8601DateFormatter().date(from: value)
     }
 
@@ -63,10 +63,10 @@ public struct CSVNormalizer: Sendable {
         case .string:
             return (.string(value), nil, "")
         case .integer:
-            if let i = Int(value) { return (.integer(i), nil, "") }
+            if let intValue = Int(value) { return (.integer(intValue), nil, "") }
             return (nil, .invalidInteger, "'\(value)' is not an integer")
         case .decimal:
-            if let d = Decimal(string: value, locale: Self.posix) { return (.decimal(d), nil, "") }
+            if let decimalValue = Decimal(string: value, locale: Self.posix) { return (.decimal(decimalValue), nil, "") }
             return (nil, .invalidDecimal, "'\(value)' is not a decimal")
         case .date:
             if let date = Self.parseDate(value) { return (.date(date), nil, "") }
