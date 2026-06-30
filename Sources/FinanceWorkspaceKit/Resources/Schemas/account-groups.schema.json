@@ -1,0 +1,12 @@
+{
+  "title": "Account Group (Accounts/account-groups.csv)",
+  "schema_version": 1,
+  "file": "Accounts/account-groups.csv",
+  "domain": "accounts",
+  "subtype": "account-groups",
+  "columns": {
+    "account_group_id": { "type": "string", "required": true },
+    "name": { "type": "string", "required": true },
+    "group_type": { "type": "enum", "required": true, "values": ["personal", "employment", "business", "custom"] }
+  }
+}

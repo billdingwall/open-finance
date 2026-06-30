@@ -1,0 +1,16 @@
+{
+  "title": "Tax Adjustment (Taxes/tax-adjustments.csv)",
+  "schema_version": 1,
+  "file": "Taxes/tax-adjustments.csv",
+  "domain": "taxes",
+  "subtype": "tax-adjustments",
+  "columns": {
+    "tax_adjustment_id": { "type": "string", "required": true },
+    "adjustment_type": { "type": "enum", "required": true,
+      "values": ["standard", "above_the_line", "schedule_a", "schedule_c", "credit"] },
+    "amount": { "type": "decimal", "required": true },
+    "tax_year": { "type": "integer", "required": true },
+    "status": { "type": "enum", "required": false, "values": ["estimated", "draft", "confirmed"] },
+    "linked_id": { "type": "string", "required": false }
+  }
+}

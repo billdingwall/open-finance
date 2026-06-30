@@ -304,7 +304,7 @@ Adding a new optional column is **not** a breaking change.
 When a breaking change is introduced:
 - The `schema_version` integer in that file type's schema definition is incremented.
 - A migration script is supplied as part of the release that introduces the change.
-- Migration scripts live in `Scripts/` and follow the naming convention `migrate-{file-type}-v{old}-to-v{new}.swift`.
+- Migration scripts are SwiftPM executable targets (run via `swift run <name>`), consistent with the package packaging. A per-file change uses `migrate-{file-type}-v{old}-to-v{new}`; a release-scoped change spanning interdependent files (renames that must apply atomically) uses a single release migration, e.g. `migrate-r6`. (The bare `Scripts/…swift` form in `.specify/memory/constitution.md` predates the SwiftPM decision and the R6 release migration — tracked for a constitution PATCH.)
 - The `RepairService` detects version mismatches during validation and prompts the user to run the applicable migration script. It does not auto-migrate breaking changes.
 - After migration, the `schema_version` header value in the affected CSV files is updated to the new version.
 
@@ -470,7 +470,7 @@ These decisions are settled and should not be reopened for v1:
 
 - **Amount sign convention** ✓ — Negative = debit (money out), positive = credit (money in). Applies consistently across all transaction file types. The `direction` column is retained alongside the sign for import mapping readability. The `CSVNormalizer` flips signs from source files that use the opposite convention during import.
 
-- **`schema_version` migration policy** ✓ — A breaking change is any modification to a CSV column or Markdown front matter field currently in use (rename, remove, type change, enum change, or new required column). Adding an optional column is not breaking. Breaking changes increment `schema_version` and require a migration script (`Scripts/migrate-{file-type}-v{old}-to-v{new}.swift`) shipped with the release. The `RepairService` detects version mismatches and prompts the user to run the script; it does not auto-migrate breaking changes.
+- **`schema_version` migration policy** ✓ — A breaking change is any modification to a CSV column or Markdown front matter field currently in use (rename, remove, type change, enum change, or new required column). Adding an optional column is not breaking. Breaking changes increment `schema_version` and require a migration shipped with the release as a SwiftPM executable (`swift run <name>`) — per-file (`migrate-{file-type}-v{old}-to-v{new}`) or release-scoped for interdependent multi-file changes (e.g. `migrate-r6`). The `RepairService` detects version mismatches and prompts the user to run the script; it does not auto-migrate breaking changes.
 
 ### Locked — 2026-06-23 (Round 6 — object model)
 

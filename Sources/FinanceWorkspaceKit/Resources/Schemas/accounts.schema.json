@@ -1,0 +1,20 @@
+{
+  "title": "Account (Accounts/accounts.csv)",
+  "schema_version": 1,
+  "file": "Accounts/accounts.csv",
+  "domain": "accounts",
+  "subtype": "registry",
+  "columns": {
+    "account_id": { "type": "string", "required": true },
+    "display_name": { "type": "string", "required": true },
+    "institution": { "type": "string", "required": false },
+    "account_group": { "type": "enum", "required": true,
+      "values": ["employment", "business", "credit_card", "investment", "savings", "checking", "loan"] },
+    "account_type": { "type": "string", "required": true },
+    "status": { "type": "enum", "required": true, "values": ["draft", "active", "frozen", "closed"] },
+    "account_group_id": { "type": "string", "required": true },
+    "current_balance": { "type": "decimal", "required": false },
+    "tax_treatment": { "type": "string", "required": false },
+    "performance_tracking": { "type": "boolean", "required": false }
+  }
+}

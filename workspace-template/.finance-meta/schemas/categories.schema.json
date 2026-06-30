@@ -1,0 +1,16 @@
+{
+  "title": "Budget Category (Budget/categories.csv)",
+  "schema_version": 1,
+  "file": "Budget/categories.csv",
+  "domain": "budget",
+  "subtype": "categories",
+  "columns": {
+    "category_id": { "type": "string", "required": true },
+    "name": { "type": "string", "required": true },
+    "parent_category_id": { "type": "string", "required": false },
+    "category_group_id": { "type": "string", "required": false },
+    "default_budget_behavior": { "type": "enum", "required": false,
+      "values": ["fixed", "discretionary", "savings", "investment", "transfer"] },
+    "tax_relevant": { "type": "boolean", "required": false }
+  }
+}

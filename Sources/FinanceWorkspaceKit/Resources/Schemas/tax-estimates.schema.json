@@ -1,0 +1,14 @@
+{
+  "title": "Tax Estimate (Taxes/estimates.csv)",
+  "schema_version": 1,
+  "file": "Taxes/estimates.csv",
+  "domain": "taxes",
+  "subtype": "tax-estimates",
+  "columns": {
+    "estimate_id": { "type": "string", "required": true },
+    "tax_year": { "type": "integer", "required": true },
+    "gross_income": { "type": "decimal", "required": false },
+    "taxes_paid": { "type": "decimal", "required": false },
+    "estimated_return": { "type": "decimal", "required": false }
+  }
+}

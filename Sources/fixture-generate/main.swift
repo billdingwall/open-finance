@@ -32,8 +32,8 @@ func csv(_ header: String, _ rows: [String]) -> String {
 }
 
 do {
-    for sub in ["Accounts/transactions", "Budget", "Savings", "Investments", "Taxes", "Notes/monthly",
-                ".finance-meta/schemas", ".finance-meta/backups", ".finance-meta/logs"] {
+    // Create the full standard folder tree so a generated fixture is complete (matches bootstrap).
+    for sub in WorkspaceLayout.requiredFolders {
         try mkdir(finance.appendingPathComponent(sub))
     }
 

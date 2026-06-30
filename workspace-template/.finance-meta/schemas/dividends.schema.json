@@ -1,0 +1,13 @@
+{
+  "title": "Dividend (Investments/dividends.csv)",
+  "schema_version": 1,
+  "file": "Investments/dividends.csv",
+  "domain": "investments",
+  "subtype": "dividends",
+  "columns": {
+    "dividend_id": { "type": "string", "required": true },
+    "asset_id": { "type": "string", "required": true, "references": "Investments/assets.csv#asset_id" },
+    "date": { "type": "date", "required": true },
+    "amount": { "type": "decimal", "required": true }
+  }
+}

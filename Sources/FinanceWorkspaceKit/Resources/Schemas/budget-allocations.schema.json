@@ -1,0 +1,14 @@
+{
+  "title": "Budget Allocation (Budget/budget-allocations.csv)",
+  "schema_version": 1,
+  "file": "Budget/budget-allocations.csv",
+  "domain": "budget",
+  "subtype": "budget-allocations",
+  "columns": {
+    "allocation_id": { "type": "string", "required": true },
+    "budget_id": { "type": "string", "required": true, "references": "Budget/budgets.csv#budget_id" },
+    "category_id": { "type": "string", "required": true, "references": "Budget/categories.csv#category_id" },
+    "planned_amount": { "type": "decimal", "required": true },
+    "period": { "type": "string", "required": true }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Budget (Budget/budgets.csv)",
+  "schema_version": 1,
+  "file": "Budget/budgets.csv",
+  "domain": "budget",
+  "subtype": "budgets",
+  "columns": {
+    "budget_id": { "type": "string", "required": true },
+    "name": { "type": "string", "required": true },
+    "account_group_ids": { "type": "string", "required": false },
+    "account_ids": { "type": "string", "required": false }
+  }
+}

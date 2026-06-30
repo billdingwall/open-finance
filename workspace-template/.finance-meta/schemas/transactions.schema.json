@@ -1,6 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openfinance.app/schemas/transaction.schema.json",
   "title": "Unified Transaction (Accounts/transactions/YYYY-MM.csv)",
   "schema_version": 1,
   "file": "Accounts/transactions/YYYY-MM.csv",

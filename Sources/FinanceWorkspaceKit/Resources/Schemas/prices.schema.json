@@ -1,0 +1,13 @@
+{
+  "title": "Price Point (Investments/prices.csv)",
+  "schema_version": 1,
+  "file": "Investments/prices.csv",
+  "domain": "investments",
+  "subtype": "prices",
+  "columns": {
+    "price_id": { "type": "string", "required": true },
+    "asset_id": { "type": "string", "required": true, "references": "Investments/assets.csv#asset_id" },
+    "date": { "type": "date", "required": true },
+    "close": { "type": "decimal", "required": true }
+  }
+}

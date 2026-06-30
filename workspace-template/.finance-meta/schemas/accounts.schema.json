@@ -1,6 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openfinance.app/schemas/account.schema.json",
   "title": "Account (Accounts/accounts.csv)",
   "schema_version": 1,
   "file": "Accounts/accounts.csv",
@@ -9,10 +7,9 @@
   "columns": {
     "account_id": { "type": "string", "required": true },
     "display_name": { "type": "string", "required": true },
-    "institution": { "type": "string", "required": true },
+    "institution": { "type": "string", "required": false },
     "account_group": { "type": "enum", "required": true,
-      "values": ["employment", "business", "credit_card", "investment", "savings", "checking", "loan"],
-      "display_names": { "Everyday Banking": "checking", "Credit Cards": "credit_card", "Loans & Debt": "loan", "Savings": "savings", "Investments": "investment", "Employment": "employment", "Business": "business" } },
+      "values": ["employment", "business", "credit_card", "investment", "savings", "checking", "loan"] },
     "account_type": { "type": "string", "required": true },
     "status": { "type": "enum", "required": true, "values": ["draft", "active", "frozen", "closed"] },
     "account_group_id": { "type": "string", "required": true },
