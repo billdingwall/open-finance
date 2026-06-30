@@ -30,9 +30,9 @@ Swift Package at repo root. Library code under `Sources/FinanceWorkspaceKit/`; C
 
 **Purpose**: Scaffold the new folders, CLI targets, and a clean build before any logic lands.
 
-- [ ] T001 [P] Create source folders: `Sources/FinanceWorkspaceKit/Domain/Mapping/`, `Sources/accounts-overview/`, `Sources/budget-overview/`, `Sources/overview-dashboard/`, `Tests/FinanceWorkspaceKitTests/Fixtures/`
-- [ ] T002 Register three `.executableTarget`s (`accounts-overview`, `budget-overview`, `overview-dashboard`) depending on `FinanceWorkspaceKit` in `Package.swift`, each with a stub `main.swift` that prints usage and exits 2, so the package builds
-- [ ] T003 [P] Confirm `swift build` and `swiftlint --strict` are green on the scaffold
+- [X] T001 [P] Create source folders: `Sources/FinanceWorkspaceKit/Domain/Mapping/`, `Sources/accounts-overview/`, `Sources/budget-overview/`, `Sources/overview-dashboard/`, `Tests/FinanceWorkspaceKitTests/Fixtures/`
+- [X] T002 Register three `.executableTarget`s (`accounts-overview`, `budget-overview`, `overview-dashboard`) depending on `FinanceWorkspaceKit` in `Package.swift`, each with a stub `main.swift` that prints usage and exits 2, so the package builds
+- [X] T003 [P] Confirm `swift build` and `swiftlint --strict` are green on the scaffold
 
 **Checkpoint**: Package builds with empty CLI targets; folders exist.
 
@@ -44,13 +44,13 @@ Swift Package at repo root. Library code under `Sources/FinanceWorkspaceKit/`; C
 math, and the shared test fixtures every engine and story depends on. ⚠️ No engine work can start
 until this phase is complete.
 
-- [ ] T004 [P] Add `AccountTypeTaxonomy` (`[AccountGroupClass: [String]]` canonical map) in `Sources/FinanceWorkspaceKit/Domain/Mapping/AccountTypeTaxonomy.swift` per `contracts/seed-data.md §1`
-- [ ] T005 Extend `AccountRule` (or add `AccountRuleDetail`) to carry `ruleType`/`amount`/`frequency`/`isActive` in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountModels.swift`, keeping existing callers compiling (per `contracts/record-mapping.md` note)
-- [ ] T006 Implement `RecordMappers` (all 9 mappers: account, accountGroup, liability, accountRule, transaction, category, budget, budgetAllocation, savingsGoal) reading from `FieldValue.typed`, returning `nil` on missing/invalid required fields, in `Sources/FinanceWorkspaceKit/Domain/Mapping/RecordMappers.swift` per `contracts/record-mapping.md`
-- [ ] T007 Add `WorkspaceContext` convenience accessors (`accounts`, `accountGroups`, `liabilities`, `accountRules`, `transactions`, `categories`, `budgets`, `budgetAllocations`, `savingsGoals`) as an extension in `Sources/FinanceWorkspaceKit/Domain/Mapping/RecordMappers.swift`, preserving record/file order (research R5/R11)
-- [ ] T008 [P] Add `PeriodMath` helpers (as-of month string, YTD window `[Jan 1 taxYear … end of asOf month]`, trailing-N-month list) in `Sources/FinanceWorkspaceKit/Domain/Mapping/PeriodMath.swift` per research R2/R3/R9
-- [ ] T009 [P] Add `RecordMappersTests` (typed reads, nil-on-invalid-required, optional→nil, provenance carried) in `Tests/FinanceWorkspaceKitTests/Unit/RecordMappersTests.swift`
-- [ ] T010 [P] Add the shared hand-authored test fixtures under `Tests/FinanceWorkspaceKitTests/Fixtures/` (multi-employment, paycheck-split+transfer, sparse <3-month, gap-month, business-retained-income) so each story's tests are independently runnable
+- [X] T004 [P] Add `AccountTypeTaxonomy` (`[AccountGroupClass: [String]]` canonical map) in `Sources/FinanceWorkspaceKit/Domain/Mapping/AccountTypeTaxonomy.swift` per `contracts/seed-data.md §1`
+- [X] T005 Extend `AccountRule` (or add `AccountRuleDetail`) to carry `ruleType`/`amount`/`frequency`/`isActive` in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountModels.swift`, keeping existing callers compiling (per `contracts/record-mapping.md` note)
+- [X] T006 Implement `RecordMappers` (all 9 mappers: account, accountGroup, liability, accountRule, transaction, category, budget, budgetAllocation, savingsGoal) reading from `FieldValue.typed`, returning `nil` on missing/invalid required fields, in `Sources/FinanceWorkspaceKit/Domain/Mapping/RecordMappers.swift` per `contracts/record-mapping.md`
+- [X] T007 Add `WorkspaceContext` convenience accessors (`accounts`, `accountGroups`, `liabilities`, `accountRules`, `transactions`, `categories`, `budgets`, `budgetAllocations`, `savingsGoals`) as an extension in `Sources/FinanceWorkspaceKit/Domain/Mapping/RecordMappers.swift`, preserving record/file order (research R5/R11)
+- [X] T008 [P] Add `PeriodMath` helpers (as-of month string, YTD window `[Jan 1 taxYear … end of asOf month]`, trailing-N-month list) in `Sources/FinanceWorkspaceKit/Domain/Mapping/PeriodMath.swift` per research R2/R3/R9
+- [X] T009 [P] Add `RecordMappersTests` (typed reads, nil-on-invalid-required, optional→nil, provenance carried) in `Tests/FinanceWorkspaceKitTests/Unit/RecordMappersTests.swift`
+- [X] T010 [P] Add the shared hand-authored test fixtures under `Tests/FinanceWorkspaceKitTests/Fixtures/` (multi-employment, paycheck-split+transfer, sparse <3-month, gap-month, business-retained-income) so each story's tests are independently runnable
 
 **Checkpoint**: Engines can consume typed entities + period math from any `WorkspaceContext`; every
 story's fixtures exist. User-story work can now begin.
@@ -68,14 +68,14 @@ rule-projected empty months, multi-entry resolution, multi-employment aggregatio
 reconcile to the ledger, transfers are income/expense-neutral, business P&L matches hand calcs, an
 account with a rule but no current-month txns shows `[projected]`.
 
-- [ ] T011 [P] [US1] Extend account projection models (`AccountsOverview` incl. `totalYTDPersonalInflow`/`totalYTDRetainedEquity`, `AccountSummaryCard` fields, `AccountGroupProjection` incl. `ytdRetainedEquity`, `AccountDetailProjection`, `AccountMonthFigures`) in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountModels.swift` per `data-model.md §B`
-- [ ] T012 [US1] Implement multi-entry group resolution + transfer exclusion (groups net to zero; paycheck gross/withholding/net handling without double-counting) as a private helper in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountEngine.swift` per research R5
-- [ ] T013 [US1] Implement ledger-derived `current_balance` and `Liability.principal_balance` in `AccountEngine` per research R6 / FR-004
-- [ ] T014 [US1] Implement per-account/per-group YTD net income (`gross − expenses − taxesPaid`, tax-year window, per-group term mapping) with `taxesPaid` from explicit tax line items (withholding legs + standalone tax-payment rows) **and** the YTD personal-cash-inflow vs retained-equity split (business income retained in business accounts; the two reconcile to total non-transfer income) in `AccountEngine` per FR-001/FR-005 / research R3-R4 / R12
-- [ ] T015 [US1] Implement account-rule/estimate cash-flow projection for accounts with no as-of-month transactions (`isProjected = true`) in `AccountEngine` per FR-006
-- [ ] T016 [US1] Implement `AccountEngine.overview` / `detail(for:)` / `groupDetail(for:)` (business P&L for business groups; multi-employment aggregation) in `AccountEngine` per `contracts/engine-contracts.md` / FR-001/002/003/008
-- [ ] T017 [US1] Wire the `accounts-overview` CLI (`--workspace`, `--as-of`; parse → settings → engine → print) in `Sources/accounts-overview/main.swift` per `contracts/cli-scripts.md`
-- [ ] T018 [P] [US1] Add `AccountEngineTests` against the shared fixtures (multi-employment, paycheck-split+transfer, empty-current-month, business-retained-income) asserting SC-002/SC-003/SC-008 and the personal-inflow vs retained-equity reconciliation (SC-010) in `Tests/FinanceWorkspaceKitTests/Unit/AccountEngineTests.swift`
+- [X] T011 [P] [US1] Extend account projection models (`AccountsOverview` incl. `totalYTDPersonalInflow`/`totalYTDRetainedEquity`, `AccountSummaryCard` fields, `AccountGroupProjection` incl. `ytdRetainedEquity`, `AccountDetailProjection`, `AccountMonthFigures`) in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountModels.swift` per `data-model.md §B`
+- [X] T012 [US1] Implement multi-entry group resolution + transfer exclusion (groups net to zero; paycheck gross/withholding/net handling without double-counting) as a private helper in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountEngine.swift` per research R5
+- [X] T013 [US1] Implement ledger-derived `current_balance` and `Liability.principal_balance` in `AccountEngine` per research R6 / FR-004
+- [X] T014 [US1] Implement per-account/per-group YTD net income (`gross − expenses − taxesPaid`, tax-year window, per-group term mapping) with `taxesPaid` from explicit tax line items (withholding legs + standalone tax-payment rows) **and** the YTD personal-cash-inflow vs retained-equity split (business income retained in business accounts; the two reconcile to total non-transfer income) in `AccountEngine` per FR-001/FR-005 / research R3-R4 / R12
+- [X] T015 [US1] Implement account-rule/estimate cash-flow projection for accounts with no as-of-month transactions (`isProjected = true`) in `AccountEngine` per FR-006
+- [X] T016 [US1] Implement `AccountEngine.overview` / `detail(for:)` / `groupDetail(for:)` (business P&L for business groups; multi-employment aggregation) in `AccountEngine` per `contracts/engine-contracts.md` / FR-001/002/003/008
+- [X] T017 [US1] Wire the `accounts-overview` CLI (`--workspace`, `--as-of`; parse → settings → engine → print) in `Sources/accounts-overview/main.swift` per `contracts/cli-scripts.md`
+- [X] T018 [P] [US1] Add `AccountEngineTests` against the shared fixtures (multi-employment, paycheck-split+transfer, empty-current-month, business-retained-income) asserting SC-002/SC-003/SC-008 and the personal-inflow vs retained-equity reconciliation (SC-010) in `Tests/FinanceWorkspaceKitTests/Unit/AccountEngineTests.swift`
 
 **Checkpoint**: US1 independently verifiable via the CLI and `swift test`. **MVP reached.**
 

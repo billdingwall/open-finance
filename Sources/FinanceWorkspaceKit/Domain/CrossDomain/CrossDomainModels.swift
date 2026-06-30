@@ -38,12 +38,27 @@ public struct NoteDocument: Codable, Equatable, Sendable, Identifiable {
 
 // MARK: - Cross-domain projections (definitions only)
 
-public struct AccountSummaryCard: Codable, Equatable, Sendable {
+public struct AccountSummaryCard: Codable, Equatable, Sendable, Identifiable {
     public var accountId: String
+    public var displayName: String
+    public var accountGroup: AccountGroupClass
     public var monthlyInflow: Decimal
     public var ytdNetIncome: Decimal
-    public init(accountId: String, monthlyInflow: Decimal, ytdNetIncome: Decimal) {
-        self.accountId = accountId; self.monthlyInflow = monthlyInflow; self.ytdNetIncome = ytdNetIncome
+    public var currentBalance: Decimal
+    /// True when the monthly figures were projected from account rules (no txns this month — FR-006).
+    public var isProjected: Bool
+    public var id: String { accountId }
+
+    public init(accountId: String, displayName: String, accountGroup: AccountGroupClass,
+                monthlyInflow: Decimal, ytdNetIncome: Decimal, currentBalance: Decimal,
+                isProjected: Bool = false) {
+        self.accountId = accountId
+        self.displayName = displayName
+        self.accountGroup = accountGroup
+        self.monthlyInflow = monthlyInflow
+        self.ytdNetIncome = ytdNetIncome
+        self.currentBalance = currentBalance
+        self.isProjected = isProjected
     }
 }
 

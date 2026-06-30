@@ -7,7 +7,15 @@
   "columns": {
     "rule_id": { "type": "string", "required": true },
     "account_id": { "type": "string", "required": true, "references": "Accounts/accounts.csv#account_id" },
-    "kind": { "type": "string", "required": true },
+    "rule_type": { "type": "enum", "required": false, "values": ["income_estimate", "expense_estimate", "recurring"] },
+    "description": { "type": "string", "required": false },
+    "amount": { "type": "decimal", "required": false },
+    "frequency": { "type": "enum", "required": false, "values": ["monthly", "biweekly", "weekly", "quarterly", "annual"] },
+    "start_date": { "type": "date", "required": false },
+    "end_date": { "type": "date", "required": false },
+    "category_id": { "type": "string", "required": false },
+    "is_active": { "type": "boolean", "required": false },
+    "kind": { "type": "string", "required": false },
     "value": { "type": "string", "required": false }
   }
 }

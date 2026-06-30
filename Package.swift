@@ -44,6 +44,18 @@ let package = Package(
             name: "migrate-r6",
             dependencies: ["FinanceWorkspaceKit"]
         ),
+        .executableTarget(
+            name: "accounts-overview",
+            dependencies: ["FinanceWorkspaceKit"]
+        ),
+        .executableTarget(
+            name: "budget-overview",
+            dependencies: ["FinanceWorkspaceKit"]
+        ),
+        .executableTarget(
+            name: "overview-dashboard",
+            dependencies: ["FinanceWorkspaceKit"]
+        ),
         .testTarget(
             name: "FinanceWorkspaceKitTests",
             dependencies: ["FinanceWorkspaceKit"]
