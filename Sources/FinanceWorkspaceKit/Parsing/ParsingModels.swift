@@ -138,16 +138,16 @@ public enum FrontMatterValue: Sendable, Equatable {
     case bool(Bool)
     case list([String])
 
-    public var stringValue: String? { if case let .string(s) = self { return s }; return nil }
+    public var stringValue: String? { if case let .string(value) = self { return value }; return nil }
     public var intValue: Int? {
-        if case let .number(n) = self { return Int(n) }
-        if case let .string(s) = self { return Int(s) }
+        if case let .number(number) = self { return Int(number) }
+        if case let .string(value) = self { return Int(value) }
         return nil
     }
     public var listValue: [String]? {
         switch self {
         case let .list(items): return items
-        case let .string(s): return [s]
+        case let .string(value): return [value]
         default: return nil
         }
     }

@@ -77,14 +77,14 @@ public struct SettingsStore: Sendable {
             timezone: kv["timezone"].flatMap { $0.isEmpty ? nil : $0 } ?? defaults.timezone)
     }
 
-    static func serialize(_ s: WorkspaceSettings) -> String {
+    static func serialize(_ settings: WorkspaceSettings) -> String {
         """
         # schema_version: 1
         key,value
-        filing_status,\(s.filingStatus.rawValue)
-        tax_year,\(s.taxYear)
-        default_currency,\(s.defaultCurrency)
-        timezone,\(s.timezone)
+        filing_status,\(settings.filingStatus.rawValue)
+        tax_year,\(settings.taxYear)
+        default_currency,\(settings.defaultCurrency)
+        timezone,\(settings.timezone)
 
         """
     }
