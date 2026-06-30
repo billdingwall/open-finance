@@ -90,13 +90,13 @@ scope, the partial-aware 3-month trailing average, spend-mix percentages, and go
 category, a `<3-month` category shows `avg of N mo` (never 0), spend-mix sums correctly, goal rows
 appear for tagged transactions.
 
-- [ ] T019 [P] [US2] Extend budget projection models (`BudgetOverviewProjection`, `BudgetVarianceRow`, `TrailingAverage`, `SpendMix`, `BudgetTotals`, `GoalContributionRow`) in `Sources/FinanceWorkspaceKit/Domain/Budget/BudgetModels.swift` per `data-model.md §C`
-- [ ] T020 [US2] Implement monthly totals (income/fixed/discretionary/transfers/savings/investments + net monthly income, transfers excluded) in `Sources/FinanceWorkspaceKit/Domain/Budget/BudgetEngine.swift` per FR-010
-- [ ] T021 [US2] Implement budget-scope resolution (`accountGroupIds` ∪ `accountIds`) and per-category plan-vs-actual variance in `BudgetEngine` per FR-011
-- [ ] T022 [US2] Implement `trailingAverage(categoryId:endingBefore:)` returning `(value, monthsAvailable, isPartial)`, partial <3 months, never zero/blank for ≥1 month, in `BudgetEngine` per FR-012 / research R7
-- [ ] T023 [US2] Implement spend-mix percentages and goal-contribution rows (`savings_goal_id`-tagged) in `BudgetEngine.overview` per FR-013/FR-014
-- [ ] T024 [US2] Wire the `budget-overview` CLI (`--workspace`, `--budget`, `--period`, `--as-of`) in `Sources/budget-overview/main.swift` per `contracts/cli-scripts.md`
-- [ ] T025 [P] [US2] Add `BudgetEngineTests` (sparse <3-month fixture for SC-004, spend-mix, scope resolution, goal contributions) in `Tests/FinanceWorkspaceKitTests/Unit/BudgetEngineTests.swift`
+- [X] T019 [P] [US2] Extend budget projection models (`BudgetOverviewProjection`, `BudgetVarianceRow`, `TrailingAverage`, `SpendMix`, `BudgetTotals`, `GoalContributionRow`) in `Sources/FinanceWorkspaceKit/Domain/Budget/BudgetModels.swift` per `data-model.md §C`
+- [X] T020 [US2] Implement monthly totals (income/fixed/discretionary/transfers/savings/investments + net monthly income, transfers excluded) in `Sources/FinanceWorkspaceKit/Domain/Budget/BudgetEngine.swift` per FR-010
+- [X] T021 [US2] Implement budget-scope resolution (`accountGroupIds` ∪ `accountIds`) and per-category plan-vs-actual variance in `BudgetEngine` per FR-011
+- [X] T022 [US2] Implement `trailingAverage(categoryId:endingBefore:)` returning `(value, monthsAvailable, isPartial)`, partial <3 months, never zero/blank for ≥1 month, in `BudgetEngine` per FR-012 / research R7
+- [X] T023 [US2] Implement spend-mix percentages and goal-contribution rows (`savings_goal_id`-tagged) in `BudgetEngine.overview` per FR-013/FR-014
+- [X] T024 [US2] Wire the `budget-overview` CLI (`--workspace`, `--budget`, `--period`, `--as-of`) in `Sources/budget-overview/main.swift` per `contracts/cli-scripts.md`
+- [X] T025 [P] [US2] Add `BudgetEngineTests` (sparse <3-month fixture for SC-004, spend-mix, scope resolution, goal contributions) in `Tests/FinanceWorkspaceKitTests/Unit/BudgetEngineTests.swift`
 
 **Checkpoint**: US2 verifiable independently; US1 still passes.
 
@@ -111,8 +111,8 @@ appear for tagged transactions.
 categories cover six groups; every seed `account_type` ∈ taxonomy; the engines produce non-empty
 projections.
 
-- [ ] T026 [US4] Expand the `Budget/categories.csv` seed to the 16-row, six-group set and correct the six seed accounts' `account_type` values in `Sources/FinanceWorkspaceKit/Platform/WorkspaceLayout.swift` per `contracts/seed-data.md §1-2`
-- [ ] T027 [P] [US4] Add `SeedDataTests` (every seed `account_type` ∈ `AccountTypeTaxonomy` for its group; categories cover six groups; bootstrapped workspace validates with zero errors — SC-007; and `AccountEngine`/`BudgetEngine` produce non-empty projections on it — FR-022) in `Tests/FinanceWorkspaceKitTests/Unit/SeedDataTests.swift`
+- [X] T026 [US4] Expand the `Budget/categories.csv` seed to the 16-row, six-group set and correct the six seed accounts' `account_type` values in `Sources/FinanceWorkspaceKit/Platform/WorkspaceLayout.swift` per `contracts/seed-data.md §1-2`
+- [X] T027 [P] [US4] Add `SeedDataTests` (every seed `account_type` ∈ `AccountTypeTaxonomy` for its group; categories cover six groups; bootstrapped workspace validates with zero errors — SC-007; and `AccountEngine`/`BudgetEngine` produce non-empty projections on it — FR-022) in `Tests/FinanceWorkspaceKitTests/Unit/SeedDataTests.swift`
 
 **Checkpoint**: Fresh bootstrap validates clean across six category groups and projects non-empty.
 

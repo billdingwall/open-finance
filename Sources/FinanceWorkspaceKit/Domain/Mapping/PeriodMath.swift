@@ -35,6 +35,16 @@ public enum PeriodMath {
         return calendar.date(byAdding: .month, value: 1, to: firstOfMonth)
     }
 
+    /// The `count` "YYYY-MM" strings immediately preceding `period` (exclusive), oldest first.
+    public static func previousMonths(before period: String, count: Int) -> [String] {
+        let parts = period.split(separator: "-")
+        guard count > 0, parts.count == 2, let year = Int(parts[0]), let monthNum = Int(parts[1]),
+              let anchor = calendar.date(from: DateComponents(year: year, month: monthNum, day: 1)) else { return [] }
+        return (1...count).reversed().compactMap { back in
+            calendar.date(byAdding: .month, value: -back, to: anchor).map(month)
+        }
+    }
+
     /// The `count` "YYYY-MM" strings ending at (and including) the as-of month, oldest first.
     public static func trailingMonths(endingAt asOf: Date, count: Int) -> [String] {
         let comps = calendar.dateComponents([.year, .month], from: asOf)
