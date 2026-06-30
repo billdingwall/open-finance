@@ -28,7 +28,11 @@ public struct AccountEngine: Sendable {
 - Read-only projection interfaces only; no Tax/Investment domain logic (FR-009). `type = trade` rows
   are ignored here.
 - Balances and `Liability.principal_balance` are ledger-derived, not read from cached columns (FR-004).
-- YTD anchored to `settings.taxYear`; `taxes_paid` from withholding legs + tax-category rows (FR-005).
+- YTD anchored to `settings.taxYear`; `taxes_paid` from explicit tax line items — withholding legs +
+  standalone tax-payment rows (FR-005).
+- Reports the YTD **personal cash inflow vs retained equity** split (Phase-3 retained equity =
+  business income retained in business accounts; the two reconcile to total non-transfer income) —
+  FR-001 / SC-010.
 - `type = transfer` excluded from gross and expenses; multi-entry groups resolved without
   double-counting (FR-005/FR-007).
 - Accounts with no transactions in the as-of month get rule/estimate-projected figures with

@@ -44,16 +44,35 @@ from those answers plus the locked architecture, so the design artifacts and tas
 
 ## R4 — `taxes_paid` term in YTD net income
 
-- **Decision**: `taxes_paid` for an account/group = the sum of ledger legs with
-  `group_role = withholding` (negative/debit amounts) plus ledger rows whose category is tax-relevant
-  in a "tax payment" sense, **within that group's accounts and the YTD window**.
-  `Taxes/estimated-payments.csv` is **not** consumed by `AccountEngine` (it has no account/group link
-  and feeds the Phase-4 Tax module).
-- **Rationale**: Clarify answer ("ledger withholding legs"). Keeps `AccountEngine` ledger-pure and
-  per-group-attributable, honoring FR-009 (no Tax-domain logic absorbed) since it reads only the
-  ledger, not tax files.
-- **Alternatives considered**: estimated-payments.csv (unattributable per group without a new
-  column); both sources (adds an attribution scheme — deferred to Phase 4).
+- **Decision**: `taxes_paid` for an account/group = the sum of **explicit tax line items** within
+  that group's accounts and the YTD window: the `group_role = withholding` legs of paycheck groups
+  (so `gross − taxes_paid = net`) plus standalone tax-payment rows (a row in a tax-payment category).
+  In Phase 3 the operative source is withholding legs; standalone tax-payment rows are summed when a
+  workspace defines such a category. `Taxes/estimated-payments.csv` is **not** consumed by
+  `AccountEngine` (no account/group link; feeds the Phase-4 Tax module).
+- **Rationale**: Clarify + analyze-A2 answer. Tax line items that "add up to taxes already paid this
+  year" are exactly the withholding legs (and any explicit tax payment), keeping `AccountEngine`
+  ledger-pure and per-group-attributable (FR-009).
+- **Alternatives considered**: vague "tax-relevant category rows" (ambiguous — which categories?);
+  estimated-payments.csv (unattributable per group); both sources (Phase-4 attribution scheme).
+
+## R12 — Retained equity vs personal cash inflow (analyze-A1)
+
+- **Decision**: Split YTD income into **personal cash inflow** (non-transfer income into
+  personal-spending accounts) and **retained equity** (taxable income recognized in non-personal
+  accounts that is not drawn to personal spending). Phase-3 retained equity = business-group income
+  rows that remain in the business accounts (i.e. not transferred to a personal-group account) within
+  the YTD window. The two sum to total non-transfer income (SC-010).
+- **Rationale**: Gives an accurate taxes-owed-vs-personal-spending view (the A1 intent): all income is
+  taxed, but only personally-drawn income is spending. Account-group classification (personal vs
+  business) is the ledger-derivable proxy for "drawn vs retained" without trade-level analysis.
+- **Phase boundary**: investment/reinvested-gain retained equity (e.g. realized gains reinvested) is
+  **Phase 4** — it depends on `type = trade` rows, which `AccountEngine` does not read (FR-009).
+  Phase 3 ships the business-retained portion and the personal/retained split scaffold; Phase 4's
+  `PortfolioEngine`/`TaxEngine` extend it with realized-gain retained equity.
+- **Alternatives considered**: counting all business income as personal inflow (overstates spending
+  capacity, distorts the budget view); deferring the whole metric to Phase 4 (loses the business view
+  available now and leaves FR-001 partially uncovered).
 
 ## R5 — Transfer exclusion & multi-entry group resolution
 

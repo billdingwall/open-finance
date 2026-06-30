@@ -37,6 +37,8 @@ AccountsOverview                       // aggregate, the AccountsView feed
   groups: [AccountGroupProjection]
   totalMonthlyInflow: Decimal
   totalYTDNetIncome: Decimal
+  totalYTDPersonalInflow: Decimal      // YTD income available for personal spending
+  totalYTDRetainedEquity: Decimal      // YTD taxable income retained (not personally drawn)
 
 AccountSummaryCard                     // (Phase-1 stub, extended)
   accountId: String
@@ -52,6 +54,7 @@ AccountGroupProjection
   groupType: GroupType
   accountIds: [String]
   ytdNetIncome: Decimal
+  ytdRetainedEquity: Decimal              // business income retained in the group's accounts (Phase 3)
   businessPL: [BusinessMonthlySummary]?   // populated only for groupType == .business
 
 AccountDetailProjection                // per-account screen feed (Phase 5)
@@ -71,8 +74,16 @@ AccountMonthFigures
 ```
 
 **Net income (FR-005)**: `net = gross − expenses − taxesPaid`, `type = transfer` excluded both sides.
-Per-group `gross`/`expenses` mapping per the spec; `taxesPaid` from `group_role = withholding` legs +
-tax-relevant category rows (research R4). YTD aggregates the months in `[Jan 1 taxYear, asOf month]`.
+Per-group `gross`/`expenses` mapping per the spec; `taxesPaid` = explicit tax line items —
+`group_role = withholding` paycheck legs + standalone tax-payment-category rows (research R4). YTD
+aggregates the months in `[Jan 1 taxYear, asOf month]`.
+
+**Retained equity (FR-001 / research R12)**: `ytdRetainedEquity` = YTD taxable income recognized in
+non-personal accounts that is not drawn to personal spending. In Phase 3 = business-group income rows
+that remain in the business accounts (not transferred to a personal-group account) within the YTD
+window. `totalYTDPersonalInflow` = YTD non-transfer income into personal-spending accounts.
+`personalInflow + retainedEquity` reconciles to total non-transfer income (SC-010). Investment/
+reinvested-gain retained equity is Phase 4 (`AccountEngine` does not read `type = trade` rows, FR-009).
 
 ## C. BudgetEngine projections (`Domain/Budget/BudgetModels.swift`, extended)
 

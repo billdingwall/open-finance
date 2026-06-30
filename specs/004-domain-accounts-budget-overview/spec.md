@@ -24,6 +24,13 @@ developer CLIs that exercise them. It deliberately **excludes** all SwiftUI view
 decisions (card layouts, charts, empty-state visuals) — those land with the Phase 5 presentation
 spec, the same way Phase 2's design tasks were deferred.
 
+> **Terminology — two distinct "account group" concepts** (per `containers-and-budgets.md §3.21`):
+> the **`account_group`** *enum* on an account (checking / savings / investment / credit_card / loan /
+> employment / business) is its high-level classification; the **account-group** *object*
+> (`Accounts/account-groups.csv`, referenced by `account_group_id`, typed by `group_type` = personal /
+> employment / business / custom) is the user-facing grouping/theme. This spec uses "account-group
+> (object)" for the latter where ambiguity is possible.
+
 ## Clarifications
 
 ### Session 2026-06-30
@@ -31,15 +38,28 @@ spec, the same way Phase 2's design tasks were deferred.
 - Q: What does "YTD" anchor to for YTD net income and YTD cash inflow? → A: The workspace's current
   tax year — Jan 1 of `tax_year` (from `Taxes/settings.csv`) through the latest month present.
 - Q: How is `taxes_paid` (the subtracted term in net income) sourced per account/group? → A: From the
-  ledger — sum of `group_role = withholding` legs (and ledger rows in tax categories) within the
-  group's accounts. `Taxes/estimated-payments.csv` feeds the Phase-4 Tax module, not per-account net
-  income (it carries no account/group link).
+  ledger — explicit tax line items (`group_role = withholding` legs + standalone tax-payment rows)
+  within the group's accounts (refined under analyze-A2 below). `Taxes/estimated-payments.csv` feeds
+  the Phase-4 Tax module, not per-account net income (it carries no account/group link).
 - Q: What defines the "current period" for monthly cash inflow and the no-transactions
   rule-projection? → A: The month of an **as-of date** that defaults to today but is injectable, so
   projections are deterministic under test.
 - Q: How is the Overview Savings card composed in Phase 3? → A: From `AccountEngine` over
   `account_group = savings` accounts — balance = sum of derived `current_balance`; monthly
   contributions = current-month net inflow to those accounts.
+- Q: What is "YTD cash inflow vs retained equity" (FR-001)? → A: **Retained equity** is taxable
+  income recognized in the year that is **not** part of personal monthly inflow — income that stays in
+  a non-personal account instead of flowing to personal spending (e.g. undistributed business income
+  held in a business account; reinvested realized gains). Personal **cash inflow** is the income
+  available for personal spending. All income is counted for taxes-owed; only cash inflow is personal
+  spending. *Phase-3 scope*: `AccountEngine` computes **business** retained equity (it does not read
+  `type = trade` rows per FR-009); investment/reinvested-gain retained equity composes in Phase 4
+  (`PortfolioEngine`/`TaxEngine`).
+- Q: What exactly counts as `taxes_paid`? → A: Explicit tax line items in the ledger that sum to taxes
+  already paid YTD — the `group_role = withholding` legs of a paycheck group (so
+  `gross − taxes_paid = net`), plus standalone tax-payment rows (a row in a tax-payment category).
+  In Phase 3 the operative source is withholding legs; standalone tax-payment rows are included when a
+  workspace defines such a category.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -187,9 +207,15 @@ budget and accounts projections.
 **AccountEngine (read-only projections)**
 
 - **FR-001**: System MUST build an aggregate account overview across all accounts: per-account
-  monthly cash inflow from the unified ledger, YTD net income, and YTD cash inflow vs retained
-  equity. "Monthly" means the month of an injectable **as-of date** (defaults to today); "YTD" means
-  Jan 1 of the workspace's current `tax_year` (`Taxes/settings.csv`) through the as-of month.
+  monthly cash inflow from the unified ledger, YTD net income, and a YTD split of **personal cash
+  inflow** vs **retained equity**. "Monthly" means the month of an injectable **as-of date** (defaults
+  to today); "YTD" means Jan 1 of the workspace's current `tax_year` (`Taxes/settings.csv`) through the
+  as-of month. **Retained equity** = taxable YTD income that is not personal monthly inflow (income
+  retained in a non-personal account rather than drawn for personal spending); in Phase 3 this is
+  business-group income retained in business accounts (investment/reinvested-gain retained equity is
+  Phase 4, since `AccountEngine` does not read `type = trade` rows). Personal cash inflow + retained
+  equity together account for all (non-transfer) income, so taxes-owed can be viewed against personal
+  spending.
 - **FR-002**: System MUST group accounts by account-group (`personal`, `employment`, `business`,
   `custom`) and produce per-group detail projections, including a per-period business P&L
   (net income) for `business` groups.
@@ -201,8 +227,9 @@ budget and accounts projections.
   (YTD anchored to the workspace `tax_year` per FR-001), excluding `type = transfer` rows from both
   gross and expenses, using the per-group term mapping: employment gross = positive income rows;
   business gross = revenue rows; checking gross = deposits with expenses = non-transfer debits;
-  `taxes_paid` = the sum of `group_role = withholding` ledger legs (plus ledger rows in tax
-  categories) within the group's accounts. `taxes_paid` is **ledger-derived only**;
+  `taxes_paid` = the sum of explicit tax line items within the group's accounts — the
+  `group_role = withholding` legs of paycheck groups (so `gross − taxes_paid = net`) plus standalone
+  tax-payment rows (a row in a tax-payment category). `taxes_paid` is **ledger-derived only**;
   `Taxes/estimated-payments.csv` is not consumed here (it feeds the Phase-4 Tax module and carries no
   account/group link).
 - **FR-006**: System MUST apply account rules and estimates to project expected cash flow for
@@ -274,7 +301,8 @@ budget and accounts projections.
 ### Key Entities *(include if feature involves data)*
 
 - **AccountProjection set** — aggregate overview, per-account detail, and per-account-group detail
-  (incl. business P&L / `BusinessMonthlySummary`); derived balances and liability principal.
+  (incl. business P&L / `BusinessMonthlySummary`); derived balances and liability principal; the YTD
+  personal-cash-inflow vs retained-equity split.
 - **AccountSummaryCard** — per-account monthly inflow + YTD net income (existing stub, fleshed out).
 - **BudgetVarianceRow / BudgetMonthProjection / BudgetOverviewProjection** — per-category plan vs
   actual, trailing average (value + months-available), spend-mix percentages.
@@ -306,6 +334,9 @@ budget and accounts projections.
 - **SC-008**: A workspace with two `employment` account-groups aggregates employment income across
   both with no double-counting or collision.
 - **SC-009**: No engine writes to the workspace during projection (verified read-only).
+- **SC-010**: For a fixture with undistributed business income, YTD personal cash inflow excludes that
+  income while YTD retained equity includes it, and (personal cash inflow + retained equity) reconciles
+  to total non-transfer income — matching hand-calculated figures.
 
 ## Assumptions
 

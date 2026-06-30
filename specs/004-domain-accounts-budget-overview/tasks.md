@@ -40,8 +40,9 @@ Swift Package at repo root. Library code under `Sources/FinanceWorkspaceKit/`; C
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: The `ParsedRecord` → typed-entity seam, the canonical taxonomy, and the shared
-period/date math every engine depends on. ⚠️ No engine work can start until this phase is complete.
+**Purpose**: The `ParsedRecord` → typed-entity seam, the canonical taxonomy, the shared period/date
+math, and the shared test fixtures every engine and story depends on. ⚠️ No engine work can start
+until this phase is complete.
 
 - [ ] T004 [P] Add `AccountTypeTaxonomy` (`[AccountGroupClass: [String]]` canonical map) in `Sources/FinanceWorkspaceKit/Domain/Mapping/AccountTypeTaxonomy.swift` per `contracts/seed-data.md §1`
 - [ ] T005 Extend `AccountRule` (or add `AccountRuleDetail`) to carry `ruleType`/`amount`/`frequency`/`isActive` in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountModels.swift`, keeping existing callers compiling (per `contracts/record-mapping.md` note)
@@ -49,8 +50,10 @@ period/date math every engine depends on. ⚠️ No engine work can start until 
 - [ ] T007 Add `WorkspaceContext` convenience accessors (`accounts`, `accountGroups`, `liabilities`, `accountRules`, `transactions`, `categories`, `budgets`, `budgetAllocations`, `savingsGoals`) as an extension in `Sources/FinanceWorkspaceKit/Domain/Mapping/RecordMappers.swift`, preserving record/file order (research R5/R11)
 - [ ] T008 [P] Add `PeriodMath` helpers (as-of month string, YTD window `[Jan 1 taxYear … end of asOf month]`, trailing-N-month list) in `Sources/FinanceWorkspaceKit/Domain/Mapping/PeriodMath.swift` per research R2/R3/R9
 - [ ] T009 [P] Add `RecordMappersTests` (typed reads, nil-on-invalid-required, optional→nil, provenance carried) in `Tests/FinanceWorkspaceKitTests/Unit/RecordMappersTests.swift`
+- [ ] T010 [P] Add the shared hand-authored test fixtures under `Tests/FinanceWorkspaceKitTests/Fixtures/` (multi-employment, paycheck-split+transfer, sparse <3-month, gap-month, business-retained-income) so each story's tests are independently runnable
 
-**Checkpoint**: Engines can consume typed entities + period math from any `WorkspaceContext`.
+**Checkpoint**: Engines can consume typed entities + period math from any `WorkspaceContext`; every
+story's fixtures exist. User-story work can now begin.
 
 ---
 
@@ -58,22 +61,21 @@ period/date math every engine depends on. ⚠️ No engine work can start until 
 
 **Goal**: `AccountEngine` produces aggregate, per-group, and per-account projections from real files:
 ledger-derived balances/liability principal, tax-year YTD net income with transfers excluded and
-`taxes_paid` from withholding legs, rule-projected empty months, multi-entry resolution, multi-
-employment aggregation.
+`taxes_paid` from explicit tax line items, the personal-cash-inflow vs retained-equity split,
+rule-projected empty months, multi-entry resolution, multi-employment aggregation.
 
 **Independent Test**: `swift run accounts-overview --workspace <fixture> --as-of <date>` — balances
 reconcile to the ledger, transfers are income/expense-neutral, business P&L matches hand calcs, an
 account with a rule but no current-month txns shows `[projected]`.
 
-- [ ] T010 [P] [US1] Extend account projection models (`AccountsOverview`, `AccountSummaryCard` fields, `AccountGroupProjection`, `AccountDetailProjection`, `AccountMonthFigures`) in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountModels.swift` per `data-model.md §B`
-- [ ] T011 [US1] Implement multi-entry group resolution + transfer exclusion (groups net to zero; paycheck gross/withholding/net handling without double-counting) as a private helper in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountEngine.swift` per research R5
-- [ ] T012 [US1] Implement ledger-derived `current_balance` and `Liability.principal_balance` in `AccountEngine` per research R6 / FR-004
-- [ ] T013 [US1] Implement per-account/per-group YTD net income (`gross − expenses − taxesPaid`, tax-year window, withholding-leg `taxesPaid`, per-group term mapping) in `AccountEngine` per FR-005 / research R3-R4
-- [ ] T014 [US1] Implement account-rule/estimate cash-flow projection for accounts with no as-of-month transactions (`isProjected = true`) in `AccountEngine` per FR-006
-- [ ] T015 [US1] Implement `AccountEngine.overview` / `detail(for:)` / `groupDetail(for:)` (business P&L for business groups; multi-employment aggregation) in `AccountEngine` per `contracts/engine-contracts.md` / FR-001/002/003/008
-- [ ] T016 [US1] Wire the `accounts-overview` CLI (`--workspace`, `--as-of`; parse → settings → engine → print) in `Sources/accounts-overview/main.swift` per `contracts/cli-scripts.md`
-- [ ] T017 [P] [US1] Add `AccountEngineTests` against fixtures (multi-employment, paycheck-split+transfer, empty-current-month, business group) asserting SC-002/SC-003/SC-008 in `Tests/FinanceWorkspaceKitTests/Unit/AccountEngineTests.swift`
-- [ ] T018 [P] [US1] Add the supporting hand-authored fixtures under `Tests/FinanceWorkspaceKitTests/Fixtures/` (multi-employment, paycheck+transfer, sparse, gap-month — shared with later stories)
+- [ ] T011 [P] [US1] Extend account projection models (`AccountsOverview` incl. `totalYTDPersonalInflow`/`totalYTDRetainedEquity`, `AccountSummaryCard` fields, `AccountGroupProjection` incl. `ytdRetainedEquity`, `AccountDetailProjection`, `AccountMonthFigures`) in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountModels.swift` per `data-model.md §B`
+- [ ] T012 [US1] Implement multi-entry group resolution + transfer exclusion (groups net to zero; paycheck gross/withholding/net handling without double-counting) as a private helper in `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountEngine.swift` per research R5
+- [ ] T013 [US1] Implement ledger-derived `current_balance` and `Liability.principal_balance` in `AccountEngine` per research R6 / FR-004
+- [ ] T014 [US1] Implement per-account/per-group YTD net income (`gross − expenses − taxesPaid`, tax-year window, per-group term mapping) with `taxesPaid` from explicit tax line items (withholding legs + standalone tax-payment rows) **and** the YTD personal-cash-inflow vs retained-equity split (business income retained in business accounts; the two reconcile to total non-transfer income) in `AccountEngine` per FR-001/FR-005 / research R3-R4 / R12
+- [ ] T015 [US1] Implement account-rule/estimate cash-flow projection for accounts with no as-of-month transactions (`isProjected = true`) in `AccountEngine` per FR-006
+- [ ] T016 [US1] Implement `AccountEngine.overview` / `detail(for:)` / `groupDetail(for:)` (business P&L for business groups; multi-employment aggregation) in `AccountEngine` per `contracts/engine-contracts.md` / FR-001/002/003/008
+- [ ] T017 [US1] Wire the `accounts-overview` CLI (`--workspace`, `--as-of`; parse → settings → engine → print) in `Sources/accounts-overview/main.swift` per `contracts/cli-scripts.md`
+- [ ] T018 [P] [US1] Add `AccountEngineTests` against the shared fixtures (multi-employment, paycheck-split+transfer, empty-current-month, business-retained-income) asserting SC-002/SC-003/SC-008 and the personal-inflow vs retained-equity reconciliation (SC-010) in `Tests/FinanceWorkspaceKitTests/Unit/AccountEngineTests.swift`
 
 **Checkpoint**: US1 independently verifiable via the CLI and `swift test`. **MVP reached.**
 
@@ -106,12 +108,13 @@ appear for tagged transactions.
 `account_type` values; a fresh workspace validates clean and yields non-empty projections.
 
 **Independent Test**: bootstrap a fresh workspace → `validate-workspace` reports zero errors; seeded
-categories cover six groups; every seed `account_type` ∈ taxonomy.
+categories cover six groups; every seed `account_type` ∈ taxonomy; the engines produce non-empty
+projections.
 
 - [ ] T026 [US4] Expand the `Budget/categories.csv` seed to the 16-row, six-group set and correct the six seed accounts' `account_type` values in `Sources/FinanceWorkspaceKit/Platform/WorkspaceLayout.swift` per `contracts/seed-data.md §1-2`
-- [ ] T027 [P] [US4] Add `SeedDataTests` (every seed `account_type` ∈ `AccountTypeTaxonomy` for its group; categories cover six groups; bootstrapped workspace validates with zero errors — SC-007) in `Tests/FinanceWorkspaceKitTests/Unit/SeedDataTests.swift`
+- [ ] T027 [P] [US4] Add `SeedDataTests` (every seed `account_type` ∈ `AccountTypeTaxonomy` for its group; categories cover six groups; bootstrapped workspace validates with zero errors — SC-007; and `AccountEngine`/`BudgetEngine` produce non-empty projections on it — FR-022) in `Tests/FinanceWorkspaceKitTests/Unit/SeedDataTests.swift`
 
-**Checkpoint**: Fresh bootstrap validates clean across six category groups.
+**Checkpoint**: Fresh bootstrap validates clean across six category groups and projects non-empty.
 
 ---
 
@@ -152,9 +155,9 @@ cards, two `data not available`, MoM skips empty months, issue summary mirrors `
 
 ```
 Phase 1 (Setup)            → T001 → T002 → T003
-Phase 2 (Foundational)     → T004,T008,T009 [P]; T005 → T006 → T007   (BLOCKS all stories)
-Phase 3 (US1, P1) 🎯       → T010 → T011 → T012 → T013 → T014 → T015 → T016; T017,T018 [P]
-Phase 4 (US2, P2)          → T019 → T020 → T021 → T022 → T023 → T024; T025 [P]   (needs Foundational; ledger access shared with US1 but independent)
+Phase 2 (Foundational)     → T004,T008,T009,T010 [P]; T005 → T006 → T007   (BLOCKS all stories)
+Phase 3 (US1, P1) 🎯       → T011 → T012 → T013 → T014 → T015 → T016 → T017; T018 [P]
+Phase 4 (US2, P2)          → T019 → T020 → T021 → T022 → T023 → T024; T025 [P]   (needs Foundational; independent of US1)
 Phase 5 (US4, P2)          → T026 → T027   (needs T004 taxonomy; otherwise independent — can run alongside US2)
 Phase 6 (US3, P3)          → T028 → T029 → T030 → T031 → T032 → T033; T034 [P]   (needs US1 + US2 engines)
 Phase 7 (Polish)           → T035-T038 [P]; T039 last
@@ -163,13 +166,15 @@ Phase 7 (Polish)           → T035-T038 [P]; T039 last
 - **US1 → US2/US4 → US3** is the hard ordering (US3's Overview consumes US1+US2 engines; the
   constitution mandates AccountEngine first).
 - **US2 and US4 are independent** of each other and can be built in parallel after Foundational.
-- Foundational (T004-T009) blocks everything; do not start US tasks until T003-T007 land.
+- All shared fixtures live in Foundational (T010), so each story's tests run independently without
+  depending on an earlier story's tasks.
+- Foundational (T004-T010) blocks everything; do not start US tasks until T004-T010 land.
 
 ## Parallel Execution Examples
 
-- **Foundational kick-off**: T004, T008, T009 in parallel (distinct files), then T005→T006→T007.
-- **Within US1**: T017 and T018 (tests + fixtures) parallel with each other once T010-T016 land;
-  T010 parallel-safe at the start (model file) before the engine logic tasks.
+- **Foundational kick-off**: T004, T008, T009, T010 in parallel (distinct files), then T005→T006→T007.
+- **Within US1**: T011 (model file) parallel-safe at the start; T018 (tests) parallel once T012-T017
+  land — fixtures already exist from T010.
 - **Across stories after Foundational**: one developer on US2 (T019-T025), another on US4
   (T026-T027) simultaneously.
 - **Polish**: T035, T036, T037, T038 all parallel (different files); T039 gates last.
@@ -187,9 +192,10 @@ Phase 7 (Polish)           → T035-T038 [P]; T039 last
 ## Task Summary
 
 - **Total**: 39 tasks (T001-T039)
-- **By story**: Setup 3 · Foundational 6 · US1 9 · US2 7 · US4 2 · US3 7 · Polish 5
+- **By story**: Setup 3 · Foundational 7 · US1 8 · US2 7 · US4 2 · US3 7 · Polish 5
 - **Parallel-marked [P]**: 17 tasks
 - **Tests**: 6 test tasks (RecordMappers, AccountEngine, BudgetEngine, SeedData, Overview/Linking,
-  ReadOnlyGuarantee) — one per story plus the foundational seam and the read-only proof
+  ReadOnlyGuarantee) — one per story plus the foundational seam and the read-only proof; all shared
+  fixtures are foundational (T010)
 - **Suggested MVP**: T001-T018 (through US1)
 </content>
