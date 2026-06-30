@@ -3,7 +3,7 @@
 **Project**: Personal Finance Workspace for macOS
 **Scope**: v1 as defined in `docs/product-requirements.md` and `docs/technical-design.md`
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
-**Last updated**: 2026-06-30 (Phase 2 build complete & merged, PR #16 — see Phase 2 status banner & changelog)
+**Last updated**: 2026-06-30 (Phase 3 build complete on branch `004-domain-accounts-budget-overview`, pending CI + merge — see Phase 3 status banner & changelog)
 
 ---
 
@@ -327,6 +327,30 @@ All transaction, asset, liability, and tax files reference `account_id` from the
 registry `Accounts/accounts.csv` (and `account_group_id` from `Accounts/account-groups.csv`) —
 downstream engines validate these references.
 
+> **🟡 Status (2026-06-30): BUILD COMPLETE on branch `004-domain-accounts-budget-overview` —
+> pending CI + merge.** Delivered as spec `specs/004-domain-accounts-budget-overview` (39/39 tasks;
+> **Milestone 3** reached). Shipped: the `ParsedRecord`→typed-entity record-mapping seam,
+> `AccountEngine` (aggregate / per-account / per-group projections, ledger-derived balances +
+> `Liability.principal_balance`, tax-year YTD net income with transfers excluded and `taxes_paid` from
+> withholding legs, the personal-inflow vs **retained-equity** split, multi-entry resolution,
+> multi-employment aggregation, account-rule cash-flow projection), `BudgetEngine` (plan-vs-actual
+> variance over a budget's scope, partial-aware 3-month trailing average, spend-mix, goal
+> contributions), `LinkingEngine` + `OverviewEngine` (five KPI cards — Budget/Savings/Business live,
+> Investments/Taxes the typed "data not available" state; trailing-6-month gap-skipping MoM panel;
+> aggregated validation issues), the expanded default seed (16 categories across six groups + a
+> default Household budget + canonical `account_type` values), and the `accounts-overview` /
+> `budget-overview` / `overview-dashboard` CLIs. `swift build` is green and the engines are verified
+> end-to-end via the CLIs; `swift test` + `swiftlint --strict` run in macOS CI (the CLT-only dev box
+> can't run them). The Phase-3 **Design** `[DECIDE]`s (Accounts/Budget/Overview UI) remain Phase-5
+> work — this spec was the engine/model/seed layer only.
+>
+> **Resolved Phase-3 decisions** (baked into the spec): account-type taxonomy, default category set,
+> multiple employment account-groups, 3-month trailing-average sparse handling, YTD net income
+> (tax-year anchored, transfers excluded, `taxes_paid` = withholding legs), Overview card sourcing
+> (Investments/Taxes stubbed), 6-month gap-skipping MoM, and the personal-inflow vs retained-equity
+> split. `[FIX-C2]` closed. As with Phases 1–2, the unchecked `[ ]` boxes below are kept for
+> historical task detail — the Development tasks and the dev-facing Product tasks are implemented.
+
 ### Product Tasks
 
 - [ ] Finalize the 7-group account type taxonomy and define all sub-types for each group
@@ -395,7 +419,7 @@ downstream engines validate these references.
 - [ ] `AccountEngine` derives `Liability.principal_balance` from the ledger; account screens resolve assets and liabilities per account
 - [ ] `BudgetEngine` resolves each Budget's scope (account-groups/accounts) over its `budget-allocations.csv` lines
 
-### Milestone 3
+### Milestone 3 — 🟡 reached on branch (pending CI + merge)
 > **Core domain engines functional.** Accounts module projects aggregate and per-account views
 > from real files. Budget module produces plan-vs-actual with 3-month trailing averages from
 > transaction files. Overview engine composes cross-domain KPI cards (with stubs for engines
@@ -870,7 +894,26 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
 
-### Build-status sync — 2026-06-30
+### Build-status sync — 2026-06-30 (Phase 3 build complete on branch)
+Not a refinement round — a doc-to-repo alignment recorded as the Phase 3 implementation lands on
+`004-domain-accounts-budget-overview` (pending CI + merge).
+
+- **Phase 3 marked BUILD COMPLETE on branch** (spec `004-domain-accounts-budget-overview`, 39/39
+  tasks; **Milestone 3** reached). Added a 🟡 status banner at the top of Phase 3 and annotated the
+  Milestone 3 callout.
+- **Domain Layer I delivered:** record-mapping seam (`ParsedRecord`→typed entities), `AccountEngine`,
+  `BudgetEngine`, `LinkingEngine`, `OverviewEngine`, expanded seed (16 categories / 6 groups +
+  default Household budget), and the `accounts-overview` / `budget-overview` / `overview-dashboard`
+  CLIs. Engine math (retained-equity split, withholding-as-taxes, partial trailing averages,
+  gap-skipping MoM, stubbed Investments/Taxes cards) verified via the CLIs; full test + lint gate
+  runs in macOS CI.
+- **`[FIX-C2]` retired** (roadmap Phase-3 dependency note already carried the correct paths) and the
+  Phase-3 product `[DECIDE]`s resolved in the spec; `docs/project-management.md` updated.
+- **Living docs updated:** `docs/out-of-scope-followups.md` (OOS-4/5/6 — Phase-4 retained equity &
+  sleeve links, Phase-5 UI + estimated-rate) and `docs/test-plans.md` (projection CLIs now testable).
+- **Next:** push → CI → PR/merge; then **Phase 4 (Domain Layer II — Savings, Investments & Tax)**.
+
+### Build-status sync — 2026-06-30 (Phase 2 complete & merged)
 Not a refinement round — a doc-to-repo alignment recorded as Phase 2 completes.
 
 - **Phase 2 marked COMPLETE** (merged to `main`, PR #16; spec `003-parsing-validation`, all 43

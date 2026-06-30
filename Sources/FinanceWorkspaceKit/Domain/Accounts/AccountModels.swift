@@ -90,14 +90,57 @@ public struct Liability: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
+/// Account-level income/expense estimate used to project expected cash flow (FR-006).
+/// Extended in Phase 3 to carry `ruleType`/`amount`/`frequency`/`isActive` (architecture §3.22).
 public struct AccountRule: Codable, Equatable, Sendable, Identifiable {
+    public enum RuleType: String, Codable, Sendable, CaseIterable {
+        case incomeEstimate = "income_estimate"
+        case expenseEstimate = "expense_estimate"
+        case recurring
+    }
+
+    public enum Frequency: String, Codable, Sendable, CaseIterable {
+        case monthly, biweekly, weekly, quarterly, annual
+
+        /// Multiplier converting one occurrence to a monthly-equivalent amount.
+        public var monthlyFactor: Decimal {
+            switch self {
+            case .monthly: return 1
+            case .biweekly: return Decimal(26) / Decimal(12)
+            case .weekly: return Decimal(52) / Decimal(12)
+            case .quarterly: return Decimal(1) / Decimal(3)
+            case .annual: return Decimal(1) / Decimal(12)
+            }
+        }
+    }
+
     public var ruleId: String
     public var accountId: String
-    public var kind: String
-    public var value: String
+    public var ruleType: RuleType?
+    public var amount: Decimal?
+    public var frequency: Frequency?
+    public var isActive: Bool
     public var id: String { ruleId }
-    public init(ruleId: String, accountId: String, kind: String, value: String) {
-        self.ruleId = ruleId; self.accountId = accountId; self.kind = kind; self.value = value
+
+    public init(ruleId: String, accountId: String, ruleType: RuleType? = nil,
+                amount: Decimal? = nil, frequency: Frequency? = nil, isActive: Bool = true) {
+        self.ruleId = ruleId
+        self.accountId = accountId
+        self.ruleType = ruleType
+        self.amount = amount
+        self.frequency = frequency
+        self.isActive = isActive
+    }
+
+    /// Signed monthly-equivalent cash flow this rule projects (income positive, expense negative).
+    public var monthlyProjection: Decimal? {
+        guard isActive, let amount, let frequency else { return nil }
+        let magnitude = amount * frequency.monthlyFactor
+        switch ruleType {
+        case .incomeEstimate: return abs(magnitude)
+        case .expenseEstimate: return -abs(magnitude)
+        case .recurring, .none: return magnitude
+        }
     }
 }
 

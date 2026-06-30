@@ -60,17 +60,32 @@ public enum WorkspaceLayout {
 
             "Accounts/liabilities.csv": csv(
                 "liability_id,account_id,principal_balance,interest_rate,term_months"),
-            "Accounts/account-rules.csv": csv("rule_id,account_id,kind,value"),
+            "Accounts/account-rules.csv": csv(
+                "rule_id,account_id,rule_type,description,amount,frequency,start_date,end_date,category_id,is_active"),
 
+            // Default category set across six groups (Phase 3, FR-021 / contracts/seed-data.md §2).
             "Budget/categories.csv": csv(
                 "category_id,name,parent_category_id,category_group_id,default_budget_behavior,tax_relevant",
-                ["cat-income,Income,,grp-income,fixed,true",
+                ["cat-salary,Salary,,grp-income,fixed,true",
+                 "cat-business-income,Business Income,,grp-income,fixed,true",
                  "cat-housing,Housing,,grp-essentials,fixed,false",
                  "cat-groceries,Groceries,,grp-essentials,discretionary,false",
+                 "cat-utilities,Utilities,,grp-essentials,fixed,false",
                  "cat-transport,Transport,,grp-essentials,discretionary,false",
-                 "cat-savings,Savings,,grp-savings,savings,false",
-                 "cat-investments,Investments,,grp-savings,investment,false"]),
-            "Budget/budgets.csv": csv("budget_id,name,account_group_ids,account_ids"),
+                 "cat-insurance,Insurance,,grp-essentials,fixed,true",
+                 "cat-dining,Dining,,grp-lifestyle,discretionary,false",
+                 "cat-entertainment,Entertainment,,grp-lifestyle,discretionary,false",
+                 "cat-shopping,Shopping,,grp-lifestyle,discretionary,false",
+                 "cat-travel,Travel,,grp-lifestyle,discretionary,false",
+                 "cat-emergency,Emergency Fund,,grp-savings,savings,false",
+                 "cat-goals,Goal Savings,,grp-savings,savings,false",
+                 "cat-retirement,Retirement,,grp-investments,investment,false",
+                 "cat-brokerage,Brokerage,,grp-investments,investment,false",
+                 "cat-transfers,Transfers,,grp-transfers,transfer,false"]),
+            // A single default budget scoped to the personal account-group (architecture §3.4).
+            "Budget/budgets.csv": csv(
+                "budget_id,name,account_group_ids,account_ids",
+                ["bud-household,Household,grp-personal,"]),
             "Budget/budget-allocations.csv": csv("allocation_id,budget_id,category_id,planned_amount,period"),
 
             "Savings/goals.csv": csv(

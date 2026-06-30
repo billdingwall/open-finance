@@ -38,22 +38,60 @@ public struct NoteDocument: Codable, Equatable, Sendable, Identifiable {
 
 // MARK: - Cross-domain projections (definitions only)
 
-public struct AccountSummaryCard: Codable, Equatable, Sendable {
+public struct AccountSummaryCard: Codable, Equatable, Sendable, Identifiable {
     public var accountId: String
+    public var displayName: String
+    public var accountGroup: AccountGroupClass
     public var monthlyInflow: Decimal
     public var ytdNetIncome: Decimal
-    public init(accountId: String, monthlyInflow: Decimal, ytdNetIncome: Decimal) {
-        self.accountId = accountId; self.monthlyInflow = monthlyInflow; self.ytdNetIncome = ytdNetIncome
+    public var currentBalance: Decimal
+    /// True when the monthly figures were projected from account rules (no txns this month — FR-006).
+    public var isProjected: Bool
+    public var id: String { accountId }
+
+    public init(accountId: String, displayName: String, accountGroup: AccountGroupClass,
+                monthlyInflow: Decimal, ytdNetIncome: Decimal, currentBalance: Decimal,
+                isProjected: Bool = false) {
+        self.accountId = accountId
+        self.displayName = displayName
+        self.accountGroup = accountGroup
+        self.monthlyInflow = monthlyInflow
+        self.ytdNetIncome = ytdNetIncome
+        self.currentBalance = currentBalance
+        self.isProjected = isProjected
     }
 }
 
-public struct OverviewSummaryCard: Codable, Equatable, Sendable {
+public struct OverviewSummaryCard: Codable, Equatable, Sendable, Identifiable {
     public enum State: String, Codable, Sendable { case available, dataNotAvailable }
-    public var kind: String
+    public var kind: String          // "budget" | "savings" | "investments" | "business" | "taxes"
     public var state: State
-    public var value: Decimal?
-    public init(kind: String, state: State = .dataNotAvailable, value: Decimal? = nil) {
-        self.kind = kind; self.state = state; self.value = value
+    public var value: Decimal?       // primary value
+    public var secondaryValue: Decimal?
+    public var id: String { kind }
+    public init(kind: String, state: State = .dataNotAvailable, value: Decimal? = nil,
+                secondaryValue: Decimal? = nil) {
+        self.kind = kind; self.state = state; self.value = value; self.secondaryValue = secondaryValue
+    }
+
+    /// A typed "data not available" card for a stub domain (Phase 3 — FR-017).
+    public static func unavailable(_ kind: String) -> OverviewSummaryCard {
+        OverviewSummaryCard(kind: kind, state: .dataNotAvailable)
+    }
+}
+
+/// The composed Overview dashboard feed (FR-016/018/019).
+public struct OverviewDashboard: Sendable, Equatable {
+    public var asOfMonth: String
+    public var cards: [OverviewSummaryCard]            // exactly 5: budget, savings, investments, business, taxes
+    public var monthOverMonth: [MonthlySnapshot]       // trailing 6 populated months, gaps skipped
+    public var issues: [ValidationIssue]
+    public init(asOfMonth: String, cards: [OverviewSummaryCard], monthOverMonth: [MonthlySnapshot],
+                issues: [ValidationIssue]) {
+        self.asOfMonth = asOfMonth
+        self.cards = cards
+        self.monthOverMonth = monthOverMonth
+        self.issues = issues
     }
 }
 

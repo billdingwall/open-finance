@@ -9,7 +9,12 @@ reference** — architecture and product specs live under `docs/` (see Key docum
 - **Phase 1 — Foundation & Architecture** (`002-foundation-architecture`): complete, merged (PR #15).
 - **Phase 2 — Parsing, Validation & Infrastructure** (`003-parsing-validation`): complete, merged
   (PR #16; Milestone 2 gate passed).
-- **Phase 3 — Domain Layer I (Accounts, Budget, Overview)**: next, not started.
+- **Phase 3 — Domain Layer I (Accounts, Budget, Overview)** (`004-domain-accounts-budget-overview`):
+  build complete on branch (all 43-item task list done; AccountEngine + BudgetEngine + LinkingEngine
+  + OverviewEngine + record-mapping seam + seed data + 3 projection CLIs). **Pending CI + merge** —
+  `swift build` is green; `swift test`/`swiftlint --strict` run in macOS CI (not runnable on the
+  CLT-only dev box).
+- **Phase 4 — Domain Layer II (Savings, Investments, Tax)**: next, not started.
 
 The app is a **Swift Package** (`Package.swift`), not a hand-authored `.xcodeproj` — the build
 environment is Command-Line-Tools-only. An Xcode app target + iCloud entitlement arrive in Phase 5
@@ -26,6 +31,9 @@ swift run index-check         --workspace ~/Finance-Dev/Finance        # scan + 
 swift run validate-workspace  --workspace ~/Finance-Dev/Finance        # parse + validate (exit 1 on errors)
 swift run repair-workspace    --workspace ~/Finance-Dev/Finance --dry-run   # preview auto-repairs (--apply to perform)
 swift run migrate-r6          --workspace ~/Finance-Dev/Finance --dry-run   # preview pre-R6 migration
+swift run accounts-overview   --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # AccountEngine projection
+swift run budget-overview     --workspace ~/Finance-Dev/Finance --period 2026-06     # BudgetEngine projection
+swift run overview-dashboard  --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # OverviewEngine dashboard
 swift run FinanceWorkspaceApp                                  # diagnostic shell (DEBUG → local-folder provider)
 ```
 
@@ -103,8 +111,11 @@ Features are built with Spec Kit, in order:
 Branches: `NNN-feature-name` (via `/speckit-git-feature`).
 
 <!-- SPECKIT START -->
-**Active feature**: none — Phase 2 (`003-parsing-validation`) complete & merged (PR #16).
-**Next**: Phase 3 — Domain Layer I (Accounts, Budget, Overview).
+**Active feature**: Phase 3 — Domain Layer I (`004-domain-accounts-budget-overview`),
+**implementation complete on branch** (39/39 tasks; Milestone 3 reached). AccountEngine →
+BudgetEngine → Linking/OverviewEngine + record-mapping seam + seed data + 3 projection CLIs.
+**Pending CI + merge** (`swift build` green; `swift test`/SwiftLint run in macOS CI).
+**Next**: push → CI → PR/merge, then Phase 4 (Savings, Investments & Tax) via `/speckit-specify`.
 **Previous**: `003-parsing-validation` (Phase 2), `002-foundation-architecture` (Phase 1).
 <!-- SPECKIT END -->
 

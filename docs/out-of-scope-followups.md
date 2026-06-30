@@ -71,6 +71,35 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   design work.
 - **Status**: Open.
 
+#### OOS-4 — Investment/reinvested-gain retained equity
+- **Source**: spec `004-domain-accounts-budget-overview` (FR-001 / clarify A1) — the
+  personal-inflow vs **retained-equity** split.
+- **Skipped because**: Phase 3 `AccountEngine` is ledger-only and does not read `type = trade`
+  rows (FR-009), so it computes only the **business** portion of retained equity. Retained equity from
+  reinvested realized gains depends on trade/lot data.
+- **Suggested next step / target phase**: **Phase 4** — extend the split in `PortfolioEngine`/
+  `TaxEngine` once trades are modeled.
+- **Status**: Open.
+
+#### OOS-5 — Sleeve-funding links populated
+- **Source**: spec `004` (FR-015) — `LinkingEngine.sleeveLinks`.
+- **Skipped because**: the bundled `transactions` schema carries no `sleeve_id`/trade columns in
+  Phase 3; the link mechanism (`receiving_asset_id` → `assets.sleeve_id`) is implemented but yields no
+  links until investment trades exist.
+- **Suggested next step / target phase**: **Phase 4** — alongside `PortfolioEngine` and the unified
+  trade ledger.
+- **Status**: Open.
+
+#### OOS-6 — Phase 3 module UI design + Overview KPI "estimated rate"
+- **Source**: the six Phase-3 **Design** `[DECIDE]`s in
+  [`docs/project-management.md`](project-management.md) (Accounts overview, per-account detail, Budget
+  overview, Budget history, Overview dashboard, empty states) and the Savings/Investments "estimated
+  rate" field.
+- **Skipped because**: spec `004` is the engine/model/seed layer only (no SwiftUI); the rate formulas
+  are Phase-4 product decisions.
+- **Suggested next step / target phase**: **Phase 5** (module UI) and **Phase 4** (rate formulas).
+- **Status**: Open.
+
 ---
 
 ## Resolved / promoted

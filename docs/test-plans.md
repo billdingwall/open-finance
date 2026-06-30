@@ -47,7 +47,8 @@ feedback on today:
 | **How the app *looks*** | ✅ Yes (intended design) | Open the static `prototype/` in a browser — it mirrors the planned UI |
 | **Parsing / validation / repair behavior** | ✅ Yes | Run the `validate-workspace` / `repair-workspace` / `migrate-r6` CLIs |
 | **Local workspace provisioning & file index** | ✅ Yes | Run `bootstrap-workspace` / `fixture-generate` / `index-check` |
-| **How the real app functions** | ❌ No | Blocked on Phase 3–5 (domain engines + UI) |
+| **Accounts / Budget / Overview projections** | ✅ Yes (Phase 3) | Run `accounts-overview` / `budget-overview` / `overview-dashboard` against a fixture (`--as-of`/`--period` for deterministic output) |
+| **How the real app functions** | ❌ No | Blocked on the Phase 5 SwiftUI presentation layer (the domain read model now exists) |
 | **How well iCloud syncing works** | ❌ No | Blocked — needs an Xcode app target + iCloud entitlement (Phase 5) |
 
 So: feedback on **file organization**, the **intended look** (via prototype), and the
