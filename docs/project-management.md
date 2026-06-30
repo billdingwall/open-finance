@@ -175,8 +175,7 @@ Tech Design §10 and Roadmap Phase 1 list both `PersonalTransaction` and `Busine
 
 ### Product
 
-**[FIX – C2]** Correct the Phase 3 critical dependency note in the roadmap  
-The note currently reads: "`Investments/accounts.csv`, `Business/entities.csv`, and all transaction files reference `account_id` from the master registry." Both paths are wrong. `Investments/accounts.csv` was removed by the unified accounts decision; the master registry is `Accounts/accounts.csv`. `Business/entities.csv` has never existed; the file is `Accounts/entities.csv`. Update the note to reference the correct paths.
+~~**[FIX – C2]** Correct the Phase 3 critical dependency note in the roadmap~~ **Resolved (Phase 3 build, `004-domain-accounts-budget-overview`)** — verified the roadmap Phase 3 "Critical dependency" note (`docs/product-roadmap.md`) already references the correct paths: master registry `Accounts/accounts.csv` plus `account_group_id` from `Accounts/account-groups.csv`; no `Investments/accounts.csv` or `Business/entities.csv` references remain. The stale-path text this item described was corrected in an earlier round; this closes the tracking entry.
 
 **[DECIDE]** Account type taxonomy — the `account_group` enum has 7 groups. What are all valid `account_type` sub-types within each? For example:
 - `checking`: personal, joint

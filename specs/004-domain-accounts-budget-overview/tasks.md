@@ -143,11 +143,11 @@ cards, two `data not available`, MoM skips empty months, issue summary mirrors `
 
 **Purpose**: Read-only guarantee, docs, and the Milestone 3 gate.
 
-- [ ] T035 [P] Add a read-only guarantee test: a full projection run leaves workspace bytes unchanged (hash before/after) — SC-009 — in `Tests/FinanceWorkspaceKitTests/Unit/ReadOnlyGuaranteeTests.swift`
-- [ ] T036 [P] Add the three new `swift run …` lines to the Build & test block in `CLAUDE.md`
-- [ ] T037 [P] Apply [FIX-C2]: correct the Phase 3 critical-dependency note (master registry `Accounts/accounts.csv`; account-groups via `Accounts/account-groups.csv`; remove `Investments/accounts.csv` / `Business/entities.csv`) in `docs/product-roadmap.md` and mark `[FIX-C2]` resolved in `docs/project-management.md`
-- [ ] T038 [P] Doc cascade per CLAUDE.md spec-completion workflow: update `docs/out-of-scope-followups.md` (any Phase-3 items deferred during implementation) and `docs/test-plans.md` (engines now testable via the three CLIs)
-- [ ] T039 Final `swift build` + `swiftlint --strict` + `swift test` pass; confirm the Milestone 3 gate (accounts aggregate+per-account, budget plan-vs-actual with trailing averages, Overview composed with stubs, cross-domain links live) per `docs/product-roadmap.md`
+- [X] T035 [P] Add a read-only guarantee test: a full projection run leaves workspace bytes unchanged (hash before/after) — SC-009 — in `Tests/FinanceWorkspaceKitTests/Unit/ReadOnlyGuaranteeTests.swift`
+- [X] T036 [P] Add the three new `swift run …` lines to the Build & test block in `CLAUDE.md`
+- [X] T037 [P] Apply [FIX-C2]: correct the Phase 3 critical-dependency note (master registry `Accounts/accounts.csv`; account-groups via `Accounts/account-groups.csv`; remove `Investments/accounts.csv` / `Business/entities.csv`) in `docs/product-roadmap.md` and mark `[FIX-C2]` resolved in `docs/project-management.md`
+- [X] T038 [P] Doc cascade per CLAUDE.md spec-completion workflow: update `docs/out-of-scope-followups.md` (any Phase-3 items deferred during implementation) and `docs/test-plans.md` (engines now testable via the three CLIs)
+- [X] T039 Final `swift build` + `swiftlint --strict` + `swift test` pass; confirm the Milestone 3 gate (accounts aggregate+per-account, budget plan-vs-actual with trailing averages, Overview composed with stubs, cross-domain links live) per `docs/product-roadmap.md`
 
 ---
 

@@ -26,6 +26,9 @@ swift run index-check         --workspace ~/Finance-Dev/Finance        # scan + 
 swift run validate-workspace  --workspace ~/Finance-Dev/Finance        # parse + validate (exit 1 on errors)
 swift run repair-workspace    --workspace ~/Finance-Dev/Finance --dry-run   # preview auto-repairs (--apply to perform)
 swift run migrate-r6          --workspace ~/Finance-Dev/Finance --dry-run   # preview pre-R6 migration
+swift run accounts-overview   --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # AccountEngine projection
+swift run budget-overview     --workspace ~/Finance-Dev/Finance --period 2026-06     # BudgetEngine projection
+swift run overview-dashboard  --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # OverviewEngine dashboard
 swift run FinanceWorkspaceApp                                  # diagnostic shell (DEBUG → local-folder provider)
 ```
 
