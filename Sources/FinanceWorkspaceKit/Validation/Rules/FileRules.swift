@@ -13,10 +13,9 @@ enum FileRules {
 
         // VAL-FILE-001 — missing required file.
         if let rule = RuleCatalog.rule("VAL-FILE-001") {
-            for required in WorkspaceLayout.requiredFiles {
-                if !fm.fileExists(atPath: context.workspaceURL.appendingPathComponent(required).path) {
-                    issues.append(rule.makeIssue(file: required, detail: "required file '\(required)' is missing"))
-                }
+            for required in WorkspaceLayout.requiredFiles
+            where !fm.fileExists(atPath: context.workspaceURL.appendingPathComponent(required).path) {
+                issues.append(rule.makeIssue(file: required, detail: "required file '\(required)' is missing"))
             }
         }
 

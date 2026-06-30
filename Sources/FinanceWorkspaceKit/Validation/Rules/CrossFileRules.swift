@@ -45,9 +45,12 @@ enum CrossFileRules {
     ]
 
     static func evaluate(_ context: WorkspaceContext) -> [ValidationIssue] {
-        var issues: [ValidationIssue] = []
+        referenceIntegrityIssues(context) + orphanNoteIssues(context) + duplicateTransactionIDIssues(context)
+    }
 
-        // Reference integrity.
+    /// Unknown-X-reference rules (VAL-CROSS-001..008) via the spec table.
+    private static func referenceIntegrityIssues(_ context: WorkspaceContext) -> [ValidationIssue] {
+        var issues: [ValidationIssue] = []
         var idSetCache: [String: Set<String>] = [:]
         for spec in specs {
             guard let rule = RuleCatalog.rule(spec.ruleID) else { continue }
@@ -56,9 +59,7 @@ enum CrossFileRules {
             idSetCache[spec.parentType] = parentIDs
 
             for record in context.records(ofType: spec.childType) {
-                guard case let .string(value)? = record.fields[spec.fkColumn]?.typed else { continue }
-                if value.isEmpty { continue }
-                if spec.optional && value.isEmpty { continue }
+                guard case let .string(value)? = record.fields[spec.fkColumn]?.typed, !value.isEmpty else { continue }
                 if !parentIDs.contains(value) {
                     issues.append(rule.makeIssue(
                         file: record.sourceFile, row: record.sourceRow, column: spec.fkColumn,
@@ -66,41 +67,44 @@ enum CrossFileRules {
                 }
             }
         }
+        return issues
+    }
 
-        // Orphan note links (VAL-CROSS-011): a note's linked IDs that resolve to nothing.
-        if let rule = RuleCatalog.rule("VAL-CROSS-011") {
-            let accountIDs = idSetCache["registry"]
-                ?? context.identifierSet(fileTypeKey: "registry", column: "account_id")
-            let groupIDs = context.identifierSet(fileTypeKey: "account-groups", column: "account_group_id")
-            let sleeveIDs = context.identifierSet(fileTypeKey: "sleeves", column: "sleeve_id")
-            for note in context.notes {
-                for id in note.linkedAccountIDs where !id.isEmpty && !accountIDs.contains(id) {
-                    issues.append(rule.makeIssue(file: note.sourceFile, detail: "note links unknown account '\(id)'"))
-                }
-                for id in note.linkedEntityIDs where !id.isEmpty && !groupIDs.contains(id) {
-                    issues.append(rule.makeIssue(file: note.sourceFile, detail: "note links unknown account-group '\(id)'"))
-                }
-                for id in note.linkedSleeveIDs where !id.isEmpty && !sleeveIDs.contains(id) {
-                    issues.append(rule.makeIssue(file: note.sourceFile, detail: "note links unknown sleeve '\(id)'"))
-                }
+    /// Orphan note links (VAL-CROSS-011): linked IDs that resolve to nothing.
+    private static func orphanNoteIssues(_ context: WorkspaceContext) -> [ValidationIssue] {
+        guard let rule = RuleCatalog.rule("VAL-CROSS-011") else { return [] }
+        let accountIDs = context.identifierSet(fileTypeKey: "registry", column: "account_id")
+        let groupIDs = context.identifierSet(fileTypeKey: "account-groups", column: "account_group_id")
+        let sleeveIDs = context.identifierSet(fileTypeKey: "sleeves", column: "sleeve_id")
+        var issues: [ValidationIssue] = []
+        for note in context.notes {
+            for id in note.linkedAccountIDs where !id.isEmpty && !accountIDs.contains(id) {
+                issues.append(rule.makeIssue(file: note.sourceFile, detail: "note links unknown account '\(id)'"))
+            }
+            for id in note.linkedEntityIDs where !id.isEmpty && !groupIDs.contains(id) {
+                issues.append(rule.makeIssue(file: note.sourceFile, detail: "note links unknown account-group '\(id)'"))
+            }
+            for id in note.linkedSleeveIDs where !id.isEmpty && !sleeveIDs.contains(id) {
+                issues.append(rule.makeIssue(file: note.sourceFile, detail: "note links unknown sleeve '\(id)'"))
             }
         }
+        return issues
+    }
 
-        // Duplicate transaction ID (VAL-CROSS-010).
-        if let rule = RuleCatalog.rule("VAL-CROSS-010") {
-            var seen = Set<String>()
-            for record in context.records(ofType: "transactions") {
-                guard case let .string(id)? = record.fields["transaction_id"]?.typed, !id.isEmpty else { continue }
-                if seen.contains(id) {
-                    issues.append(rule.makeIssue(
-                        file: record.sourceFile, row: record.sourceRow, column: "transaction_id",
-                        detail: "duplicate transaction_id '\(id)'"))
-                } else {
-                    seen.insert(id)
-                }
+    /// Duplicate transaction ID (VAL-CROSS-010).
+    private static func duplicateTransactionIDIssues(_ context: WorkspaceContext) -> [ValidationIssue] {
+        guard let rule = RuleCatalog.rule("VAL-CROSS-010") else { return [] }
+        var issues: [ValidationIssue] = []
+        var seen = Set<String>()
+        for record in context.records(ofType: "transactions") {
+            guard case let .string(id)? = record.fields["transaction_id"]?.typed, !id.isEmpty else { continue }
+            if seen.contains(id) {
+                issues.append(rule.makeIssue(file: record.sourceFile, row: record.sourceRow,
+                                             column: "transaction_id", detail: "duplicate transaction_id '\(id)'"))
+            } else {
+                seen.insert(id)
             }
         }
-
         return issues
     }
 }

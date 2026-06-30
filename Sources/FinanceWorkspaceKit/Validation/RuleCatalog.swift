@@ -52,22 +52,17 @@ public enum RuleCatalog {
 
     public static func rule(_ id: String) -> ValidationRule? { byId[id] }
 
+    /// Maps a lifted parse/normalization warning kind to its catalog rule ID (clarify Q3).
+    private static let parseWarningRuleIDs: [ParseWarning.Kind: String] = [
+        .invalidDate: "VAL-FILE-006", .invalidDecimal: "VAL-FILE-007", .invalidEnum: "VAL-FILE-009",
+        .invalidInteger: "VAL-FILE-010", .invalidBoolean: "VAL-FILE-010", .missingRequiredValue: "VAL-FILE-011",
+        .missingHeader: "VAL-FILE-005", .unknownColumn: "VAL-FILE-012", .malformedRow: "VAL-FILE-013",
+        .schemaVersionMismatch: "VAL-FILE-014", .missingSchemaVersion: "VAL-FILE-015",
+    ]
+
     /// The catalog rule a lifted parse/normalization warning maps to (clarify Q3 — unified stream).
     public static func rule(forParseWarning kind: ParseWarning.Kind) -> ValidationRule {
-        let id: String
-        switch kind {
-        case .invalidDate:            id = "VAL-FILE-006"
-        case .invalidDecimal:         id = "VAL-FILE-007"
-        case .invalidEnum:            id = "VAL-FILE-009"
-        case .invalidInteger:         id = "VAL-FILE-010"
-        case .invalidBoolean:         id = "VAL-FILE-010"
-        case .missingRequiredValue:   id = "VAL-FILE-011"
-        case .missingHeader:          id = "VAL-FILE-005"
-        case .unknownColumn:          id = "VAL-FILE-012"
-        case .malformedRow:           id = "VAL-FILE-013"
-        case .schemaVersionMismatch:  id = "VAL-FILE-014"
-        case .missingSchemaVersion:   id = "VAL-FILE-015"
-        }
+        let id = parseWarningRuleIDs[kind] ?? "VAL-FILE-013"
         return byId[id] ?? rule("VAL-FILE-013", .file, .warning, .none, kind.rawValue)
     }
 

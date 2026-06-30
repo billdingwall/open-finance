@@ -14,79 +14,78 @@ enum DomainRules {
     }
 
     static func evaluate(_ context: WorkspaceContext) -> [ValidationIssue] {
+        assetWithoutAccountIssues(context) + tradeWithoutAssetIssues(context) + groupBalanceIssues(context)
+    }
+
+    /// VAL-DOMAIN-003 — asset without an owning account.
+    private static func assetWithoutAccountIssues(_ context: WorkspaceContext) -> [ValidationIssue] {
+        guard let rule = RuleCatalog.rule("VAL-DOMAIN-003") else { return [] }
         var issues: [ValidationIssue] = []
+        for asset in context.records(ofType: "assets") where string(asset, "account_id").isEmpty {
+            issues.append(rule.makeIssue(file: asset.sourceFile, row: asset.sourceRow,
+                                         column: "account_id", detail: "asset has no owning account_id"))
+        }
+        return issues
+    }
 
-        // VAL-DOMAIN-003 — asset without an owning account.
-        if let rule = RuleCatalog.rule("VAL-DOMAIN-003") {
-            for asset in context.records(ofType: "assets") {
-                let accountID: String
-                if case let .string(value)? = asset.fields["account_id"]?.typed { accountID = value } else { accountID = "" }
-                if accountID.isEmpty {
-                    issues.append(rule.makeIssue(file: asset.sourceFile, row: asset.sourceRow,
-                        column: "account_id", detail: "asset has no owning account_id"))
-                }
+    /// VAL-DOMAIN-004 — a trade transaction with neither a sending nor a receiving asset.
+    private static func tradeWithoutAssetIssues(_ context: WorkspaceContext) -> [ValidationIssue] {
+        guard let rule = RuleCatalog.rule("VAL-DOMAIN-004") else { return [] }
+        var issues: [ValidationIssue] = []
+        for txn in context.records(ofType: "transactions") {
+            guard case let .string(type)? = txn.fields["type"]?.typed, type == "trade" else { continue }
+            if string(txn, "sending_asset_id").isEmpty && string(txn, "receiving_asset_id").isEmpty {
+                issues.append(rule.makeIssue(file: txn.sourceFile, row: txn.sourceRow,
+                                             detail: "trade has neither a sending nor a receiving asset"))
             }
         }
+        return issues
+    }
 
-        // VAL-DOMAIN-004 — a trade transaction with neither a sending nor a receiving asset.
-        if let rule = RuleCatalog.rule("VAL-DOMAIN-004") {
-            for txn in context.records(ofType: "transactions") {
-                guard case let .string(type)? = txn.fields["type"]?.typed, type == "trade" else { continue }
-                let sending = string(txn, "sending_asset_id")
-                let receiving = string(txn, "receiving_asset_id")
-                if sending.isEmpty && receiving.isEmpty {
-                    issues.append(rule.makeIssue(file: txn.sourceFile, row: txn.sourceRow,
-                        detail: "trade has neither a sending nor a receiving asset"))
-                }
-            }
-        }
-
-        // Group transaction rows by group_id.
+    /// VAL-DOMAIN-005 (balanced groups net to zero) + VAL-DOMAIN-006 (gross/net reconciliation).
+    private static func groupBalanceIssues(_ context: WorkspaceContext) -> [ValidationIssue] {
         var groups: [String: [GroupRow]] = [:]
         for record in context.records(ofType: "transactions") {
-            guard case let .string(groupID)? = record.fields["group_id"]?.typed, !groupID.isEmpty else { continue }
-            guard case let .decimal(amount)? = record.fields["amount"]?.typed else { continue }
-            let role: String?
-            if case let .string(r)? = record.fields["group_role"]?.typed, !r.isEmpty { role = r } else { role = nil }
+            guard case let .string(groupID)? = record.fields["group_id"]?.typed, !groupID.isEmpty,
+                  case let .decimal(amount)? = record.fields["amount"]?.typed else { continue }
+            var role: String?
+            if case let .string(value)? = record.fields["group_role"]?.typed, !value.isEmpty { role = value }
             groups[groupID, default: []].append(
                 GroupRow(amount: amount, role: role, file: record.sourceFile, row: record.sourceRow))
         }
 
-        for (groupID, rows) in groups {
-            guard let anchor = rows.first else { continue }
+        return groups.flatMap { groupID, rows -> [ValidationIssue] in
             let roles = Set(rows.compactMap(\.role))
-            let isGrossNet = roles.contains("gross") || roles.contains("net")
-
-            if isGrossNet {
-                guard let rule = RuleCatalog.rule("VAL-DOMAIN-006") else { continue }
-                let gross = rows.filter { $0.role == "gross" }
-                let net = rows.filter { $0.role == "net" }
-                let withholding = rows.filter { $0.role == "withholding" }
-                if gross.count != 1 || net.count != 1 {
-                    issues.append(rule.makeIssue(file: anchor.file, row: anchor.row,
-                        detail: "group '\(groupID)' must have exactly one gross and one net row"))
-                    continue
-                }
-                let expectedNet = abs(gross[0].amount) - withholding.reduce(Decimal(0)) { $0 + abs($1.amount) }
-                if abs(net[0].amount) != expectedNet {
-                    issues.append(rule.makeIssue(file: anchor.file, row: anchor.row,
-                        detail: "group '\(groupID)': net \(net[0].amount) != gross − Σwithholding (\(expectedNet))"))
-                }
-            } else {
-                // Transfer / balanced group: rows must net to zero.
-                guard let rule = RuleCatalog.rule("VAL-DOMAIN-005") else { continue }
-                let sum = rows.reduce(Decimal(0)) { $0 + $1.amount }
-                if sum != 0 {
-                    issues.append(rule.makeIssue(file: anchor.file, row: anchor.row,
-                        detail: "group '\(groupID)' nets to \(sum), expected 0"))
-                }
-            }
+            return roles.contains("gross") || roles.contains("net")
+                ? grossNetIssues(groupID: groupID, rows: rows)
+                : balancedGroupIssues(groupID: groupID, rows: rows)
         }
-
-        return issues
     }
 
-    private static func abs(_ d: Decimal) -> Decimal { d < 0 ? -d : d }
+    private static func grossNetIssues(groupID: String, rows: [GroupRow]) -> [ValidationIssue] {
+        guard let rule = RuleCatalog.rule("VAL-DOMAIN-006"), let anchor = rows.first else { return [] }
+        let gross = rows.filter { $0.role == "gross" }
+        let net = rows.filter { $0.role == "net" }
+        let withholding = rows.filter { $0.role == "withholding" }
+        guard gross.count == 1, net.count == 1 else {
+            return [rule.makeIssue(file: anchor.file, row: anchor.row,
+                                   detail: "group '\(groupID)' must have exactly one gross and one net row")]
+        }
+        let expectedNet = abs(gross[0].amount) - withholding.reduce(Decimal(0)) { $0 + abs($1.amount) }
+        guard abs(net[0].amount) != expectedNet else { return [] }
+        return [rule.makeIssue(file: anchor.file, row: anchor.row,
+                               detail: "group '\(groupID)': net \(net[0].amount) != gross − Σwithholding (\(expectedNet))")]
+    }
+
+    private static func balancedGroupIssues(groupID: String, rows: [GroupRow]) -> [ValidationIssue] {
+        guard let rule = RuleCatalog.rule("VAL-DOMAIN-005"), let anchor = rows.first else { return [] }
+        let sum = rows.reduce(Decimal(0)) { $0 + $1.amount }
+        guard sum != 0 else { return [] }
+        return [rule.makeIssue(file: anchor.file, row: anchor.row,
+                               detail: "group '\(groupID)' nets to \(sum), expected 0")]
+    }
+
+    private static func abs(_ value: Decimal) -> Decimal { value < 0 ? -value : value }
 
     private static func string(_ record: ParsedRecord, _ column: String) -> String {
         if case let .string(value)? = record.fields[column]?.typed { return value }

@@ -49,10 +49,10 @@ public struct CSVParserService: Sendable {
             schema.columns.keys.map { ($0.lowercased(), $0) })
         var indexToColumn: [Int: String] = [:]
         var seenColumns = Set<String>()
-        for (i, cell) in header.enumerated() {
+        for (columnIndex, cell) in header.enumerated() {
             let key = cell.trimmingCharacters(in: .whitespaces).lowercased()
             if let canonical = canonicalByLower[key] {
-                indexToColumn[i] = canonical
+                indexToColumn[columnIndex] = canonical
                 seenColumns.insert(canonical)
             } else if !key.isEmpty {
                 warnings.append(.init(file: relativePath, row: nil, column: cell,
@@ -76,8 +76,8 @@ public struct CSVParserService: Sendable {
                                       message: "row has \(row.count) fields, header has \(header.count)"))
             }
             var raw: [String: String] = [:]
-            for (i, column) in indexToColumn where i < row.count {
-                raw[column] = row[i]
+            for (columnIndex, column) in indexToColumn where columnIndex < row.count {
+                raw[column] = row[columnIndex]
             }
             let (record, rowWarnings) = normalizer.normalize(raw: raw, schema: schema,
                                                              file: relativePath, row: rowNumber)

@@ -44,12 +44,12 @@ public struct CSVNormalizer: Sendable {
                 continue
             }
 
-            let (typed, warningKind, detail) = convert(value, type: column.type, enumValues: column.values)
-            if let typed {
+            let conversion = convert(value, type: column.type, enumValues: column.values)
+            if let typed = conversion.value {
                 fields[name] = FieldValue(raw: rawValue, typed: typed, isValid: true)
             } else {
                 warnings.append(.init(file: file, row: row, column: name,
-                                      kind: warningKind ?? .invalidEnum, message: detail))
+                                      kind: conversion.warningKind ?? .invalidEnum, message: conversion.detail))
                 fields[name] = FieldValue(raw: rawValue, typed: nil, isValid: false)
             }
         }
@@ -57,29 +57,42 @@ public struct CSVNormalizer: Sendable {
         return (ParsedRecord(fields: fields, sourceFile: file, sourceRow: row), warnings)
     }
 
-    private func convert(_ value: String, type: ColumnType,
-                         enumValues: [String]?) -> (TypedValue?, ParseWarning.Kind?, String) {
+    /// Outcome of converting one raw value: a typed value, or a flagged failure.
+    private struct Conversion {
+        let value: TypedValue?
+        let warningKind: ParseWarning.Kind?
+        let detail: String
+        static func ok(_ value: TypedValue) -> Conversion { Conversion(value: value, warningKind: nil, detail: "") }
+        static func fail(_ kind: ParseWarning.Kind, _ detail: String) -> Conversion {
+            Conversion(value: nil, warningKind: kind, detail: detail)
+        }
+    }
+
+    private func convert(_ value: String, type: ColumnType, enumValues: [String]?) -> Conversion {
         switch type {
         case .string:
-            return (.string(value), nil, "")
+            return .ok(.string(value))
         case .integer:
-            if let intValue = Int(value) { return (.integer(intValue), nil, "") }
-            return (nil, .invalidInteger, "'\(value)' is not an integer")
+            return Int(value).map { .ok(.integer($0)) } ?? .fail(.invalidInteger, "'\(value)' is not an integer")
         case .decimal:
-            if let decimalValue = Decimal(string: value, locale: Self.posix) { return (.decimal(decimalValue), nil, "") }
-            return (nil, .invalidDecimal, "'\(value)' is not a decimal")
+            return Decimal(string: value, locale: Self.posix).map { .ok(.decimal($0)) }
+                ?? .fail(.invalidDecimal, "'\(value)' is not a decimal")
         case .date:
-            if let date = Self.parseDate(value) { return (.date(date), nil, "") }
-            return (nil, .invalidDate, "'\(value)' is not an ISO-8601 / yyyy-MM-dd date")
+            return Self.parseDate(value).map { .ok(.date($0)) }
+                ?? .fail(.invalidDate, "'\(value)' is not an ISO-8601 / yyyy-MM-dd date")
         case .boolean:
-            switch value.lowercased() {
-            case "true", "1", "yes", "y": return (.boolean(true), nil, "")
-            case "false", "0", "no", "n": return (.boolean(false), nil, "")
-            default: return (nil, .invalidBoolean, "'\(value)' is not a boolean")
-            }
+            return Self.parseBool(value).map { .ok(.boolean($0)) } ?? .fail(.invalidBoolean, "'\(value)' is not a boolean")
         case .enumerated:
-            if let values = enumValues, values.contains(value) { return (.string(value), nil, "") }
-            return (nil, .invalidEnum, "'\(value)' is not one of \(enumValues ?? [])")
+            return (enumValues?.contains(value) ?? false)
+                ? .ok(.string(value)) : .fail(.invalidEnum, "'\(value)' is not one of \(enumValues ?? [])")
+        }
+    }
+
+    private static func parseBool(_ value: String) -> Bool? {
+        switch value.lowercased() {
+        case "true", "1", "yes", "y": return true
+        case "false", "0", "no", "n": return false
+        default: return nil
         }
     }
 }
