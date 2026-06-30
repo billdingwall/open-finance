@@ -136,11 +136,11 @@ description: "Task list for Parsing, Validation & Infrastructure (Phase 2)"
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T039 [P] Run the `quickstart.md` verification table end-to-end against the fixtures
-- [ ] T040 [P] Unit tests for `Decimal`/ISO-8601 normalization edge cases, RFC-4180 quoting, and front-matter edge cases in `Tests/FinanceWorkspaceKitTests/Unit/`
-- [ ] T041 Responsive parse + full-validate sanity check on the 12-month fixture (SC-002 soft target; hard thresholds deferred to roadmap Phase 7)
-- [ ] T042 [P] Update `CLAUDE.md` build/test notes if the new executables/Parsing services change run commands
-- [ ] T043 Confirm the **Milestone 2** gate: every supported file type parses into typed records; the engine detects + classifies all defined issue types; auto-repairs apply with preview; fixtures for all file types pass parsing cleanly
+- [X] T039 [P] Run the `quickstart.md` verification table end-to-end against the fixtures
+- [X] T040 [P] Unit tests for `Decimal`/ISO-8601 normalization edge cases, RFC-4180 quoting, and front-matter edge cases in `Tests/FinanceWorkspaceKitTests/Unit/`
+- [X] T041 Responsive parse + full-validate sanity check on the 12-month fixture (SC-002 soft target; hard thresholds deferred to roadmap Phase 7)
+- [X] T042 [P] Update `CLAUDE.md` build/test notes if the new executables/Parsing services change run commands
+- [X] T043 Confirm the **Milestone 2** gate: every supported file type parses into typed records; the engine detects + classifies all defined issue types; auto-repairs apply with preview; fixtures for all file types pass parsing cleanly
 
 ---
 

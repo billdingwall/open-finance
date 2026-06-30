@@ -16,7 +16,12 @@ swift test                  # run the suite (Swift Testing) — needs full Xcode
 swift run bootstrap-workspace --workspace <path>/Finance   # provision a workspace
 swift run fixture-generate  --workspace ~/Finance-Dev --months 12   # dev fixture data
 swift run index-check       --workspace ~/Finance-Dev/Finance       # scan + print index summary
+swift run validate-workspace --workspace ~/Finance-Dev/Finance      # parse + validate (issues by severity; exit 1 on errors)
+swift run repair-workspace   --workspace ~/Finance-Dev/Finance --dry-run   # preview auto-repairs (--apply to perform)
+swift run migrate-r6         --workspace ~/Finance-Dev/Finance --dry-run   # preview R6 migration of a pre-R6 workspace
 ```
+
+> Phase 2 (`003-parsing-validation`) added the Parsing layer (`CSVParserService`/`CSVSchemaRegistry`/`CSVNormalizer`/`FrontMatterParser`/`MarkdownParserService`/`WorkspaceParser`), the `ValidationEngine` + `RuleCatalog`, `RepairService`, `SettingsStore`, the `MigrationService`, and the `validate-workspace`/`repair-workspace`/`migrate-r6` CLIs. Canonical JSON schemas are **bundled** with the library (`Sources/FinanceWorkspaceKit/Resources/Schemas/`, loaded via `Bundle.module`) and mirrored into the workspace `.finance-meta/schemas/` at bootstrap.
 
 > Note: `swift test` requires a full Xcode toolchain (XCTest/Swift Testing); a CLT-only machine can `swift build` and run the executables but not `swift test`. CI: `.github/workflows/swiftlint.yml` (SwiftLint on a Linux runner) + `.github/workflows/ci-macos.yml` (`swift build`/`swift test` on a macOS runner). The macOS build/test CI landed in Phase 1 — earlier docs that say "full Mac build CI deferred to Phase 5" are superseded.
 
