@@ -62,13 +62,36 @@ public struct AccountSummaryCard: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
-public struct OverviewSummaryCard: Codable, Equatable, Sendable {
+public struct OverviewSummaryCard: Codable, Equatable, Sendable, Identifiable {
     public enum State: String, Codable, Sendable { case available, dataNotAvailable }
-    public var kind: String
+    public var kind: String          // "budget" | "savings" | "investments" | "business" | "taxes"
     public var state: State
-    public var value: Decimal?
-    public init(kind: String, state: State = .dataNotAvailable, value: Decimal? = nil) {
-        self.kind = kind; self.state = state; self.value = value
+    public var value: Decimal?       // primary value
+    public var secondaryValue: Decimal?
+    public var id: String { kind }
+    public init(kind: String, state: State = .dataNotAvailable, value: Decimal? = nil,
+                secondaryValue: Decimal? = nil) {
+        self.kind = kind; self.state = state; self.value = value; self.secondaryValue = secondaryValue
+    }
+
+    /// A typed "data not available" card for a stub domain (Phase 3 — FR-017).
+    public static func unavailable(_ kind: String) -> OverviewSummaryCard {
+        OverviewSummaryCard(kind: kind, state: .dataNotAvailable)
+    }
+}
+
+/// The composed Overview dashboard feed (FR-016/018/019).
+public struct OverviewDashboard: Sendable, Equatable {
+    public var asOfMonth: String
+    public var cards: [OverviewSummaryCard]            // exactly 5: budget, savings, investments, business, taxes
+    public var monthOverMonth: [MonthlySnapshot]       // trailing 6 populated months, gaps skipped
+    public var issues: [ValidationIssue]
+    public init(asOfMonth: String, cards: [OverviewSummaryCard], monthOverMonth: [MonthlySnapshot],
+                issues: [ValidationIssue]) {
+        self.asOfMonth = asOfMonth
+        self.cards = cards
+        self.monthOverMonth = monthOverMonth
+        self.issues = issues
     }
 }
 

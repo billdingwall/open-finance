@@ -127,13 +127,13 @@ skipping MoM panel, and the aggregated validation issues.
 **Independent Test**: `swift run overview-dashboard --workspace <fixture> --as-of <date>` — three live
 cards, two `data not available`, MoM skips empty months, issue summary mirrors `validate-workspace`.
 
-- [ ] T028 [P] [US3] Extend cross-domain models (`OverviewDashboard`, `OverviewSummaryCard` fields/state, populate `MonthlySnapshot`, `GoalFundingLink`/`SleeveFundingLink`) in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/CrossDomainModels.swift` per `data-model.md §D`
-- [ ] T029 [US3] Implement `LinkingEngine.goalLinks` / `sleeveLinks` from the unified ledger in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/LinkingEngine.swift` per FR-015
-- [ ] T030 [US3] Implement the Savings + Business cards from `AccountEngine` (savings-group balance/inflow; business-group P&L) and the Budget card from `BudgetEngine` in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/OverviewEngine.swift` per FR-017 / research R8
-- [ ] T031 [US3] Implement the typed `dataNotAvailable` Investments + Taxes cards and assemble all five cards in `OverviewEngine.dashboard` per FR-016/FR-017
-- [ ] T032 [US3] Implement the trailing-6-month, gap-skipping month-over-month panel and the aggregated `ValidationEngine` issue list in `OverviewEngine` per FR-018/FR-019 / research R9
-- [ ] T033 [US3] Wire the `overview-dashboard` CLI (`--workspace`, `--as-of`) in `Sources/overview-dashboard/main.swift` per `contracts/cli-scripts.md`
-- [ ] T034 [P] [US3] Add `LinkingEngineTests` and `OverviewEngineTests` (gap-month fixture for SC-006; stub-card assertions for SC-005; issue aggregation) in `Tests/FinanceWorkspaceKitTests/Unit/OverviewEngineTests.swift`
+- [X] T028 [P] [US3] Extend cross-domain models (`OverviewDashboard`, `OverviewSummaryCard` fields/state, populate `MonthlySnapshot`, `GoalFundingLink`/`SleeveFundingLink`) in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/CrossDomainModels.swift` per `data-model.md §D`
+- [X] T029 [US3] Implement `LinkingEngine.goalLinks` / `sleeveLinks` from the unified ledger in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/LinkingEngine.swift` per FR-015
+- [X] T030 [US3] Implement the Savings + Business cards from `AccountEngine` (savings-group balance/inflow; business-group P&L) and the Budget card from `BudgetEngine` in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/OverviewEngine.swift` per FR-017 / research R8
+- [X] T031 [US3] Implement the typed `dataNotAvailable` Investments + Taxes cards and assemble all five cards in `OverviewEngine.dashboard` per FR-016/FR-017
+- [X] T032 [US3] Implement the trailing-6-month, gap-skipping month-over-month panel and the aggregated `ValidationEngine` issue list in `OverviewEngine` per FR-018/FR-019 / research R9
+- [X] T033 [US3] Wire the `overview-dashboard` CLI (`--workspace`, `--as-of`) in `Sources/overview-dashboard/main.swift` per `contracts/cli-scripts.md`
+- [X] T034 [P] [US3] Add `LinkingEngineTests` and `OverviewEngineTests` (gap-month fixture for SC-006; stub-card assertions for SC-005; issue aggregation) in `Tests/FinanceWorkspaceKitTests/Unit/OverviewEngineTests.swift`
 
 **Checkpoint**: Full Overview composes; all four engines green together.
 
