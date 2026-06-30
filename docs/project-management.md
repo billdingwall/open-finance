@@ -1,21 +1,27 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
-**Last updated**: 2026-06-28 (Phase 1 build complete & merged — PR #15; Phase 2 build started on `003-parsing-validation`)  
+**Last updated**: 2026-06-30 (Phase 2 build complete & merged — PR #16; Phase 3 not yet started)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
-> **Build status (2026-06-28):** **Phase 1 is complete and merged to `main`** (spec
-> `002-foundation-architecture`, PR #15). The foundation was built as a **Swift Package**
-> (`Sources/FinanceWorkspaceKit/{Platform,Domain,Validation,Persistence,Parsing}/` + the
-> `FinanceWorkspaceApp`/`bootstrap-workspace`/`fixture-generate`/`index-check` executables), not a
-> hand-authored `.xcodeproj`. macOS build/test CI (`ci-macos.yml`) landed in Phase 1. The one
-> deferred Phase 1 item is the iCloud ubiquity-container **entitlement** + dev code signing (needs
-> the Xcode app target). The implemented domain models settle several Phase 1 doc-naming FIX items
-> in code — `UnifiedTransaction` (M6), `AccountGroup` (C6/S9), single `Account` + optional
-> `InvestmentMetadata` (C1) — though the architecture-doc text for M1/M3/M4 may still warrant a
-> consistency pass in a future round. **Phase 2 (Parsing, Validation & Infrastructure) is now in
-> build.**
+> **Build status (2026-06-30):** **Phases 1 and 2 are complete and merged to `main`** (specs
+> `002-foundation-architecture`, PR #15; `003-parsing-validation`, PR #16). The app is a **Swift
+> Package** (`Sources/FinanceWorkspaceKit/{Platform,Parsing,Validation,Domain,Persistence,Migration}/`
+> + the `FinanceWorkspaceApp`/`bootstrap-workspace`/`fixture-generate`/`index-check`/`validate-workspace`/`repair-workspace`/`migrate-r6`
+> executables), not a hand-authored `.xcodeproj`. macOS build/test CI (`ci-macos.yml`) landed in
+> Phase 1.
+>
+> **Phase 2 delivered** the Parsing layer, `ValidationEngine` + full `RuleCatalog` (34 rules),
+> `RepairService`, `SettingsStore`, `MigrationService`, and 23 bundled JSON schemas — confirmed by
+> the Milestone 2 gate (T043). This retires the two partially-resolved Phase 2 `[DECIDE]`s (CSV
+> spec gaps, validation rule catalog) and all five `R6-M1…M5` `[FIX]`s below.
+>
+> **Still deferred:** the iCloud ubiquity-container **entitlement** + dev code signing (needs the
+> Xcode app target, added in Phase 5). The implemented domain models settle several Phase 1
+> doc-naming FIX items in code — `UnifiedTransaction` (M6), `AccountGroup` (C6/S9), single `Account`
+> + optional `InvestmentMetadata` (C1) — though the architecture-doc text for M1/M3/M4 may still
+> warrant a consistency pass in a future round. **Phase 3 (Domain Layer I) has not yet started.**
 
 ---
 
@@ -127,9 +133,9 @@ Tech Design §10 and Roadmap Phase 1 list both `PersonalTransaction` and `Busine
 
 ~~**[FIX – S7]** Define the savings goal `status` enum values~~ **Resolved R8** — `status ∈ {active, archived}` (`completed` derived from progress ≥ target; `paused` not in v1). Reverses the earlier "lifecycle is V2" note. `goals.csv` spec updated; `SavingsGoalEngine` description updated.
 
-**[DECIDE]** CSV spec gaps — **partially resolved R8.** Format/approach locked: `schema_version` is a leading `# schema_version: N` comment row (tolerant parser); the 28 specs are authored as machine-readable JSON in `.finance-meta/schemas/` as the single source of truth. **Still open:** enumerate the full enum value sets (`account_group`, `account_type`, `trade_type`, `frequency`, `adjustment_type`, `status`) and the required-vs-optional flag per column. Phase 2 work.
+~~**[DECIDE]** CSV spec gaps~~ **Resolved (Phase 2 build, 2026-06-30)** — The full set of canonical JSON schemas (23, one per managed file type) is authored and **bundled** with the library at `Sources/FinanceWorkspaceKit/Resources/Schemas/` (loaded via `Bundle.module`, mirrored into `.finance-meta/schemas/` at bootstrap). Each schema enumerates required-vs-optional columns and the enum value sets (`account_group`, `account_type`, `trade_type`, `frequency`, `adjustment_type`, `status`, …), enforced by `CSVSchemaRegistry`. `schema_version` is the leading `# schema_version: N` comment row (tolerant parser).
 
-**[DECIDE]** Validation rule catalog — **partially resolved R8.** Rule shape locked: `{ id VAL-<TIER>-<NNN>, tier, severity, repair_class, message_template, predicate }`, authored as data alongside the JSON schemas (`docs/architecture/rulesets-and-taxes.md`). **Still open:** enumerate the full per-rule catalog (one entry per condition).
+~~**[DECIDE]** Validation rule catalog~~ **Resolved (Phase 2 build, 2026-06-30)** — The full per-rule catalog is implemented in `RuleCatalog` / `Validation/Rules/`: **34 rules** in the locked `VAL-<TIER>-<NNN>` shape — 15 file-level (`VAL-FILE-001…015`), 11 cross-file (`VAL-CROSS-001…011`), 8 domain (`VAL-DOMAIN-001…008`), each carrying tier, severity, repair class, and message template. Run by `ValidationEngine`; confirmed by the Milestone 2 gate.
 
 ~~**[DECIDE]** Validation issue classification~~ **Resolved R8** — Defaults set in `docs/architecture/rulesets-and-taxes.md`: missing optional column → warning/auto; unknown `category_id` → warning/manual; unknown `account_id` on a transaction → error/manual (assisted create, no silent add); missing required folder → info/auto. Severity philosophy: errors block; warnings surface; info silent.
 
@@ -151,20 +157,15 @@ Tech Design §10 and Roadmap Phase 1 list both `PersonalTransaction` and `Busine
 
 ~~**[DECIDE]** Import sign-flip detection~~ **Resolved R8** — Explicit per-import declaration in the column-mapping step, with a heuristic pre-fill the user confirms. Never silently flip. See `docs/architecture/data-pipelines.md §3.1`.
 
-**[FIX – R6-M1]** Apply R6 schema renames in `CSVSchemaRegistry`  
-Three file/column renames from Round 6 must be reflected in the schema registry before parsing can be built: `entities.csv` → `account-groups.csv` (FK column `entity_id` → `account_group_id`); `holdings.csv` → `assets.csv` (FK column `holding_id` → `asset_id`); `deductions.csv` → `tax-adjustments.csv` (FK column `deduction_id` → `tax_adjustment_id`). All specs are in `docs/architecture/containers-and-budgets.md §3`.
+~~**[FIX – R6-M1]** Apply R6 schema renames in `CSVSchemaRegistry`~~ **Resolved (Phase 2 build, 2026-06-30)** — The bundled schemas use the R6 names: `account-groups.schema.json` (`account_group_id`), `assets.schema.json` (`asset_id`), `tax-adjustments.schema.json` (`tax_adjustment_id`); `CSVSchemaRegistry` registers them. Legacy names are handled by `migrate-r6` (R6-M5).
 
-**[FIX – R6-M2]** Add `Accounts/liabilities.csv` spec to `CSVSchemaRegistry`  
-`Liability` is a first-class object as of Round 6 — `Accounts/liabilities.csv` was added. The schema registry must include this file. Spec is in `docs/architecture/containers-and-budgets.md §3.3`.
+~~**[FIX – R6-M2]** Add `Accounts/liabilities.csv` spec to `CSVSchemaRegistry`~~ **Resolved (Phase 2 build, 2026-06-30)** — `liabilities.schema.json` is bundled and registered.
 
-**[FIX – R6-M3]** Add `Investments/portfolios.csv` and sleeve files to `CSVSchemaRegistry`  
-`Portfolio` was introduced as a formal investment container in Round 6 — `Investments/portfolios.csv`, `Investments/sleeves.csv`, and `Investments/sleeve-targets.csv` were added. The schema registry must include all three. Specs are in `docs/architecture/containers-and-budgets.md §3`.
+~~**[FIX – R6-M3]** Add `Investments/portfolios.csv` and sleeve files to `CSVSchemaRegistry`~~ **Resolved (Phase 2 build, 2026-06-30)** — `portfolios.schema.json`, `sleeves.schema.json`, and `sleeve-targets.schema.json` are all bundled and registered.
 
-**[FIX – R6-M4]** Add `group_id` and `group_role` columns to the unified transaction schema  
-Multi-entry transactions (transfers, paycheck gross/net splits) use a shared `group_id` connector and a `group_role` column (`gross`, `net`, `withholding`, `credit`, `debit`). These columns must be in the `Accounts/transactions/YYYY-MM.csv` spec in `CSVSchemaRegistry`. Spec is in `docs/architecture/containers-and-budgets.md §3.1`.
+~~**[FIX – R6-M4]** Add `group_id` and `group_role` columns to the unified transaction schema~~ **Resolved (Phase 2 build, 2026-06-30)** — `transactions.schema.json` carries the multi-entry `group_id` / `group_role` columns; the multi-entry group rules are in the validation catalog (`VAL-DOMAIN-*`).
 
-**[FIX – R6-M5]** Create one-time `migrate-r6.swift` migration script  
-Before first build, a preview-able migration script is needed to rename the three legacy CSV files (`entities.csv` → `account-groups.csv`, `holdings.csv` → `assets.csv`, `deductions.csv` → `tax-adjustments.csv`), update FK column names in-place, and fold `Investments/transactions.csv` into the unified monthly ledger. Spec is in `docs/architecture/data-pipelines.md §2` (optional scripts). Existing workspaces from the prototype era will need this path.
+~~**[FIX – R6-M5]** Create one-time `migrate-r6.swift` migration script~~ **Resolved (Phase 2 build, 2026-06-30)** — `MigrationService` + the `migrate-r6` CLI (`Sources/migrate-r6/`) implement the preview-able, idempotent migration: rename the three legacy files/FK columns, fold `Investments/transactions.csv` into the unified ledger as `type = trade` rows, seed new R6 files, bump `schema_version`, update the manifest. Delivered as US5 (T035–T038).
 
 ~~**[FIX – R7-P1]** Update prototype `data.js` write/edit flows~~ **Resolved R7** — Prototype now demonstrates the full add/edit/delete cycle: add-transaction modal and manual single-entry flow, edit account/transaction/goal/category/group side panels, **delete with reference-check reassignment preview** (per-collection reassignment picker, atomic delete + reassign — matches the locked Round 7 reassign policy), and a two-step **import CSV column-mapping flow** (file picker → auto-detected column-mapping table → import). `prototype/data.js` also carries the full R6 schema (accountGroups, assets, taxAdjustments, liabilities, portfolios, multi-entry transactions with `groupId`/`groupRole`). Tracked per `docs/_refinement/r7-review.md` items A2/B1/B2.
 
@@ -422,16 +423,18 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 | Phase | FIX open | FIX resolved | DECIDE open | DECIDE resolved | Total open |
 |---|---|---|---|---|---|
 | Phase 1 — Foundation | 5 | 11 | 4 | 9 | 9 |
-| Phase 2 — Parsing | 5 | 3 | 5 | 3 | 10 |
+| Phase 2 — Parsing | 0 | 8 | 3 | 5 | 3 |
 | Phase 3 — Domain I | 1 | 0 | 13 | 1 | 14 |
 | Phase 4 — Domain II | 2 | 0 | 21 | 0 | 23 |
 | Phase 5 — Presentation | 1 | 0 | 11 | 0 | 12 |
 | Phase 6 — Write Flows | 0 | 0 | 14 | 0 | 14 |
 | Phase 7 — Polish | 0 | 0 | 6 | 0 | 6 |
-| **Total** | **14** | **14** | **74** | **13** | **88** |
+| **Total** | **9** | **19** | **72** | **15** | **81** |
 
-> **Round 8 (2026-06-26)** retired 15 open items (Phase 1: 5 FIX + 5 DECIDE; Phase 2: 2 FIX + 3 DECIDE). Two Phase 2 `[DECIDE]` items (CSV spec gaps, validation rule catalog) are **partially** resolved — format/structure locked, full enumeration still open — and remain counted as open. `R6-M1…M5` remain open as Phase 2 build tasks (specs are settled; realized by authoring the `.finance-meta/schemas/` JSON schemas).
+> **Phase 2 build complete (2026-06-30)** retired 7 open Phase 2 items: the two partially-resolved `[DECIDE]`s (CSV spec gaps, validation rule catalog — now fully resolved by the 23 bundled JSON schemas + the 34-rule `RuleCatalog`) and all five `R6-M1…M5` `[FIX]`s. The 3 remaining open Phase 2 items are **Design** `[DECIDE]`s (validation issue card, repair preview panel, indexing progress state) — UI design that lands with the Presentation layer (Phase 5), not part of the engine spec `003`.
+>
+> **Round 8 (2026-06-26)** retired 15 open items (Phase 1: 5 FIX + 5 DECIDE; Phase 2: 2 FIX + 3 DECIDE).
 
 ---
 
-*Last updated: 2026-06-26 (Round 8 — foundation hardening)*
+*Last updated: 2026-06-30 (Phase 2 build complete — PR #16)*

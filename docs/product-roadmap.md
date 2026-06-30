@@ -3,7 +3,7 @@
 **Project**: Personal Finance Workspace for macOS
 **Scope**: v1 as defined in `docs/product-requirements.md` and `docs/technical-design.md`
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
-**Last updated**: 2026-06-28 (Phase 1 build complete — see Phase 1 status banner & changelog)
+**Last updated**: 2026-06-30 (Phase 2 build complete & merged, PR #16 — see Phase 2 status banner & changelog)
 
 ---
 
@@ -214,6 +214,23 @@ typed domain records. This is the prerequisite for every domain engine in Phase 
 
 **⚠️ Critical dependency**: Domain engines in Phase 3 are blocked until `CSVParserService`,
 `CSVSchemaRegistry`, and `ValidationEngine` are complete and tested against real fixture files.
+
+> **✅ Status (2026-06-30): COMPLETE — merged to `main` via PR #16.** Delivered as spec
+> `specs/003-parsing-validation` (all 43 tasks done; **Milestone 2** gate confirmed at T043). The
+> Parsing layer (`CSVParserService` / `CSVSchemaRegistry` / `CSVNormalizer` / `FrontMatterParser` /
+> `MarkdownParserService` / `WorkspaceParser`), the `ValidationEngine` + `RuleCatalog` (full
+> catalog: 15 file + 11 cross-file + 8 domain rules in the `VAL-<TIER>-<NNN>` shape),
+> `RepairService`, `SettingsStore`, and `MigrationService` all shipped, plus the
+> `validate-workspace` / `repair-workspace` / `migrate-r6` CLIs. Canonical JSON schemas for all 23
+> managed file types are **bundled** with the library (`Sources/FinanceWorkspaceKit/Resources/Schemas/`,
+> via `Bundle.module`) and mirrored into the workspace `.finance-meta/schemas/` at bootstrap. As
+> with Phase 1, the unchecked `[ ]` boxes below are retained for historical task detail — the
+> **Development** tasks and the dev-facing **Product** tasks are implemented.
+>
+> **Not in this phase:** the **Design Tasks** below (validation issue card, repair preview panel,
+> indexing progress state) are UI design that lands with the Presentation layer (Phase 5); spec
+> `003` was the engine/infrastructure layer only. The intended treatments are explored in the
+> static `prototype/` but are not yet committed design specs.
 
 ### Product Tasks
 
@@ -852,6 +869,23 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Build-status sync — 2026-06-30
+Not a refinement round — a doc-to-repo alignment recorded as Phase 2 completes.
+
+- **Phase 2 marked COMPLETE** (merged to `main`, PR #16; spec `003-parsing-validation`, all 43
+  tasks; Milestone 2 gate confirmed at T043). Added a status banner at the top of Phase 2.
+- **Parsing + Validation layer delivered:** `CSVParserService` / `CSVSchemaRegistry` /
+  `CSVNormalizer` / `FrontMatterParser` / `MarkdownParserService` / `WorkspaceParser`,
+  `ValidationEngine` + `RuleCatalog` (34 rules: 15 file / 11 cross-file / 8 domain), `RepairService`,
+  `SettingsStore`, `MigrationService`, and the `validate-workspace` / `repair-workspace` /
+  `migrate-r6` CLIs.
+- **Schemas bundled:** 23 canonical JSON schemas live in
+  `Sources/FinanceWorkspaceKit/Resources/Schemas/` (loaded via `Bundle.module`) and mirror into the
+  workspace `.finance-meta/schemas/` at bootstrap.
+- **Project-management sync:** the two partially-resolved Phase 2 `[DECIDE]`s (CSV spec gaps,
+  validation rule catalog) and all five `R6-M1…M5` `[FIX]`s retired; item-count table updated.
+- **Phase 3 (Domain Layer I — Accounts, Budget & Overview)** is the next phase — not yet started.
 
 ### Build-status sync — 2026-06-28
 Not a refinement round — a doc-to-repo alignment recorded as Phase 2 begins.
