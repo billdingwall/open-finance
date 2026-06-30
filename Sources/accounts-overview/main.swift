@@ -49,7 +49,8 @@ do {
     }
     print(String(repeating: "─", count: 72))
     for group in overview.groups {
-        print("group \(group.accountGroupId) [\(group.groupType.rawValue)] — YTD net \(money(group.ytdNetIncome)), retained equity \(money(group.ytdRetainedEquity))")
+        let net = money(group.ytdNetIncome), retained = money(group.ytdRetainedEquity)
+        print("group \(group.accountGroupId) [\(group.groupType.rawValue)] — YTD net \(net), retained equity \(retained)")
         for pl in group.businessPL ?? [] { print("    P&L \(pl.period): \(money(pl.netIncome))") }
     }
     print(String(repeating: "─", count: 72))

@@ -106,8 +106,11 @@ public struct AccountEngine: Sendable {
             totalInflow += monthInflow
             totalNet += ytdNet
             // Personal-inflow vs retained-equity split (FR-001 / R12): business-group income is retained.
-            if groupType[account.accountId] == .business { totalRetained += ytd.gross }
-            else { totalPersonal += ytd.gross }
+            if groupType[account.accountId] == .business {
+                totalRetained += ytd.gross
+            } else {
+                totalPersonal += ytd.gross
+            }
         }
 
         let groups = buildGroups(accounts: accounts, groupType: groupType, figures: figures,
@@ -143,12 +146,11 @@ public struct AccountEngine: Sendable {
     public func groupDetail(for accountGroupId: String, in context: WorkspaceContext, asOf: Date,
                             settings: WorkspaceSettings) -> AccountGroupProjection? {
         let accounts = context.accounts
-        guard let group = context.accountGroups.first(where: { $0.accountGroupId == accountGroupId })
-        else { return nil }
+        guard accounts.contains(where: { $0.accountGroupId == accountGroupId }) else { return nil }
         let groupType = groupTypeByAccount(accounts, groups: context.accountGroups)
         let figures = monthlyFigures(context.transactions)
         return buildGroups(accounts: accounts, groupType: groupType, figures: figures,
-                           taxYear: settings.taxYear, asOf: asOf, only: group.accountGroupId).first
+                           taxYear: settings.taxYear, asOf: asOf, only: accountGroupId).first
     }
 
     // MARK: - Internals
@@ -216,7 +218,9 @@ public struct AccountEngine: Sendable {
                 }
             }
             let pl: [BusinessMonthlySummary]? = gType == .business
-                ? monthlyNet.keys.sorted().map { BusinessMonthlySummary(accountGroupId: groupId, period: $0, netIncome: monthlyNet[$0] ?? 0) }
+                ? monthlyNet.keys.sorted().map {
+                    BusinessMonthlySummary(accountGroupId: groupId, period: $0, netIncome: monthlyNet[$0] ?? 0)
+                }
                 : nil
             return AccountGroupProjection(accountGroupId: groupId, groupType: gType,
                                           accountIds: groupAccounts.map(\.accountId).sorted(),

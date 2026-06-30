@@ -62,10 +62,12 @@ do {
     }
     print(String(repeating: "─", count: 78))
     let totals = projection.totals
-    print("income \(money(totals.income)) · fixed \(money(totals.fixed)) · discretionary \(money(totals.discretionary)) · savings \(money(totals.savings)) · investments \(money(totals.investments)) · transfers \(money(totals.transfers))")
+    print("income \(money(totals.income)) · fixed \(money(totals.fixed)) · discretionary \(money(totals.discretionary))")
+    print("savings \(money(totals.savings)) · investments \(money(totals.investments)) · transfers \(money(totals.transfers))")
     print("net monthly income \(money(totals.netMonthlyIncome))")
     let mix = projection.spendMix
-    print("spend mix — fixed \(pct(mix.fixedPct)) · discretionary \(pct(mix.discretionaryPct)) · savings \(pct(mix.savingsPct)) · investments \(pct(mix.investmentPct)) of net income")
+    print("spend mix (% of net income) — fixed \(pct(mix.fixedPct)) · discretionary \(pct(mix.discretionaryPct))")
+    print("              savings \(pct(mix.savingsPct)) · investments \(pct(mix.investmentPct))")
     for contribution in projection.goalContributions {
         print("goal \(contribution.goalId): \(money(contribution.amount))")
     }
