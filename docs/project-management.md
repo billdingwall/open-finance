@@ -1,7 +1,7 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
-**Last updated**: 2026-06-30 (Phase 2 build complete & merged — PR #16; Phase 3 not yet started)  
+**Last updated**: 2026-06-30 (Phase 3 build complete on branch `004-domain-accounts-budget-overview`, pending CI + merge)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
@@ -21,7 +21,11 @@
 > Xcode app target, added in Phase 5). The implemented domain models settle several Phase 1
 > doc-naming FIX items in code — `UnifiedTransaction` (M6), `AccountGroup` (C6/S9), single `Account`
 > + optional `InvestmentMetadata` (C1) — though the architecture-doc text for M1/M3/M4 may still
-> warrant a consistency pass in a future round. **Phase 3 (Domain Layer I) has not yet started.**
+> warrant a consistency pass in a future round. **Phase 3 (Domain Layer I) is build-complete on branch
+`004-domain-accounts-budget-overview`** (39/39 tasks; Milestone 3 reached) — pending CI + merge. It
+retires `[FIX-C2]` and all seven Phase-3 product `[DECIDE]`s (taxonomy, category seed, employment
+groups, trailing-average sparse handling, KPI card specs, MoM panel, YTD net income); the six Phase-3
+**Design** `[DECIDE]`s remain Phase-5 work. **Phase 4 (Domain Layer II) is next, not started.**
 
 ---
 
@@ -177,35 +181,19 @@ Tech Design §10 and Roadmap Phase 1 list both `PersonalTransaction` and `Busine
 
 ~~**[FIX – C2]** Correct the Phase 3 critical dependency note in the roadmap~~ **Resolved (Phase 3 build, `004-domain-accounts-budget-overview`)** — verified the roadmap Phase 3 "Critical dependency" note (`docs/product-roadmap.md`) already references the correct paths: master registry `Accounts/accounts.csv` plus `account_group_id` from `Accounts/account-groups.csv`; no `Investments/accounts.csv` or `Business/entities.csv` references remain. The stale-path text this item described was corrected in an earlier round; this closes the tracking entry.
 
-**[DECIDE]** Account type taxonomy — the `account_group` enum has 7 groups. What are all valid `account_type` sub-types within each? For example:
-- `checking`: personal, joint
-- `savings`: HYSA, standard, money market
-- `investment`: taxable brokerage, Roth IRA, Traditional IRA, HSA, 401k, SEP-IRA
-- `credit_card`: personal, business
-- `loan`: mortgage, auto, personal, student
-- `employment`: W-2 payroll, 1099 contract
-- `business`: sole proprietor, LLC, S-Corp
+~~**[DECIDE]** Account type taxonomy~~ **Resolved (Phase 3 build)** — canonical `account_type` per `account_group` shipped as `AccountTypeTaxonomy` (`checking` {personal, joint}; `savings` {hysa, standard, money_market}; `investment` {taxable, roth_ira, traditional_ira, hsa, 401k, sep_ira}; `credit_card` {personal, business}; `loan` {mortgage, auto, personal, student}; `employment` {w2, 1099}; `business` {sole_prop, llc, s_corp}). `account_type` stays a free-string schema column (forward-compatible); the seed accounts use canonical values.
 
-**[DECIDE]** Default budget category set — group names, category names, `default_budget_behavior` (fixed / discretionary / savings / investment / transfer), and `tax_relevant` flag for each. This is the seed data written by `bootstrap-workspace` and shown to every new user.
+~~**[DECIDE]** Default budget category set~~ **Resolved (Phase 3 build)** — 16-row seed across six groups (Income {salary, business_income — fixed/tax_relevant}, Essentials {housing, groceries, utilities, transport, insurance}, Lifestyle {dining, entertainment, shopping, travel — discretionary}, Savings {emergency, goals — savings}, Investments {retirement, brokerage — investment}, Transfers {transfer}) in `WorkspaceLayout`. `tax_relevant` on income + insurance.
 
-**[DECIDE]** Entities/themes taxonomy — display labels, icon identifiers, and which account groups are valid under each of the four entity types (personal, employment, business, custom). Can a user have more than one employment entity (e.g. two jobs)?
+~~**[DECIDE]** Entities/themes taxonomy~~ **Resolved (Phase 3 build, engine portion)** — **multiple `employment` account-groups are allowed** (each job is its own group; engines aggregate across them). The four `group_type`s (personal/employment/business/custom) are the canonical taxonomy. Display labels / icon identifiers are UI and stay with the Phase-5 design work.
 
-**[DECIDE]** 3-month trailing average — sparse data: when fewer than 3 full months exist, show a partial average with a data-sufficiency label (e.g. "avg of 1 mo"), dashes until 3 months exist, or the available data with no special treatment?
+~~**[DECIDE]** 3-month trailing average — sparse data~~ **Resolved (Phase 3 build)** — partial average with a data-sufficiency signal (`TrailingAverage{value, monthsAvailable, isPartial}`, label "avg of N mo"); never zero/blank for a category with ≥1 month; `monthsAvailable == 0` → `value == nil` (UI renders a dash).
 
-**[DECIDE]** Overview KPI card field specs — exact field definitions for all 5 cards:
-- **Budget**: "estimated spending" — sum of all budget plan rows, or actual-to-date with a projection for remaining days?
-- **Savings**: "estimated rate" — account yield from account rules, or YTD growth rate from balance snapshots?
-- **Investments**: "estimated rate" — YTD portfolio return, annualized benchmark return, or yield from account rules?
-- **Business**: which entities are included — all `entity_type: business`, or only active ones?
-- **Taxes**: "estimated return" — derived by `DeductionEngine` (taxes_paid − estimated_owed), or user-entered?
+~~**[DECIDE]** Overview KPI card field specs~~ **Resolved (Phase 3 build, Phase-3 scope)** — Budget card = current-month income vs estimated spending (fixed + discretionary); Savings card (AccountEngine) = savings-group balance + current-month inflow; Business card = business-group YTD net income (active accounts via `status`); Investments + Taxes cards return the typed "data not available" state (PortfolioEngine/TaxEngine = Phase 4). The "estimated rate" formulas for Savings/Investments are Phase-4 (`OOS-6`).
 
-**[DECIDE]** Month-over-month panel — how many prior months are shown (3, 6, or 12)? When a month has no data, show a zero bar, a gap, or skip the month?
+~~**[DECIDE]** Month-over-month panel~~ **Resolved (Phase 3 build)** — trailing **6** months; months with no data are **skipped** (not zero-barred).
 
-**[DECIDE]** YTD net income formula — `gross_income − total_expenses − taxes_paid` defined per account group:
-- `employment`: gross = all positive transactions; what counts as expenses? What counts as taxes paid?
-- `business`: gross = revenue; expenses = business expense transactions; taxes = estimated payments for the entity?
-- `checking`: gross = deposits; expenses = debits excluding transfers?
-- How are inter-account transfers excluded from both sides?
+~~**[DECIDE]** YTD net income formula~~ **Resolved (Phase 3 build)** — `gross − expenses − taxes_paid`, YTD anchored to the workspace `tax_year`, `type = transfer` excluded from both sides; `taxes_paid` = explicit tax line items (withholding legs + standalone tax-payment rows). Per-group: employment/checking gross = positive income rows; business gross = revenue rows. Plus the personal-inflow vs **retained-equity** split (business income retained in business accounts; investment/reinvested-gain retained equity → Phase 4, `OOS-4`).
 
 ---
 
@@ -423,17 +411,24 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 |---|---|---|---|---|---|
 | Phase 1 — Foundation | 5 | 11 | 4 | 9 | 9 |
 | Phase 2 — Parsing | 0 | 8 | 3 | 5 | 3 |
-| Phase 3 — Domain I | 1 | 0 | 13 | 1 | 14 |
+| Phase 3 — Domain I | 0 | 1 | 6 | 8 | 6 |
 | Phase 4 — Domain II | 2 | 0 | 21 | 0 | 23 |
 | Phase 5 — Presentation | 1 | 0 | 11 | 0 | 12 |
 | Phase 6 — Write Flows | 0 | 0 | 14 | 0 | 14 |
 | Phase 7 — Polish | 0 | 0 | 6 | 0 | 6 |
-| **Total** | **9** | **19** | **72** | **15** | **81** |
+| **Total** | **8** | **20** | **65** | **22** | **73** |
 
+> **Phase 3 build complete on branch (2026-06-30)** retired 8 open Phase 3 items: `[FIX-C2]` and all
+> seven Phase-3 product `[DECIDE]`s (account-type taxonomy, default category set, employment-group
+> taxonomy, 3-month trailing-average sparse handling, Overview KPI card specs, MoM panel, YTD net
+> income). The 6 remaining open Phase 3 items are **Design** `[DECIDE]`s (Accounts overview,
+> per-account detail, Budget overview, Budget history, Overview dashboard, empty states) — UI design
+> that lands with the Presentation layer (Phase 5), not part of the engine spec `004`.
+>
 > **Phase 2 build complete (2026-06-30)** retired 7 open Phase 2 items: the two partially-resolved `[DECIDE]`s (CSV spec gaps, validation rule catalog — now fully resolved by the 23 bundled JSON schemas + the 34-rule `RuleCatalog`) and all five `R6-M1…M5` `[FIX]`s. The 3 remaining open Phase 2 items are **Design** `[DECIDE]`s (validation issue card, repair preview panel, indexing progress state) — UI design that lands with the Presentation layer (Phase 5), not part of the engine spec `003`.
 >
 > **Round 8 (2026-06-26)** retired 15 open items (Phase 1: 5 FIX + 5 DECIDE; Phase 2: 2 FIX + 3 DECIDE).
 
 ---
 
-*Last updated: 2026-06-30 (Phase 2 build complete — PR #16)*
+*Last updated: 2026-06-30 (Phase 3 build complete on branch — pending CI + merge)*
