@@ -3,9 +3,10 @@ import Foundation
 // T012 — Taxes domain models. The tax module estimates obligations; it is not a computation engine.
 
 public enum TaxAdjustmentType: String, Codable, Sendable, CaseIterable {
-    case standard, itemized, credit, liability
+    case standard, credit
     case aboveTheLine = "above_the_line"
-    case businessExpense = "business-expense"
+    case scheduleA = "schedule_a"      // itemized deductions
+    case scheduleC = "schedule_c"      // business expenses
 }
 
 public struct TaxAdjustment: Codable, Equatable, Sendable, Identifiable {
@@ -118,6 +119,93 @@ public struct RealizedGainSummary: Equatable, Sendable {
         self.shortTermGainLoss = shortTermGainLoss
         self.longTermGainLoss = longTermGainLoss
         self.lots = lots
+    }
+}
+
+// MARK: - Deduction / estimate / prep models (US3)
+
+/// Standard-vs-itemized comparison + adjustments; the greater is flagged, never auto-committed (FR-019).
+public struct TaxDeductionSummary: Equatable, Sendable {
+    public enum Recommendation: String, Equatable, Sendable { case standard, itemized }
+    public var taxYear: Int
+    public var grossIncome: Decimal
+    public var standardTotal: Decimal
+    public var itemizedTotal: Decimal
+    public var recommended: Recommendation      // the greater — for display only
+    public var aboveTheLine: Decimal
+    public var scheduleC: Decimal
+    public var qbiDeduction: Decimal
+    public var taxableIncomeAfterAdjustments: Decimal
+    public var businessExpenseByGroup: [BusinessExpenseReconciliation]
+
+    public init(taxYear: Int, grossIncome: Decimal, standardTotal: Decimal, itemizedTotal: Decimal,
+                recommended: Recommendation, aboveTheLine: Decimal, scheduleC: Decimal,
+                qbiDeduction: Decimal, taxableIncomeAfterAdjustments: Decimal,
+                businessExpenseByGroup: [BusinessExpenseReconciliation]) {
+        self.taxYear = taxYear
+        self.grossIncome = grossIncome
+        self.standardTotal = standardTotal
+        self.itemizedTotal = itemizedTotal
+        self.recommended = recommended
+        self.aboveTheLine = aboveTheLine
+        self.scheduleC = scheduleC
+        self.qbiDeduction = qbiDeduction
+        self.taxableIncomeAfterAdjustments = taxableIncomeAfterAdjustments
+        self.businessExpenseByGroup = businessExpenseByGroup
+    }
+}
+
+public struct BusinessExpenseReconciliation: Equatable, Sendable, Identifiable {
+    public var accountGroupId: String
+    public var claimed: Decimal              // Schedule C business-expense adjustments for the group
+    public var ledgerTotal: Decimal          // account-group expense total from the ledger
+    public var divergence: Decimal { claimed - ledgerTotal }
+    public var id: String { accountGroupId }
+    public init(accountGroupId: String, claimed: Decimal, ledgerTotal: Decimal) {
+        self.accountGroupId = accountGroupId; self.claimed = claimed; self.ledgerTotal = ledgerTotal
+    }
+}
+
+/// Computed simplified tax estimate; a non-empty stored `estimates.csv` value overrides (FR-017).
+public struct TaxEstimateProjection: Equatable, Sendable {
+    public enum Source: String, Equatable, Sendable { case computed, stored }
+    public var fiscalYear: Int
+    public var taxableIncome: Decimal
+    public var projectedLiability: Decimal
+    public var taxesPaid: Decimal
+    public var estimatedReturn: Decimal       // taxesPaid − projectedLiability (refund if positive)
+    public var source: Source
+
+    public init(fiscalYear: Int, taxableIncome: Decimal, projectedLiability: Decimal,
+                taxesPaid: Decimal, estimatedReturn: Decimal, source: Source) {
+        self.fiscalYear = fiscalYear
+        self.taxableIncome = taxableIncome
+        self.projectedLiability = projectedLiability
+        self.taxesPaid = taxesPaid
+        self.estimatedReturn = estimatedReturn
+        self.source = source
+    }
+}
+
+/// Fixed v1 tax-prep checklist (FR-021).
+public struct TaxPrepSummary: Equatable, Sendable {
+    public var taxYear: Int
+    public var items: [PrepItem]
+    public init(taxYear: Int, items: [PrepItem]) { self.taxYear = taxYear; self.items = items }
+}
+
+public struct PrepItem: Equatable, Sendable, Identifiable {
+    public enum Kind: String, Equatable, Sendable, CaseIterable {
+        case w2Income = "W-2 income", form1099 = "1099s"
+        case estimatedPayments = "Estimated payments", deductionConfirmations = "Deduction confirmations"
+    }
+    public enum State: String, Equatable, Sendable { case missing, incomplete, complete }
+    public var kind: Kind
+    public var state: State
+    public var detail: String
+    public var id: String { kind.rawValue }
+    public init(kind: Kind, state: State, detail: String) {
+        self.kind = kind; self.state = state; self.detail = detail
     }
 }
 

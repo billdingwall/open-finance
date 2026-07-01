@@ -113,17 +113,8 @@ public struct SleeveFundingLink: Codable, Equatable, Sendable {
     public init(sleeveId: String, transactionId: String) { self.sleeveId = sleeveId; self.transactionId = transactionId }
 }
 
-public struct TaxPrepSummary: Codable, Equatable, Sendable {
-    public var taxYear: Int
-    public var complete: Bool
-    public init(taxYear: Int, complete: Bool) { self.taxYear = taxYear; self.complete = complete }
-}
-
-public struct TaxDeductionSummary: Codable, Equatable, Sendable {
-    public var taxYear: Int
-    public var totalAdjustments: Decimal
-    public init(taxYear: Int, totalAdjustments: Decimal) { self.taxYear = taxYear; self.totalAdjustments = totalAdjustments }
-}
+// TaxPrepSummary and TaxDeductionSummary now live in Domain/Taxes/TaxModels.swift (US3), superseding
+// the Phase-3 stubs that were here.
 
 public struct BusinessMonthlySummary: Codable, Equatable, Sendable {
     public var accountGroupId: String

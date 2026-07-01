@@ -26,6 +26,9 @@ public struct WorkspaceParser: Sendable {
 
         for relativePath in Self.discover(in: workspaceURL) {
             let url = workspaceURL.appendingPathComponent(relativePath)
+            // Taxes/archive/ holds read-only, app-managed year-close snapshots — not live read-model
+            // data. Skip them (neither parsed nor flagged as unrecognized). See architecture §3.24.
+            if relativePath.hasPrefix("Taxes/archive/") { continue }
             if relativePath.hasSuffix(".csv") {
                 guard let schema = registry.schema(forRelativePath: relativePath) else {
                     unrecognized.append(relativePath)   // unknown file type → VAL-FILE-002 at validation
