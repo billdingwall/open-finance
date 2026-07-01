@@ -155,10 +155,10 @@ completed derived.
 gap, months-to-goal (or "n/a"), and funding links match hand-calcs; a snapshot-less goal uses the
 ledger balance; archived goals are absent.
 
-- [ ] T038 [P] [US5] Extend `SavingsModels` with `GoalProgressProjection` (incl. `balanceSource`, `trailingContributionRate`, `isCompleteDerived`, `fundingLinks`) in `Sources/FinanceWorkspaceKit/Domain/Savings/SavingsModels.swift` per `data-model.md §B`
-- [ ] T039 [US5] Implement `SavingsGoalEngine`: snapshot-anchored-else-ledger balance; gap-to-target; months-to-goal at the trailing-3-month contribution rate (`nil`/"n/a" when ≤0); `GoalFundingLink` resolution from `savings_goal_id`-tagged rows; exclude `archived`; derive `completed` from progress ≥ target, in `Sources/FinanceWorkspaceKit/Domain/Savings/SavingsGoalEngine.swift` per FR-001/002/003/004 / research R4
-- [ ] T040 [US5] Wire the `savings-overview` CLI (`--workspace`, `--as-of`) in `Sources/savings-overview/main.swift` per `contracts/cli-scripts.md`
-- [ ] T041 [P] [US5] Add `SavingsGoalEngineTests` (snapshot vs ledger balance, months-to-goal + "n/a", archived exclusion, derived-complete) in `Tests/FinanceWorkspaceKitTests/Unit/SavingsGoalEngineTests.swift`
+- [X] T038 [P] [US5] Extend `SavingsModels` with `GoalProgressProjection` (incl. `balanceSource`, `trailingContributionRate`, `isCompleteDerived`, `fundingLinks`) in `Sources/FinanceWorkspaceKit/Domain/Savings/SavingsModels.swift` per `data-model.md §B`
+- [X] T039 [US5] Implement `SavingsGoalEngine`: snapshot-anchored-else-ledger balance; gap-to-target; months-to-goal at the trailing-3-month contribution rate (`nil`/"n/a" when ≤0); `GoalFundingLink` resolution from `savings_goal_id`-tagged rows; exclude `archived`; derive `completed` from progress ≥ target, in `Sources/FinanceWorkspaceKit/Domain/Savings/SavingsGoalEngine.swift` per FR-001/002/003/004 / research R4
+- [X] T040 [US5] Wire the `savings-overview` CLI (`--workspace`, `--as-of`) in `Sources/savings-overview/main.swift` per `contracts/cli-scripts.md`
+- [X] T041 [P] [US5] Add `SavingsGoalEngineTests` (snapshot vs ledger balance, months-to-goal + "n/a", archived exclusion, derived-complete) in `Tests/FinanceWorkspaceKitTests/Unit/SavingsGoalEngineTests.swift`
 
 **Checkpoint**: Savings goals verifiable independently (no dependency on US1–US4).
 
