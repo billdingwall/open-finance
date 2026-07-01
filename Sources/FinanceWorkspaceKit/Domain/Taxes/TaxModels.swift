@@ -32,28 +32,36 @@ public struct TaxAdjustment: Codable, Equatable, Sendable, Identifiable {
 public struct TaxEstimate: Codable, Equatable, Sendable, Identifiable {
     public var estimateId: String
     public var taxYear: Int
-    public var estimatedOwed: Decimal
+    public var grossIncome: Decimal?
+    public var taxesPaid: Decimal?
+    public var estimatedReturn: Decimal?     // stored override; nil → engine computes (FR-017)
     public var id: String { estimateId }
 
-    public init(estimateId: String, taxYear: Int, estimatedOwed: Decimal) {
+    public init(estimateId: String, taxYear: Int, grossIncome: Decimal? = nil,
+                taxesPaid: Decimal? = nil, estimatedReturn: Decimal? = nil) {
         self.estimateId = estimateId
         self.taxYear = taxYear
-        self.estimatedOwed = estimatedOwed
+        self.grossIncome = grossIncome
+        self.taxesPaid = taxesPaid
+        self.estimatedReturn = estimatedReturn
     }
 }
 
 public struct TaxDocument: Codable, Equatable, Sendable, Identifiable {
     public var documentId: String
     public var taxYear: Int
-    public var kind: String            // e.g. W-2, 1099-INT
-    public var reference: String?
+    public var kind: String            // e.g. W-2, 1099-INT, 1099-DIV
+    public var label: String?
+    public var linkedPath: String?
     public var id: String { documentId }
 
-    public init(documentId: String, taxYear: Int, kind: String, reference: String? = nil) {
+    public init(documentId: String, taxYear: Int, kind: String,
+                label: String? = nil, linkedPath: String? = nil) {
         self.documentId = documentId
         self.taxYear = taxYear
         self.kind = kind
-        self.reference = reference
+        self.label = label
+        self.linkedPath = linkedPath
     }
 }
 

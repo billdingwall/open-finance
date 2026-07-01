@@ -17,6 +17,9 @@
     "group_role": { "type": "enum", "required": false, "values": ["gross", "net", "withholding", "credit", "debit"] },
     "sending_asset_id": { "type": "string", "required": false },
     "receiving_asset_id": { "type": "string", "required": false },
-    "liability_id": { "type": "string", "required": false }
+    "liability_id": { "type": "string", "required": false },
+    "trade_type": { "type": "enum", "required": false, "values": ["buy", "sell"] },
+    "quantity": { "type": "decimal", "required": false },
+    "price": { "type": "decimal", "required": false }
   }
 }
