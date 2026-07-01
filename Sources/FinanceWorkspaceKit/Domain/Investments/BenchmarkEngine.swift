@@ -58,7 +58,7 @@ public struct BenchmarkEngine: Sendable {
     private func sectorWeights(_ context: WorkspaceContext, asOf: Date) -> [SectorWeight] {
         let holdings = PortfolioEngine().holdings(context, asOf: asOf, scope: .aggregate)
         guard holdings.totalMarketValue > 0 else { return [] }
-        let assetsById = Dictionary(context.assets.map { ($0.assetId, $0) }, uniquingKeysWith: { a, _ in a })
+        let assetsById = Dictionary(context.assets.map { ($0.assetId, $0) }, uniquingKeysWith: { first, _ in first })
         var mvBySector: [String: Decimal] = [:]
         for position in holdings.positions {
             guard let mv = position.currentValue.decimal else { continue }

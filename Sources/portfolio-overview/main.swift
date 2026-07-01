@@ -35,9 +35,9 @@ func money(_ value: Decimal) -> String {
 }
 func qty(_ value: Decimal) -> String { String(format: "%.4f", NSDecimalNumber(decimal: value).doubleValue) }
 func pct(_ value: Decimal) -> String { String(format: "%.1f%%", NSDecimalNumber(decimal: value * 100).doubleValue) }
-func padR(_ t: String, _ w: Int) -> String { t.count >= w ? t : t + String(repeating: " ", count: w - t.count) }
-func padL(_ t: String, _ w: Int) -> String { t.count >= w ? t : String(repeating: " ", count: w - t.count) + t }
-func valueText(_ s: ValueState) -> String { if case let .value(v) = s { return money(v) }; return "price n/a" }
+func padR(_ text: String, _ width: Int) -> String { text.count >= width ? text : text + String(repeating: " ", count: width - text.count) }
+func padL(_ text: String, _ width: Int) -> String { text.count >= width ? text : String(repeating: " ", count: width - text.count) + text }
+func valueText(_ state: ValueState) -> String { if case let .value(amount) = state { return money(amount) }; return "price n/a" }
 
 let context = try WorkspaceParser().parse(workspaceURL: root)
 let scope: HoldingsProjection.Scope = account.map { .account($0) } ?? .aggregate
@@ -47,18 +47,18 @@ let iso = ISO8601DateFormatter(); iso.formatOptions = [.withFullDate]
 print("Portfolio holdings — as of \(iso.string(from: asOf))\(account.map { " · account \($0)" } ?? "")")
 print(String(repeating: "─", count: 78))
 print(padR("ASSET", 12) + padR("TICKER", 8) + padL("QTY", 12) + padL("COST BASIS", 14) + padL("VALUE", 14) + padL("UNREALIZED", 14))
-for p in projection.positions {
-    print(padR(p.assetId, 12) + padR(p.ticker ?? "", 8) + padL(qty(p.quantity), 12)
-          + padL(money(p.costBasis), 14) + padL(valueText(p.currentValue), 14) + padL(valueText(p.unrealizedGainLoss), 14))
+for pos in projection.positions {
+    print(padR(pos.assetId, 12) + padR(pos.ticker ?? "", 8) + padL(qty(pos.quantity), 12)
+          + padL(money(pos.costBasis), 14) + padL(valueText(pos.currentValue), 14) + padL(valueText(pos.unrealizedGainLoss), 14))
 }
 print(String(repeating: "─", count: 78))
 print("TOTAL priced market value \(money(projection.totalMarketValue))")
 if !projection.sleeveAllocations.isEmpty {
     print("Sleeves:")
-    for s in projection.sleeveAllocations {
-        let target = s.targetWeight.map { pct($0) } ?? "—"
-        let drift = s.drift.map { (($0 >= 0 ? "+" : "") + pct($0)) } ?? "—"
-        print("  \(padR(s.name, 18)) mv \(money(s.marketValue)) · actual \(pct(s.actualWeight)) · target \(target) · drift \(drift)")
+    for sleeve in projection.sleeveAllocations {
+        let target = sleeve.targetWeight.map { pct($0) } ?? "—"
+        let drift = sleeve.drift.map { (($0 >= 0 ? "+" : "") + pct($0)) } ?? "—"
+        print("  \(padR(sleeve.name, 18)) mv \(money(sleeve.marketValue)) · actual \(pct(sleeve.actualWeight)) · target \(target) · drift \(drift)")
     }
 }
 if !projection.dividendTotalsByAsset.isEmpty {

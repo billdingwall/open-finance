@@ -178,7 +178,7 @@ public enum GrowthState: Equatable, Sendable {
     case insufficientHistory
 
     public var value: Decimal? {
-        switch self { case let .simple(v), let .cagr(v): return v; case .insufficientHistory: return nil }
+        switch self { case let .simple(value), let .cagr(value): return value; case .insufficientHistory: return nil }
     }
 }
 
@@ -221,7 +221,7 @@ public enum ValueState: Equatable, Sendable {
     case value(Decimal)
     case priceUnavailable
 
-    public var decimal: Decimal? { if case let .value(v) = self { return v }; return nil }
+    public var decimal: Decimal? { if case let .value(amount) = self { return amount }; return nil }
 }
 
 /// A holding position, aggregated across FIFO-open lots for one asset.

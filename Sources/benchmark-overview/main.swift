@@ -28,13 +28,13 @@ while let arg = args.first {
 guard let workspacePath else { fail(usage, code: 2) }
 let root = URL(fileURLWithPath: workspacePath, isDirectory: true)
 
-func padR(_ t: String, _ w: Int) -> String { t.count >= w ? t : t + String(repeating: " ", count: w - t.count) }
-func padL(_ t: String, _ w: Int) -> String { t.count >= w ? t : String(repeating: " ", count: w - t.count) + t }
-func cellText(_ g: GrowthState) -> String {
-    switch g {
-    case let .simple(v), let .cagr(v):
-        let p = NSDecimalNumber(decimal: v * 100).doubleValue
-        return String(format: "%@%.1f%%", p >= 0 ? "+" : "", p)
+func padR(_ text: String, _ width: Int) -> String { text.count >= width ? text : text + String(repeating: " ", count: width - text.count) }
+func padL(_ text: String, _ width: Int) -> String { text.count >= width ? text : String(repeating: " ", count: width - text.count) + text }
+func cellText(_ growth: GrowthState) -> String {
+    switch growth {
+    case let .simple(value), let .cagr(value):
+        let percent = NSDecimalNumber(decimal: value * 100).doubleValue
+        return String(format: "%@%.1f%%", percent >= 0 ? "+" : "", percent)
     case .insufficientHistory: return "—"
     }
 }
@@ -54,7 +54,7 @@ for row in heat.accounts { print(rowText(row.label, row.cells)) }
 if !heat.sectorWeights.isEmpty {
     print(String(repeating: "─", count: 40))
     print("Portfolio sector weights:")
-    for s in heat.sectorWeights {
-        print("  \(padR(s.sector, 16)) \(String(format: "%.1f%%", NSDecimalNumber(decimal: s.weight * 100).doubleValue))")
+    for sector in heat.sectorWeights {
+        print("  \(padR(sector.sector, 16)) \(String(format: "%.1f%%", NSDecimalNumber(decimal: sector.weight * 100).doubleValue))")
     }
 }

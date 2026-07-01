@@ -189,12 +189,12 @@ and Schedule C links resolve.
 **Purpose**: Fixture generation, resilience + read-only guarantees, seed validation, docs, and the
 Milestone 4 gate.
 
-- [ ] T047 [P] Extend `fixture-generate` to emit the new file types (assets/prices/`type = trade` rows/dividends, a portfolio with sleeves + sleeve-targets, an `sp500` series, goals/progress, tax estimates/documents) in `Sources/fixture-generate/main.swift` per `contracts/seed-data.md §4`
-- [ ] T048 [P] Update `SeedDataTests` so a fresh `bootstrap-workspace` validates with zero errors (SC-010), the four new CLIs produce non-empty projections on fixture output (SC-001), and every engine returns well-formed typed states (no crash/nil/misleading zero) on an empty, transaction-less workspace (FR-025 / Edge Cases), in `Tests/FinanceWorkspaceKitTests/Unit/SeedDataTests.swift`
-- [ ] T049 [P] Add a read-only guarantee test: projection runs (excluding the two explicit `--apply` writes) leave workspace bytes unchanged (hash before/after) — SC-009 — extend `Tests/FinanceWorkspaceKitTests/Unit/ReadOnlyGuaranteeTests.swift`
-- [ ] T050 [P] Add the four new `swift run …` lines plus the two `tax-overview --apply` actions to the Build & test block in `CLAUDE.md`
-- [ ] T051 [P] Doc cascade per CLAUDE.md spec-completion workflow: update `docs/product-roadmap.md` Phase 4 status + Milestone 4, `docs/project-management.md`, `docs/out-of-scope-followups.md` (any Phase-4 items deferred), and `docs/test-plans.md` (engines now testable via the four CLIs)
-- [ ] T052 Final `swift build` + `swiftlint --strict` + `swift test` pass; confirm the Milestone 4 gate (all domain engines functional; budget→goal, portfolio→tax, business→Schedule C links live; Overview composites all five KPI cards from real data) per `docs/product-roadmap.md`
+- [X] T047 [P] Extend `fixture-generate` to emit the new file types (assets/prices/`type = trade` rows/dividends, a portfolio with sleeves + sleeve-targets, an `sp500` series, goals/progress, tax estimates/documents) in `Sources/fixture-generate/main.swift` per `contracts/seed-data.md §4`
+- [X] T048 [P] Update `SeedDataTests` so a fresh `bootstrap-workspace` validates with zero errors (SC-010), the four new CLIs produce non-empty projections on fixture output (SC-001), and every engine returns well-formed typed states (no crash/nil/misleading zero) on an empty, transaction-less workspace (FR-025 / Edge Cases), in `Tests/FinanceWorkspaceKitTests/Unit/SeedDataTests.swift`
+- [X] T049 [P] Add a read-only guarantee test: projection runs (excluding the two explicit `--apply` writes) leave workspace bytes unchanged (hash before/after) — SC-009 — extend `Tests/FinanceWorkspaceKitTests/Unit/ReadOnlyGuaranteeTests.swift`
+- [X] T050 [P] Add the four new `swift run …` lines plus the two `tax-overview --apply` actions to the Build & test block in `CLAUDE.md`
+- [X] T051 [P] Doc cascade per CLAUDE.md spec-completion workflow: update `docs/product-roadmap.md` Phase 4 status + Milestone 4, `docs/project-management.md`, `docs/out-of-scope-followups.md` (any Phase-4 items deferred), and `docs/test-plans.md` (engines now testable via the four CLIs)
+- [X] T052 Final `swift build` + `swiftlint --strict` + `swift test` pass; confirm the Milestone 4 gate (all domain engines functional; budget→goal, portfolio→tax, business→Schedule C links live; Overview composites all five KPI cards from real data) per `docs/product-roadmap.md`
 
 ---
 

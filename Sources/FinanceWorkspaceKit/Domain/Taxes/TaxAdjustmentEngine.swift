@@ -22,9 +22,11 @@ public struct TaxAdjustmentEngine: Sendable {
         let chosen = max(standard, itemized)
         let taxable = max(0, gross - aboveTheLine - scheduleC - qbi - chosen)
 
+        // `.itemized`/`.standard` here are TaxDeductionSummary.Recommendation cases (display only).
+        let recommendation: TaxDeductionSummary.Recommendation = itemized > standard ? .itemized : .standard
         return TaxDeductionSummary(
             taxYear: year, grossIncome: gross, standardTotal: standard, itemizedTotal: itemized,
-            recommended: itemized > standard ? .itemized : .standard, aboveTheLine: aboveTheLine, // Recommendation enum, not TaxAdjustmentType
+            recommended: recommendation, aboveTheLine: aboveTheLine,
             scheduleC: scheduleC, qbiDeduction: qbi, taxableIncomeAfterAdjustments: taxable,
             businessExpenseByGroup: businessReconciliations(context, adjustments: adjustments, year: year))
     }
@@ -112,7 +114,7 @@ public struct TaxAdjustmentEngine: Sendable {
                                          year: Int) -> [BusinessExpenseReconciliation] {
         let scheduleC = adjustments.filter { $0.adjustmentType == .scheduleC }
         var claimedByGroup: [String: Decimal] = [:]
-        for adj in scheduleC { if let g = adj.linkedId { claimedByGroup[g, default: 0] += adj.amount } }
+        for adj in scheduleC { if let group = adj.linkedId { claimedByGroup[group, default: 0] += adj.amount } }
         let accountsByGroup = Dictionary(grouping: context.accounts, by: \.accountGroupId)
         return claimedByGroup.map { groupId, claimed in
             let accountIds = Set((accountsByGroup[groupId] ?? []).map(\.accountId))

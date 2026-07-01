@@ -61,16 +61,16 @@ public enum PeriodMath {
 
     /// Calendar-anchored start date for a benchmark window measured back from `asOf`.
     public static func windowStart(_ window: BenchmarkWindow, asOf: Date) -> Date? {
-        let c = calendar
+        let cal = calendar
         switch window {
-        case .day:        return c.date(byAdding: .day, value: -1, to: asOf)
-        case .week:       return c.date(byAdding: .day, value: -7, to: asOf)
-        case .month:      return c.date(byAdding: .month, value: -1, to: asOf)
-        case .threeMonth: return c.date(byAdding: .month, value: -3, to: asOf)
-        case .sixMonth:   return c.date(byAdding: .month, value: -6, to: asOf)
-        case .oneYear:    return c.date(byAdding: .year, value: -1, to: asOf)
-        case .threeYear:  return c.date(byAdding: .year, value: -3, to: asOf)
-        case .fiveYear:   return c.date(byAdding: .year, value: -5, to: asOf)
+        case .day:        return cal.date(byAdding: .day, value: -1, to: asOf)
+        case .week:       return cal.date(byAdding: .day, value: -7, to: asOf)
+        case .month:      return cal.date(byAdding: .month, value: -1, to: asOf)
+        case .threeMonth: return cal.date(byAdding: .month, value: -3, to: asOf)
+        case .sixMonth:   return cal.date(byAdding: .month, value: -6, to: asOf)
+        case .oneYear:    return cal.date(byAdding: .year, value: -1, to: asOf)
+        case .threeYear:  return cal.date(byAdding: .year, value: -3, to: asOf)
+        case .fiveYear:   return cal.date(byAdding: .year, value: -5, to: asOf)
         }
     }
 

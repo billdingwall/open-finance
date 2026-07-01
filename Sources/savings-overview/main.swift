@@ -28,9 +28,9 @@ while let arg = args.first {
 guard let workspacePath else { fail(usage, code: 2) }
 let root = URL(fileURLWithPath: workspacePath, isDirectory: true)
 
-func money(_ v: Decimal) -> String { String(format: "%@%.2f", v < 0 ? "-" : "", abs(NSDecimalNumber(decimal: v).doubleValue)) }
-func padR(_ t: String, _ w: Int) -> String { t.count >= w ? t : t + String(repeating: " ", count: w - t.count) }
-func padL(_ t: String, _ w: Int) -> String { t.count >= w ? t : String(repeating: " ", count: w - t.count) + t }
+func money(_ value: Decimal) -> String { String(format: "%@%.2f", value < 0 ? "-" : "", abs(NSDecimalNumber(decimal: value).doubleValue)) }
+func padR(_ text: String, _ width: Int) -> String { text.count >= width ? text : text + String(repeating: " ", count: width - text.count) }
+func padL(_ text: String, _ width: Int) -> String { text.count >= width ? text : String(repeating: " ", count: width - text.count) + text }
 
 let context = try WorkspaceParser().parse(workspaceURL: root)
 let goals = SavingsGoalEngine().projectGoals(context, asOf: asOf)
@@ -39,12 +39,12 @@ let iso = ISO8601DateFormatter(); iso.formatOptions = [.withFullDate]
 print("Savings goals — as of \(iso.string(from: asOf))")
 print(String(repeating: "─", count: 84))
 print(padR("GOAL", 22) + padL("BALANCE", 13) + padL("TARGET", 13) + padL("GAP", 13) + padL("RATE/mo", 12) + "  MONTHS")
-for g in goals {
-    let rate = g.trailingContributionRate.value.map { money($0) } ?? "—"
-    let months = g.isCompleteDerived ? "done" : (g.monthsToGoal.map(String.init) ?? "n/a")
-    let src = g.balanceSource == .snapshot ? "" : " ~ledger"
-    print(padR(g.name, 22) + padL(money(g.currentBalance), 13) + padL(money(g.targetAmount), 13)
-          + padL(money(g.gapToTarget), 13) + padL(rate, 12) + "  " + months + src)
+for goal in goals {
+    let rate = goal.trailingContributionRate.value.map { money($0) } ?? "—"
+    let months = goal.isCompleteDerived ? "done" : (goal.monthsToGoal.map(String.init) ?? "n/a")
+    let src = goal.balanceSource == .snapshot ? "" : " ~ledger"
+    print(padR(goal.name, 22) + padL(money(goal.currentBalance), 13) + padL(money(goal.targetAmount), 13)
+          + padL(money(goal.gapToTarget), 13) + padL(rate, 12) + "  " + months + src)
 }
 print(String(repeating: "─", count: 84))
 print("\(goals.count) active goal(s); \(goals.filter { $0.isCompleteDerived }.count) at/over target")

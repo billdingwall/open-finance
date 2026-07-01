@@ -30,7 +30,8 @@ public enum WorkspaceLayout {
 
     /// path → content for every seed file. Idempotent provisioning never overwrites existing files.
     public static func seedFiles(taxYear: Int, createdAt: Date = Date()) -> [String: String] {
-        [
+        let standard = decimalString(standardDeduction(filingStatus: "single", taxYear: taxYear))
+        return [
             "Workspace.md": """
             ---
             type: workspace
@@ -100,7 +101,7 @@ public enum WorkspaceLayout {
                  "timezone,UTC"]),
             "Taxes/tax-adjustments.csv": csv(
                 "tax_adjustment_id,adjustment_type,amount,tax_year,status,linked_id",
-                ["adj-standard,standard,\(decimalString(standardDeduction(filingStatus: "single", taxYear: taxYear))),\(taxYear),estimated,"]),
+                ["adj-standard,standard,\(standard),\(taxYear),estimated,"]),
             "Taxes/estimated-payments.csv": csv(
                 "payment_id,tax_year,quarter,amount,paid"),
             "Taxes/estimates.csv": csv("estimate_id,tax_year,gross_income,taxes_paid,estimated_return"),

@@ -72,10 +72,13 @@ public struct TaxPrepEngine: Sendable {
         guard !isYearClosed(workspaceURL: workspaceURL, year: year) else { throw ArchiveError.alreadyClosed(year) }
         let context = try WorkspaceParser().parse(workspaceURL: workspaceURL)
 
+        func money(_ value: Decimal) -> String { String(format: "%.2f", NSDecimalNumber(decimal: value).doubleValue) }
+
         let adjustments = context.taxAdjustments.filter { $0.taxYear == year }
         let adjHeader = "# schema_version: 1\ntax_adjustment_id,adjustment_type,amount,tax_year,status,linked_id"
-        let adjRows = adjustments.map {
-            "\($0.taxAdjustmentId),\($0.adjustmentType.rawValue),\(String(format: "%.2f", NSDecimalNumber(decimal: $0.amount).doubleValue)),\($0.taxYear),\($0.status),\($0.linkedId ?? "")"
+        let adjRows = adjustments.map { adj in
+            [adj.taxAdjustmentId, adj.adjustmentType.rawValue, money(adj.amount),
+             String(adj.taxYear), adj.status, adj.linkedId ?? ""].joined(separator: ",")
         }
         try TaxSafeWrite.write(([adjHeader] + adjRows).joined(separator: "\n") + "\n",
                                to: "Taxes/archive/\(year)-tax-adjustments.csv", in: workspaceURL,
@@ -83,8 +86,8 @@ public struct TaxPrepEngine: Sendable {
 
         let payments = context.estimatedPayments.filter { $0.taxYear == year }
         let payHeader = "# schema_version: 1\npayment_id,tax_year,quarter,amount,paid"
-        let payRows = payments.map {
-            "\($0.paymentId),\($0.taxYear),\($0.quarter),\(String(format: "%.2f", NSDecimalNumber(decimal: $0.amount).doubleValue)),\($0.paid)"
+        let payRows = payments.map { pay in
+            [pay.paymentId, String(pay.taxYear), String(pay.quarter), money(pay.amount), String(pay.paid)].joined(separator: ",")
         }
         try TaxSafeWrite.write(([payHeader] + payRows).joined(separator: "\n") + "\n",
                                to: "Taxes/archive/\(year)-estimated-payments.csv", in: workspaceURL,

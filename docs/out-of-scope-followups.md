@@ -102,6 +102,20 @@ work already done: the "we shipped the spec, but consciously left X for later" i
 
 ---
 
+## Phase 4 (`005-savings-investments-tax`) — deferred during implementation
+
+- **Sector-vs-benchmark comparison** (FR-012): the shipped `benchmarks/sp500.csv` carries only
+  `date,close` — no benchmark sector data — so `BenchmarkEngine` reports **portfolio** sector weights
+  only, not sector-relative-to-benchmark. *(Source: T034/T035.)* Target: a future schema round adding
+  benchmark sector data.
+- **Per-account tax allocation**: `TaxEngine` effective rate uses ledger **withholding legs** per
+  account; `estimated-payments.csv` (workspace-level, no account link) feeds the tax **estimate**, not
+  per-account rates. *(Source: US2/US3.)* Acceptable for v1.
+- **Live price ingestion** stays V2 — prices/benchmark come from static CSVs (as planned).
+- **Status**: Open.
+
+---
+
 ## Resolved / promoted
 
 _None yet._

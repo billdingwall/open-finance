@@ -38,11 +38,11 @@ public struct TaxEngine: Sendable {
         }
 
         // Dividends per account (via asset → account).
-        let accountByAsset = Dictionary(context.assets.compactMap { a in a.accountId.map { (a.assetId, $0) } },
-                                        uniquingKeysWith: { a, _ in a })
+        let accountByAsset = Dictionary(context.assets.compactMap { asset in asset.accountId.map { (asset.assetId, $0) } },
+                                        uniquingKeysWith: { first, _ in first })
         var dividendByAccount: [String: Decimal] = [:]
-        for d in context.dividends where inYear(d.date) {
-            if let account = accountByAsset[d.assetId] { dividendByAccount[account, default: 0] += d.amount }
+        for div in context.dividends where inYear(div.date) {
+            if let account = accountByAsset[div.assetId] { dividendByAccount[account, default: 0] += div.amount }
         }
 
         let accountIds = Set(grossByAccount.keys)

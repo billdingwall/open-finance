@@ -40,9 +40,9 @@ do {
 
     print("Overview — as of \(dashboard.asOfMonth)")
     print(String(repeating: "─", count: 60))
-    func rateText(_ r: RateState?) -> String {
-        switch r {
-        case .value(let v): return " · rate \(String(format: "%.1f%%", NSDecimalNumber(decimal: v * 100).doubleValue))"
+    func rateText(_ rate: RateState?) -> String {
+        switch rate {
+        case .value(let value): return " · rate \(String(format: "%.1f%%", NSDecimalNumber(decimal: value * 100).doubleValue))"
         case .rateNotSet: return " · rate not set"
         case nil: return ""
         }

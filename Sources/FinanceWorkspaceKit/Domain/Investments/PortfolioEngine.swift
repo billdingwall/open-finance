@@ -10,7 +10,7 @@ public struct PortfolioEngine: Sendable {
 
     public func holdings(_ context: WorkspaceContext, asOf: Date,
                          scope: HoldingsProjection.Scope = .aggregate) -> HoldingsProjection {
-        let assetsById = Dictionary(context.assets.map { ($0.assetId, $0) }, uniquingKeysWith: { a, _ in a })
+        let assetsById = Dictionary(context.assets.map { ($0.assetId, $0) }, uniquingKeysWith: { first, _ in first })
         let pricesByAsset = context.pricesByAsset
 
         // Scope → the set of accounts in play (nil = all).
@@ -58,9 +58,9 @@ public struct PortfolioEngine: Sendable {
     private func buildSleeveAllocations(_ context: WorkspaceContext, positions: [Position],
                                         total: Decimal) -> [SleeveAllocation] {
         guard total > 0 else { return [] }
-        let sleevesById = Dictionary(context.sleeves.map { ($0.sleeveId, $0) }, uniquingKeysWith: { a, _ in a })
+        let sleevesById = Dictionary(context.sleeves.map { ($0.sleeveId, $0) }, uniquingKeysWith: { first, _ in first })
         let targetsBySleeve = Dictionary(context.sleeveTargets.map { ($0.sleeveId, $0.targetWeight) },
-                                         uniquingKeysWith: { a, _ in a })
+                                         uniquingKeysWith: { first, _ in first })
         var mvBySleeve: [String: Decimal] = [:]
         for position in positions {
             guard let sleeveId = position.sleeveId, let mv = position.currentValue.decimal else { continue }

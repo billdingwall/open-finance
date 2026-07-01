@@ -33,8 +33,8 @@ public struct SavingsGoalEngine: Sendable {
                 let gap = max(0, goal.targetAmount - balance)
                 let rate = trailingRate(contributions, asOf: asOf)
                 let monthsToGoal: Int? = {
-                    guard gap > 0, let r = rate.value, r > 0 else { return gap <= 0 ? 0 : nil }
-                    let months = NSDecimalNumber(decimal: gap).doubleValue / NSDecimalNumber(decimal: r).doubleValue
+                    guard gap > 0, let monthly = rate.value, monthly > 0 else { return gap <= 0 ? 0 : nil }
+                    let months = NSDecimalNumber(decimal: gap).doubleValue / NSDecimalNumber(decimal: monthly).doubleValue
                     return Int(months.rounded(.up))
                 }()
 

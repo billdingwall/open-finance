@@ -30,10 +30,10 @@ while let arg = args.first {
 guard let workspacePath else { fail(usage, code: 2) }
 let root = URL(fileURLWithPath: workspacePath, isDirectory: true)
 
-func money(_ v: Decimal) -> String { String(format: "%@%.2f", v < 0 ? "-" : "", abs(NSDecimalNumber(decimal: v).doubleValue)) }
-func pct(_ v: Decimal) -> String { String(format: "%.1f%%", NSDecimalNumber(decimal: v * 100).doubleValue) }
-func padR(_ t: String, _ w: Int) -> String { t.count >= w ? t : t + String(repeating: " ", count: w - t.count) }
-func padL(_ t: String, _ w: Int) -> String { t.count >= w ? t : String(repeating: " ", count: w - t.count) + t }
+func money(_ value: Decimal) -> String { String(format: "%@%.2f", value < 0 ? "-" : "", abs(NSDecimalNumber(decimal: value).doubleValue)) }
+func pct(_ value: Decimal) -> String { String(format: "%.1f%%", NSDecimalNumber(decimal: value * 100).doubleValue) }
+func padR(_ text: String, _ width: Int) -> String { text.count >= width ? text : text + String(repeating: " ", count: width - text.count) }
+func padL(_ text: String, _ width: Int) -> String { text.count >= width ? text : String(repeating: " ", count: width - text.count) + text }
 
 let context = try WorkspaceParser().parse(workspaceURL: root)
 let settings = (try? SettingsStore().read(workspaceURL: root)) ?? .defaults()
@@ -42,15 +42,17 @@ let projection = TaxEngine().project(context, taxYear: taxYear)
 
 print("Tax overview — tax year \(taxYear)")
 print(String(repeating: "─", count: 80))
-print(padR("ACCOUNT", 20) + padL("TAXABLE INC", 14) + padL("TAXES PAID", 13) + padL("EFF RATE", 10) + padL("DIVIDENDS", 12) + padL("INTEREST", 11))
-for a in projection.accounts {
-    let rate = a.effectiveRate.map { pct($0) } ?? "—"
-    print(padR(a.accountId, 20) + padL(money(a.ytdTaxableIncome), 14) + padL(money(a.taxesPaid), 13)
-          + padL(rate, 10) + padL(money(a.dividendIncome), 12) + padL(money(a.interestIncome), 11))
+print(padR("ACCOUNT", 20) + padL("TAXABLE INC", 14) + padL("TAXES PAID", 13)
+      + padL("EFF RATE", 10) + padL("DIVIDENDS", 12) + padL("INTEREST", 11))
+for acct in projection.accounts {
+    let rate = acct.effectiveRate.map { pct($0) } ?? "—"
+    print(padR(acct.accountId, 20) + padL(money(acct.ytdTaxableIncome), 14) + padL(money(acct.taxesPaid), 13)
+          + padL(rate, 10) + padL(money(acct.dividendIncome), 12) + padL(money(acct.interestIncome), 11))
 }
 print(String(repeating: "─", count: 80))
-let r = projection.realized
-print("Realized gain/loss \(taxYear): short-term \(money(r.shortTermGainLoss)) · long-term \(money(r.longTermGainLoss)) · total \(money(r.total)) (\(r.lots.count) lot disposals)")
+let realized = projection.realized
+print("Realized gain/loss \(taxYear): short-term \(money(realized.shortTermGainLoss)) · "
+      + "long-term \(money(realized.longTermGainLoss)) · total \(money(realized.total)) (\(realized.lots.count) disposals)")
 
 // Deduction summary + tax estimate (US3)
 let settingsYear = WorkspaceSettings(filingStatus: settings.filingStatus, taxYear: taxYear,
@@ -58,14 +60,17 @@ let settingsYear = WorkspaceSettings(filingStatus: settings.filingStatus, taxYea
 let deductions = TaxAdjustmentEngine().deductionSummary(context, settings: settingsYear)
 let estimate = TaxAdjustmentEngine().taxEstimate(context, settings: settingsYear)
 print(String(repeating: "─", count: 80))
-print("Deductions: standard \(money(deductions.standardTotal)) vs itemized \(money(deductions.itemizedTotal)) → recommend \(deductions.recommended.rawValue)")
-print("  above-the-line \(money(deductions.aboveTheLine)) · Schedule C \(money(deductions.scheduleC)) · QBI \(money(deductions.qbiDeduction))")
+print("Deductions: standard \(money(deductions.standardTotal)) vs itemized "
+      + "\(money(deductions.itemizedTotal)) → recommend \(deductions.recommended.rawValue)")
+print("  above-the-line \(money(deductions.aboveTheLine)) · Schedule C "
+      + "\(money(deductions.scheduleC)) · QBI \(money(deductions.qbiDeduction))")
 print("  taxable income after adjustments \(money(deductions.taxableIncomeAfterAdjustments))")
-for b in deductions.businessExpenseByGroup {
-    let flag = b.divergence == 0 ? "" : "  ⚠ divergence \(money(b.divergence))"
-    print("  Schedule C [\(b.accountGroupId)] claimed \(money(b.claimed)) vs ledger \(money(b.ledgerTotal))\(flag)")
+for biz in deductions.businessExpenseByGroup {
+    let flag = biz.divergence == 0 ? "" : "  ⚠ divergence \(money(biz.divergence))"
+    print("  Schedule C [\(biz.accountGroupId)] claimed \(money(biz.claimed)) vs ledger \(money(biz.ledgerTotal))\(flag)")
 }
-print("Estimate (\(estimate.source.rawValue)): projected liability \(money(estimate.projectedLiability)) · taxes paid \(money(estimate.taxesPaid)) · est. return \(money(estimate.estimatedReturn))")
+print("Estimate (\(estimate.source.rawValue)): projected liability \(money(estimate.projectedLiability)) · "
+      + "taxes paid \(money(estimate.taxesPaid)) · est. return \(money(estimate.estimatedReturn))")
 
 // Prep checklist (US3)
 let prep = TaxPrepEngine().prepSummary(context, settings: settingsYear)

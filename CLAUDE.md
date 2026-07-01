@@ -33,7 +33,13 @@ swift run repair-workspace    --workspace ~/Finance-Dev/Finance --dry-run   # pr
 swift run migrate-r6          --workspace ~/Finance-Dev/Finance --dry-run   # preview pre-R6 migration
 swift run accounts-overview   --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # AccountEngine projection
 swift run budget-overview     --workspace ~/Finance-Dev/Finance --period 2026-06     # BudgetEngine projection
-swift run overview-dashboard  --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # OverviewEngine dashboard
+swift run overview-dashboard  --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # OverviewEngine dashboard (5 live cards)
+swift run savings-overview    --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # SavingsGoalEngine projection
+swift run portfolio-overview  --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # PortfolioEngine holdings + sleeve drift
+swift run benchmark-overview  --workspace ~/Finance-Dev/Finance --as-of 2026-06-30   # BenchmarkEngine heat map
+swift run tax-overview        --workspace ~/Finance-Dev/Finance --tax-year 2026       # TaxEngine + deductions/estimate/prep
+swift run tax-overview        --workspace ~/Finance-Dev/Finance --tax-year 2026 --seed-standard --apply  # safe write: seed standard adjustment
+swift run tax-overview        --workspace ~/Finance-Dev/Finance --tax-year 2025 --close-year --apply     # safe write: year-close archive
 swift run FinanceWorkspaceApp                                  # diagnostic shell (DEBUG → local-folder provider)
 ```
 
