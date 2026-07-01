@@ -56,7 +56,7 @@ struct FixtureWorkspace {
         return "\(id),\(account),\(date),\(amount),trade,\(sending),\(receiving),\(side),\(qty),\(price)"
     }
 
-    static let assetHeader = "asset_id,ticker,name,security_class,account_id,currency"
+    static let assetHeader = "asset_id,ticker,name,security_class,account_id,sleeve_id,currency"
     static let priceHeader = "price_id,asset_id,date,close"
     static let dividendHeader = "dividend_id,asset_id,date,amount"
     static let taxLotHeader = "lot_id,asset_id,acquired_date,quantity,cost_basis"

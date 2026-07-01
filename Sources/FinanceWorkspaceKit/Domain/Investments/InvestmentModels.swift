@@ -8,16 +8,18 @@ public struct Asset: Codable, Equatable, Sendable, Identifiable {
     public var name: String
     public var securityClass: String?      // maps `security_class`; doubles as the sector bucket
     public var accountId: String?          // owning account (Investments/assets.csv#account_id)
+    public var sleeveId: String?           // optional sleeve membership (for allocation/drift)
     public var currency: String?
     public var id: String { assetId }
 
     public init(assetId: String, ticker: String? = nil, name: String, securityClass: String? = nil,
-                accountId: String? = nil, currency: String? = nil) {
+                accountId: String? = nil, sleeveId: String? = nil, currency: String? = nil) {
         self.assetId = assetId
         self.ticker = ticker
         self.name = name
         self.securityClass = securityClass
         self.accountId = accountId
+        self.sleeveId = sleeveId
         self.currency = currency
     }
 }
@@ -164,5 +166,84 @@ public struct SleeveTarget: Codable, Equatable, Sendable, Identifiable {
     public init(sleeveId: String, targetWeight: Decimal) {
         self.sleeveId = sleeveId
         self.targetWeight = targetWeight
+    }
+}
+
+// MARK: - Portfolio projection models (US1)
+
+/// A derived money value that may be unknown because no price exists for the asset (FR-009).
+public enum ValueState: Equatable, Sendable {
+    case value(Decimal)
+    case priceUnavailable
+
+    public var decimal: Decimal? { if case let .value(v) = self { return v }; return nil }
+}
+
+/// A holding position, aggregated across FIFO-open lots for one asset.
+public struct Position: Equatable, Sendable, Identifiable {
+    public var assetId: String
+    public var ticker: String?
+    public var accountId: String?
+    public var sleeveId: String?
+    public var quantity: Decimal
+    public var costBasis: Decimal
+    public var currentValue: ValueState
+    public var unrealizedGainLoss: ValueState
+    public var id: String { assetId }
+
+    public init(assetId: String, ticker: String?, accountId: String?, sleeveId: String?,
+                quantity: Decimal, costBasis: Decimal,
+                currentValue: ValueState, unrealizedGainLoss: ValueState) {
+        self.assetId = assetId
+        self.ticker = ticker
+        self.accountId = accountId
+        self.sleeveId = sleeveId
+        self.quantity = quantity
+        self.costBasis = costBasis
+        self.currentValue = currentValue
+        self.unrealizedGainLoss = unrealizedGainLoss
+    }
+}
+
+/// A sleeve's actual vs target weight and drift (FR-007).
+public struct SleeveAllocation: Equatable, Sendable, Identifiable {
+    public var sleeveId: String
+    public var name: String
+    public var marketValue: Decimal
+    public var actualWeight: Decimal          // share of the portfolio's priced market value
+    public var targetWeight: Decimal?
+    public var drift: Decimal?                 // actualWeight − targetWeight
+    public var id: String { sleeveId }
+
+    public init(sleeveId: String, name: String, marketValue: Decimal, actualWeight: Decimal,
+                targetWeight: Decimal?, drift: Decimal?) {
+        self.sleeveId = sleeveId
+        self.name = name
+        self.marketValue = marketValue
+        self.actualWeight = actualWeight
+        self.targetWeight = targetWeight
+        self.drift = drift
+    }
+}
+
+/// Aggregate or per-account holdings projection.
+public struct HoldingsProjection: Equatable, Sendable {
+    public enum Scope: Equatable, Sendable { case aggregate; case account(String) }
+    public var scope: Scope
+    public var positions: [Position]
+    public var sleeveAllocations: [SleeveAllocation]
+    public var dividendTotalsByAsset: [String: Decimal]
+    public var dividendTotalsByAccount: [String: Decimal]
+    public var totalMarketValue: Decimal       // sum of priced positions only
+
+    public init(scope: Scope, positions: [Position], sleeveAllocations: [SleeveAllocation],
+                dividendTotalsByAsset: [String: Decimal], dividendTotalsByAccount: [String: Decimal],
+                totalMarketValue: Decimal) {
+        self.scope = scope
+        self.positions = positions
+        self.sleeveAllocations = sleeveAllocations
+        self.dividendTotalsByAsset = dividendTotalsByAsset
+        self.dividendTotalsByAccount = dividendTotalsByAccount
+        self.totalMarketValue = totalMarketValue
     }
 }

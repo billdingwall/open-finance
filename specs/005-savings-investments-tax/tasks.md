@@ -71,13 +71,13 @@ target weight + drift, dividend totals; with a typed "price unavailable" state.
 reconcile to assets/prices/trades, sleeve drift = actual − target (actual weights sum to 100%), an
 asset with no price prints "price unavailable", dividend totals match.
 
-- [ ] T011 [P] [US1] Extend investment projection models (`Position` with `ValueState`, `TaxLot`, `SleeveAllocation`, `HoldingsProjection`) in `Sources/FinanceWorkspaceKit/Domain/Investments/InvestmentModels.swift` per `data-model.md §B`
-- [ ] T012 [US1] Implement FIFO tax-lot resolution per asset from `type = trade` rows (per-asset open-lot queue; sells consume oldest first) in `Sources/FinanceWorkspaceKit/Domain/Investments/PortfolioEngine.swift` per research R1 / FR-006
-- [ ] T013 [US1] Implement position current value (`quantity × lastCloseOnOrBefore(asOf)`), cost basis, and unrealized gain/loss, returning `.priceUnavailable` when the ticker has no price row, in `PortfolioEngine` per FR-005/FR-009
-- [ ] T014 [US1] Implement the `Portfolio → Sleeve → Asset` hierarchy and per-sleeve actual weight / target weight / drift from `sleeve-targets.csv` in `PortfolioEngine` per FR-007
-- [ ] T015 [US1] Implement dividend totals per asset/account (from `dividends.csv`) and assemble aggregate + `--account` `HoldingsProjection` in `PortfolioEngine` per FR-008 / `contracts/engine-contracts.md`
-- [ ] T016 [US1] Wire the `portfolio-overview` CLI (`--workspace`, `--as-of`, optional `--account`) in `Sources/portfolio-overview/main.swift` per `contracts/cli-scripts.md`
-- [ ] T017 [P] [US1] Add `PortfolioEngineTests` (FIFO multi-lot basis, drift sums to 100%, price-unavailable, dividend totals) asserting SC-002/SC-003 in `Tests/FinanceWorkspaceKitTests/Unit/PortfolioEngineTests.swift`
+- [X] T011 [P] [US1] Extend investment projection models (`Position` with `ValueState`, `TaxLot`, `SleeveAllocation`, `HoldingsProjection`) in `Sources/FinanceWorkspaceKit/Domain/Investments/InvestmentModels.swift` per `data-model.md §B`
+- [X] T012 [US1] Implement FIFO tax-lot resolution per asset from `type = trade` rows (per-asset open-lot queue; sells consume oldest first) in `Sources/FinanceWorkspaceKit/Domain/Investments/PortfolioEngine.swift` per research R1 / FR-006
+- [X] T013 [US1] Implement position current value (`quantity × lastCloseOnOrBefore(asOf)`), cost basis, and unrealized gain/loss, returning `.priceUnavailable` when the ticker has no price row, in `PortfolioEngine` per FR-005/FR-009
+- [X] T014 [US1] Implement the `Portfolio → Sleeve → Asset` hierarchy and per-sleeve actual weight / target weight / drift from `sleeve-targets.csv` in `PortfolioEngine` per FR-007
+- [X] T015 [US1] Implement dividend totals per asset/account (from `dividends.csv`) and assemble aggregate + `--account` `HoldingsProjection` in `PortfolioEngine` per FR-008 / `contracts/engine-contracts.md`
+- [X] T016 [US1] Wire the `portfolio-overview` CLI (`--workspace`, `--as-of`, optional `--account`) in `Sources/portfolio-overview/main.swift` per `contracts/cli-scripts.md`
+- [X] T017 [P] [US1] Add `PortfolioEngineTests` (FIFO multi-lot basis, drift sums to 100%, price-unavailable, dividend totals) asserting SC-002/SC-003 in `Tests/FinanceWorkspaceKitTests/Unit/PortfolioEngineTests.swift`
 
 **Checkpoint**: US1 independently verifiable via the CLI and `swift test`. **MVP reached.**
 

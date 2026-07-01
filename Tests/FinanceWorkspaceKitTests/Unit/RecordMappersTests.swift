@@ -64,8 +64,8 @@ import Foundation
         let fx = FixtureWorkspace()
         defer { fx.cleanup() }
         fx.write("Investments/assets.csv", FixtureWorkspace.assetHeader, [
-            "as-1,VTI,Total Market,ETF,acc-investment,USD",
-            ",no-id,name,ETF,acc-investment,USD",                  // invalid: missing asset_id → nil
+            "as-1,VTI,Total Market,etf,acc-investment,sl-1,USD",
+            ",no-id,name,etf,acc-investment,sl-1,USD",             // invalid: missing asset_id → nil
         ])
         fx.write("Investments/prices.csv", FixtureWorkspace.priceHeader, [
             "p1,as-1,2026-06-01,250.00", "p2,as-1,2026-06-15,260.00"])

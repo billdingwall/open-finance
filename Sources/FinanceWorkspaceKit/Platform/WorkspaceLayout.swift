@@ -107,7 +107,7 @@ public enum WorkspaceLayout {
             "Taxes/documents.csv": csv("document_id,tax_year,kind,label,linked_path"),
 
             // Investments (Phase 4). Empty-but-valid; fixtures/imports populate them.
-            "Investments/assets.csv": csv("asset_id,ticker,name,security_class,account_id,currency"),
+            "Investments/assets.csv": csv("asset_id,ticker,name,security_class,account_id,sleeve_id,currency"),
             "Investments/prices.csv": csv("price_id,asset_id,date,close"),
             "Investments/dividends.csv": csv("dividend_id,asset_id,date,amount"),
             "Investments/tax-lots.csv": csv("lot_id,asset_id,acquired_date,quantity,cost_basis"),

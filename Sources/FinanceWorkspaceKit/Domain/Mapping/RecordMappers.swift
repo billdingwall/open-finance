@@ -136,7 +136,7 @@ public enum RecordMappers {
         guard let id = rec.string("asset_id") else { return nil }
         return Asset(assetId: id, ticker: rec.string("ticker"), name: rec.string("name") ?? id,
                      securityClass: rec.string("security_class"), accountId: rec.string("account_id"),
-                     currency: rec.string("currency"))
+                     sleeveId: rec.string("sleeve_id"), currency: rec.string("currency"))
     }
 
     public static func pricePoint(_ rec: ParsedRecord) -> PricePoint? {
