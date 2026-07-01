@@ -15,6 +15,7 @@
     "account_group_id": { "type": "string", "required": true },
     "current_balance": { "type": "decimal", "required": false },
     "tax_treatment": { "type": "string", "required": false },
-    "performance_tracking": { "type": "boolean", "required": false }
+    "performance_tracking": { "type": "boolean", "required": false },
+    "apy": { "type": "decimal", "required": false }
   }
 }

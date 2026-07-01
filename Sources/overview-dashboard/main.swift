@@ -40,10 +40,17 @@ do {
 
     print("Overview — as of \(dashboard.asOfMonth)")
     print(String(repeating: "─", count: 60))
+    func rateText(_ rate: RateState?) -> String {
+        switch rate {
+        case .value(let value): return " · rate \(String(format: "%.1f%%", NSDecimalNumber(decimal: value * 100).doubleValue))"
+        case .rateNotSet: return " · rate not set"
+        case nil: return ""
+        }
+    }
     for card in dashboard.cards {
         if card.state == .available {
             let secondary = card.secondaryValue.map { " / \(money($0))" } ?? ""
-            print("  \(card.kind.uppercased()): \(money(card.value))\(secondary)")
+            print("  \(card.kind.uppercased()): \(money(card.value))\(secondary)\(rateText(card.estimatedRate))")
         } else {
             print("  \(card.kind.uppercased()): data not available")
         }

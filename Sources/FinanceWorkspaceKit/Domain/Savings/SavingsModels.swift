@@ -45,3 +45,38 @@ public struct SavingsProgress: Codable, Equatable, Sendable, Identifiable {
         self.balance = balance
     }
 }
+
+// MARK: - Savings projection model (US5)
+
+/// Per-goal progress projection (FR-001..004). Archived goals are excluded upstream;
+/// `isCompleteDerived` is derived from progress ≥ target (no stored "completed" state).
+public struct GoalProgressProjection: Equatable, Sendable, Identifiable {
+    public enum BalanceSource: String, Equatable, Sendable { case snapshot, ledgerDerived }
+    public var goalId: String
+    public var name: String
+    public var targetAmount: Decimal
+    public var currentBalance: Decimal
+    public var balanceSource: BalanceSource
+    public var gapToTarget: Decimal
+    public var monthsToGoal: Int?                // nil = "n/a" (rate ≤ 0 / unknown)
+    public var trailingContributionRate: TrailingAverage
+    public var isCompleteDerived: Bool
+    public var fundingLinks: [GoalFundingLink]
+    public var id: String { goalId }
+
+    public init(goalId: String, name: String, targetAmount: Decimal, currentBalance: Decimal,
+                balanceSource: BalanceSource, gapToTarget: Decimal, monthsToGoal: Int?,
+                trailingContributionRate: TrailingAverage, isCompleteDerived: Bool,
+                fundingLinks: [GoalFundingLink]) {
+        self.goalId = goalId
+        self.name = name
+        self.targetAmount = targetAmount
+        self.currentBalance = currentBalance
+        self.balanceSource = balanceSource
+        self.gapToTarget = gapToTarget
+        self.monthsToGoal = monthsToGoal
+        self.trailingContributionRate = trailingContributionRate
+        self.isCompleteDerived = isCompleteDerived
+        self.fundingLinks = fundingLinks
+    }
+}

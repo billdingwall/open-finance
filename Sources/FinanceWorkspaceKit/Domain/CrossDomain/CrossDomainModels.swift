@@ -62,21 +62,50 @@ public struct AccountSummaryCard: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
+/// A stored (not derived) estimated rate; `.rateNotSet` when the source field is absent (FR-024a).
+public enum RateState: Codable, Equatable, Sendable {
+    case value(Decimal)
+    case rateNotSet
+}
+
 public struct OverviewSummaryCard: Codable, Equatable, Sendable, Identifiable {
     public enum State: String, Codable, Sendable { case available, dataNotAvailable }
     public var kind: String          // "budget" | "savings" | "investments" | "business" | "taxes"
     public var state: State
     public var value: Decimal?       // primary value
     public var secondaryValue: Decimal?
+    public var estimatedRate: RateState?   // investments/savings only (FR-024a)
     public var id: String { kind }
     public init(kind: String, state: State = .dataNotAvailable, value: Decimal? = nil,
-                secondaryValue: Decimal? = nil) {
-        self.kind = kind; self.state = state; self.value = value; self.secondaryValue = secondaryValue
+                secondaryValue: Decimal? = nil, estimatedRate: RateState? = nil) {
+        self.kind = kind; self.state = state; self.value = value
+        self.secondaryValue = secondaryValue; self.estimatedRate = estimatedRate
     }
 
     /// A typed "data not available" card for a stub domain (Phase 3 — FR-017).
     public static func unavailable(_ kind: String) -> OverviewSummaryCard {
         OverviewSummaryCard(kind: kind, state: .dataNotAvailable)
+    }
+}
+
+/// Portfolio realized gains → tax engine input (FR-023).
+public struct PortfolioTaxLink: Equatable, Sendable {
+    public var taxYear: Int
+    public var shortTermGainLoss: Decimal
+    public var longTermGainLoss: Decimal
+    public init(taxYear: Int, shortTermGainLoss: Decimal, longTermGainLoss: Decimal) {
+        self.taxYear = taxYear; self.shortTermGainLoss = shortTermGainLoss; self.longTermGainLoss = longTermGainLoss
+    }
+}
+
+/// Business-expense (Schedule C) adjustment → owning account-group (FR-023).
+public struct ScheduleCLink: Equatable, Sendable, Identifiable {
+    public var taxAdjustmentId: String
+    public var accountGroupId: String
+    public var amount: Decimal
+    public var id: String { taxAdjustmentId }
+    public init(taxAdjustmentId: String, accountGroupId: String, amount: Decimal) {
+        self.taxAdjustmentId = taxAdjustmentId; self.accountGroupId = accountGroupId; self.amount = amount
     }
 }
 
@@ -113,17 +142,8 @@ public struct SleeveFundingLink: Codable, Equatable, Sendable {
     public init(sleeveId: String, transactionId: String) { self.sleeveId = sleeveId; self.transactionId = transactionId }
 }
 
-public struct TaxPrepSummary: Codable, Equatable, Sendable {
-    public var taxYear: Int
-    public var complete: Bool
-    public init(taxYear: Int, complete: Bool) { self.taxYear = taxYear; self.complete = complete }
-}
-
-public struct TaxDeductionSummary: Codable, Equatable, Sendable {
-    public var taxYear: Int
-    public var totalAdjustments: Decimal
-    public init(taxYear: Int, totalAdjustments: Decimal) { self.taxYear = taxYear; self.totalAdjustments = totalAdjustments }
-}
+// TaxPrepSummary and TaxDeductionSummary now live in Domain/Taxes/TaxModels.swift (US3), superseding
+// the Phase-3 stubs that were here.
 
 public struct BusinessMonthlySummary: Codable, Equatable, Sendable {
     public var accountGroupId: String

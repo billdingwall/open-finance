@@ -39,18 +39,16 @@ import Foundation
         return fx
     }
 
-    @Test func stubCardsAreDataNotAvailable() throws {  // SC-005
+    @Test func allFiveCardsLiveWithRateStates() throws {  // SC-008/SC-012 (Phase 4)
         let fx = gapMonthFixture(); defer { fx.cleanup() }
         let dash = try OverviewEngine().dashboard(fx.parse(), asOf: asOf, settings: settings)
         #expect(dash.cards.count == 5)
+        // No card is the Phase-3 "data not available" stub any more.
+        #expect(dash.cards.allSatisfy { $0.state == .available })
         let investments = try #require(dash.cards.first { $0.kind == "investments" })
-        let taxes = try #require(dash.cards.first { $0.kind == "taxes" })
-        #expect(investments.state == .dataNotAvailable)
-        #expect(investments.value == nil)
-        #expect(taxes.state == .dataNotAvailable)
-        // The three live cards carry values.
-        #expect(dash.cards.first { $0.kind == "budget" }?.state == .available)
-        #expect(dash.cards.first { $0.kind == "savings" }?.state == .available)
+        #expect(investments.value == Decimal(0))                 // no holdings in this fixture
+        #expect(investments.estimatedRate == .rateNotSet)        // no portfolio expected_return_rate
+        #expect(dash.cards.first { $0.kind == "savings" }?.estimatedRate == .rateNotSet)
         #expect(dash.cards.first { $0.kind == "business" }?.value == Decimal(string: "2000.00"))
     }
 
@@ -66,5 +64,23 @@ import Foundation
         let fx = gapMonthFixture(); defer { fx.cleanup() }
         let links = try LinkingEngine().goalLinks(in: fx.parse())
         #expect(links.contains { $0.goalId == "goal-ef" && $0.transactionId == "s1" })
+    }
+
+    @Test func portfolioTaxAndScheduleCLinks() throws {  // FR-023
+        let fx = FixtureWorkspace(); defer { fx.cleanup() }
+        // A long-term sale (2025 buy → 2026 sell) and a Schedule C adjustment on a business group.
+        fx.write("Investments/assets.csv", FixtureWorkspace.assetHeader, ["as-1,VTI,Total,etf,acc-investment,,USD"])
+        fx.write("Accounts/transactions/2025-01.csv", FixtureWorkspace.tradeHeader, [
+            FixtureWorkspace.trade("b1", "acc-investment", "2025-01-10", "-2000", asset: "as-1", side: "buy", qty: "10", price: "200")])
+        fx.write("Accounts/transactions/2026-06.csv", FixtureWorkspace.tradeHeader, [
+            FixtureWorkspace.trade("s1", "acc-investment", "2026-06-20", "1300", asset: "as-1", side: "sell", qty: "5", price: "260")])
+        fx.write("Taxes/tax-adjustments.csv", FixtureWorkspace.taxAdjHeader, [
+            "adj-sc,schedule_c,3000.00,2026,estimated,grp-business"])
+        let ctx = try fx.parse()
+
+        let taxLink = LinkingEngine().portfolioTaxLinks(in: ctx, taxYear: 2026)
+        #expect(taxLink.longTermGainLoss == Decimal(300))         // realized gains feed the tax engine
+        let scheduleC = LinkingEngine().scheduleCLinks(in: ctx)
+        #expect(scheduleC.contains { $0.accountGroupId == "grp-business" && $0.amount == Decimal(3000) })
     }
 }

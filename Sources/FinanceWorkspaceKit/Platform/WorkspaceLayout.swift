@@ -30,7 +30,8 @@ public enum WorkspaceLayout {
 
     /// path → content for every seed file. Idempotent provisioning never overwrites existing files.
     public static func seedFiles(taxYear: Int, createdAt: Date = Date()) -> [String: String] {
-        [
+        let standard = decimalString(standardDeduction(filingStatus: "single", taxYear: taxYear))
+        return [
             "Workspace.md": """
             ---
             type: workspace
@@ -100,10 +101,54 @@ public enum WorkspaceLayout {
                  "timezone,UTC"]),
             "Taxes/tax-adjustments.csv": csv(
                 "tax_adjustment_id,adjustment_type,amount,tax_year,status,linked_id",
-                ["adj-standard,standard,0.00,\(taxYear),estimated,"]),
+                ["adj-standard,standard,\(standard),\(taxYear),estimated,"]),
             "Taxes/estimated-payments.csv": csv(
                 "payment_id,tax_year,quarter,amount,paid"),
+            "Taxes/estimates.csv": csv("estimate_id,tax_year,gross_income,taxes_paid,estimated_return"),
+            "Taxes/documents.csv": csv("document_id,tax_year,kind,label,linked_path"),
+
+            // Investments (Phase 4). Empty-but-valid; fixtures/imports populate them.
+            "Investments/assets.csv": csv("asset_id,ticker,name,security_class,account_id,sleeve_id,currency"),
+            "Investments/prices.csv": csv("price_id,asset_id,date,close"),
+            "Investments/dividends.csv": csv("dividend_id,asset_id,date,amount"),
+            "Investments/tax-lots.csv": csv("lot_id,asset_id,acquired_date,quantity,cost_basis"),
+            "Investments/portfolios.csv": csv("portfolio_id,name,account_id,expected_return_rate"),
+            "Investments/sleeves.csv": csv("sleeve_id,portfolio_id,name"),
+            "Investments/sleeve-targets.csv": csv("target_id,sleeve_id,target_weight"),
+            "Investments/benchmarks/sp500.csv": csv("date,close"),
         ]
+    }
+
+    private static func decimalString(_ value: Decimal) -> String {
+        String(format: "%.2f", NSDecimalNumber(decimal: value).doubleValue)
+    }
+
+    // MARK: - Tax tables (hardcoded estimates; new tax years require a code update — research R3)
+    // Values are simplified estimates for the tax module (constitution: "all tax figures are estimates").
+
+    /// Standard deduction by filing status + tax year; falls back to the nearest known year.
+    public static func standardDeduction(filingStatus: String, taxYear: Int) -> Decimal {
+        let table: [Int: [String: Decimal]] = [
+            2025: ["single": 15000, "married_filing_jointly": 30000,
+                   "married_filing_separately": 15000, "head_of_household": 22500],
+            2026: ["single": 15750, "married_filing_jointly": 31500,
+                   "married_filing_separately": 15750, "head_of_household": 23625],
+        ]
+        let year = table[taxYear] ?? table[table.keys.max() ?? 2026] ?? [:]
+        return year[filingStatus] ?? year["single"] ?? 0
+    }
+
+    /// Progressive brackets as (upperBound?, marginalRate) ascending; a nil upperBound is the top band.
+    public static func taxBrackets(filingStatus: String, taxYear: Int) -> [(upperBound: Decimal?, rate: Decimal)] {
+        // Single / MFJ estimate tables (2025-ish); other statuses fall back to single.
+        let single: [(Decimal?, Decimal)] = [
+            (11925, 0.10), (48475, 0.12), (103350, 0.22), (197300, 0.24),
+            (250525, 0.32), (626350, 0.35), (nil, 0.37)]
+        let mfj: [(Decimal?, Decimal)] = [
+            (23850, 0.10), (96950, 0.12), (206700, 0.22), (394600, 0.24),
+            (501050, 0.32), (751600, 0.35), (nil, 0.37)]
+        let bands = filingStatus == "married_filing_jointly" ? mfj : single
+        return bands.map { (upperBound: $0.0, rate: $0.1) }
     }
 
     public static func currentTaxYear(now: Date = Date()) -> Int {

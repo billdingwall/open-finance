@@ -7,6 +7,7 @@
   "columns": {
     "portfolio_id": { "type": "string", "required": true },
     "name": { "type": "string", "required": true },
-    "account_id": { "type": "string", "required": false, "references": "Accounts/accounts.csv#account_id" }
+    "account_id": { "type": "string", "required": false, "references": "Accounts/accounts.csv#account_id" },
+    "expected_return_rate": { "type": "decimal", "required": false }
   }
 }

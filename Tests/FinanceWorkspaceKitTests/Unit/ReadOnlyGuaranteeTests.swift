@@ -35,6 +35,15 @@ import Foundation
         _ = OverviewEngine().dashboard(context, asOf: asOf, settings: settings)
         _ = LinkingEngine().goalLinks(in: context)
 
+        // Phase 4 read-only engines (the two safe writes are excluded — they are explicit --apply actions).
+        _ = PortfolioEngine().holdings(context, asOf: asOf)
+        _ = BenchmarkEngine().heatMap(context, asOf: asOf)
+        _ = SavingsGoalEngine().projectGoals(context, asOf: asOf)
+        _ = TaxEngine().project(context, taxYear: settings.taxYear)
+        _ = TaxAdjustmentEngine().deductionSummary(context, settings: settings)
+        _ = TaxAdjustmentEngine().taxEstimate(context, settings: settings)
+        _ = TaxPrepEngine().prepSummary(context, settings: settings)
+
         let after = snapshot(ws)
         #expect(before == after, "engines must not write to the workspace (SC-009)")
     }

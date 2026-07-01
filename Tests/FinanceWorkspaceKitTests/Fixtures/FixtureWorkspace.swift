@@ -43,4 +43,33 @@ struct FixtureWorkspace {
                    group: String = "", role: String = "", liability: String = "") -> String {
         "\(id),\(account),\(date),\(amount),\(type),\(category),\(goal),\(group),\(role),\(liability)"
     }
+
+    // MARK: Phase 4 — investment / savings / tax headers + builders
+
+    static let tradeHeader =
+        "transaction_id,account_id,date,amount,type,sending_asset_id,receiving_asset_id,trade_type,quantity,price"
+    /// A `type = trade` ledger row. Buy → receiving_asset_id set; sell → sending_asset_id set.
+    static func trade(_ id: String, _ account: String, _ date: String, _ amount: String,
+                      asset: String, side: String, qty: String, price: String) -> String {
+        let sending = side == "sell" ? asset : ""
+        let receiving = side == "buy" ? asset : ""
+        return "\(id),\(account),\(date),\(amount),trade,\(sending),\(receiving),\(side),\(qty),\(price)"
+    }
+
+    static let assetHeader = "asset_id,ticker,name,security_class,account_id,sleeve_id,currency"
+    static let priceHeader = "price_id,asset_id,date,close"
+    static let dividendHeader = "dividend_id,asset_id,date,amount"
+    static let taxLotHeader = "lot_id,asset_id,acquired_date,quantity,cost_basis"
+    static let portfolioHeader = "portfolio_id,name,account_id,expected_return_rate"
+    static let sleeveHeader = "sleeve_id,portfolio_id,name"
+    static let sleeveTargetHeader = "target_id,sleeve_id,target_weight"
+    static let benchmarkHeader = "date,close"
+    static let goalHeader =
+        "goal_id,name,target_amount,target_date,monthly_target,source_account_id,status,linked_note_id"
+    static let progressHeader = "progress_id,goal_id,as_of,balance"
+    static let taxAdjHeader = "tax_adjustment_id,adjustment_type,amount,tax_year,status,linked_id"
+    static let taxEstimateHeader = "estimate_id,tax_year,gross_income,taxes_paid,estimated_return"
+    static let taxDocHeader = "document_id,tax_year,kind,label,linked_path"
+    static let estPaymentHeader = "payment_id,tax_year,quarter,amount,paid"
+    static let settingsHeader = "key,value"
 }

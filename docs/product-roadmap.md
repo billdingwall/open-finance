@@ -429,6 +429,24 @@ downstream engines validate these references.
 
 ## Phase 4: Domain Layer II — Savings, Investments & Tax
 
+> **🟡 Status (2026-07-01): BUILD COMPLETE on branch `005-savings-investments-tax` — pending CI +
+> merge.** Delivered as spec `specs/005-savings-investments-tax` (52 tasks; **Milestone 4** reached).
+> Shipped: `SavingsGoalEngine`, `PortfolioEngine` (FIFO lots, valuation, sleeve drift, dividends),
+> `BenchmarkEngine` (8-window heat map, simple/CAGR, sector weights), `TaxEngine` (per-account taxable
+> income / taxes paid / effective rate, ST/LT realized gains), `TaxAdjustmentEngine` (std-vs-itemized,
+> simplified ~20% QBI, business x-ref, computed estimate + the standard-adjustment safe write),
+> `TaxPrepEngine` (fixed prep checklist + the year-close archive safe write), and the
+> `LinkingEngine`/`OverviewEngine` completion (portfolio→tax + Schedule C links; all five KPI cards
+> live). Four CLIs (`savings-`/`portfolio-`/`benchmark-`/`tax-overview`) + `overview-dashboard` now
+> render live data; `fixture-generate` emits the new file types. `swift build` is green and every
+> engine is verified end-to-end via the CLIs; `swift test` + `swiftlint --strict` run in macOS CI.
+>
+> **Shipped-schema reconciliations (additive, non-breaking):** the unified ledger gained optional
+> `trade_type`/`quantity`/`price` (ledger-FIFO realized gains); `assets` gained `sleeve_id`;
+> `portfolios` gained `expected_return_rate`; `accounts` gained `apy`. `TaxAdjustmentType` was aligned
+> to the shipped enum (`schedule_a`/`schedule_c`). `Taxes/archive/` is excluded from parsing (read-only
+> snapshots). See `docs/out-of-scope-followups.md` for the deferred items surfaced during the build.
+
 **Goal**: Build the remaining domain engine groups. These can be developed largely in
 parallel once Phase 3 is complete, as they share only the master account registry.
 

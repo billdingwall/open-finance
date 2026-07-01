@@ -56,6 +56,22 @@ let package = Package(
             name: "overview-dashboard",
             dependencies: ["FinanceWorkspaceKit"]
         ),
+        .executableTarget(
+            name: "savings-overview",
+            dependencies: ["FinanceWorkspaceKit"]
+        ),
+        .executableTarget(
+            name: "portfolio-overview",
+            dependencies: ["FinanceWorkspaceKit"]
+        ),
+        .executableTarget(
+            name: "benchmark-overview",
+            dependencies: ["FinanceWorkspaceKit"]
+        ),
+        .executableTarget(
+            name: "tax-overview",
+            dependencies: ["FinanceWorkspaceKit"]
+        ),
         .testTarget(
             name: "FinanceWorkspaceKitTests",
             dependencies: ["FinanceWorkspaceKit"]

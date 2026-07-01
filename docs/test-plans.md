@@ -48,6 +48,7 @@ feedback on today:
 | **Parsing / validation / repair behavior** | ✅ Yes | Run the `validate-workspace` / `repair-workspace` / `migrate-r6` CLIs |
 | **Local workspace provisioning & file index** | ✅ Yes | Run `bootstrap-workspace` / `fixture-generate` / `index-check` |
 | **Accounts / Budget / Overview projections** | ✅ Yes (Phase 3) | Run `accounts-overview` / `budget-overview` / `overview-dashboard` against a fixture (`--as-of`/`--period` for deterministic output) |
+| **Savings / Investments / Tax projections** | ✅ Yes (Phase 4) | Run `savings-overview` / `portfolio-overview` / `benchmark-overview` / `tax-overview` against a fixture; `overview-dashboard` now shows all five KPI cards live. The two safe writes are `tax-overview --seed-standard` / `--close-year` (preview by default; `--apply` to write, backed up + logged) |
 | **How the real app functions** | ❌ No | Blocked on the Phase 5 SwiftUI presentation layer (the domain read model now exists) |
 | **How well iCloud syncing works** | ❌ No | Blocked — needs an Xcode app target + iCloud entitlement (Phase 5) |
 

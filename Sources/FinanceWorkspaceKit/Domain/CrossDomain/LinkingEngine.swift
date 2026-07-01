@@ -25,6 +25,21 @@ public struct LinkingEngine: Sendable {
         }
     }
 
+    /// Portfolio realized gains → tax engine input (FR-023).
+    public func portfolioTaxLinks(in context: WorkspaceContext, taxYear: Int) -> PortfolioTaxLink {
+        let realized = TaxEngine().realizedGains(context, taxYear: taxYear)
+        return PortfolioTaxLink(taxYear: taxYear, shortTermGainLoss: realized.shortTermGainLoss,
+                                longTermGainLoss: realized.longTermGainLoss)
+    }
+
+    /// Business-expense (Schedule C) adjustment → owning account-group (FR-023).
+    public func scheduleCLinks(in context: WorkspaceContext) -> [ScheduleCLink] {
+        context.taxAdjustments.compactMap { adj in
+            guard adj.adjustmentType == .scheduleC, let group = adj.linkedId else { return nil }
+            return ScheduleCLink(taxAdjustmentId: adj.taxAdjustmentId, accountGroupId: group, amount: adj.amount)
+        }
+    }
+
     private func assetSleeveLookup(_ context: WorkspaceContext) -> [String: String] {
         var out: [String: String] = [:]
         for record in context.records(ofType: "assets") {

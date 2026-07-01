@@ -36,6 +36,7 @@ public struct Account: Codable, Equatable, Sendable, Identifiable {
     public var status: AccountStatus
     public var accountGroupId: String
     public var currentBalance: Decimal?          // derived/cached for display
+    public var apy: Decimal?                      // optional stored savings rate (FR-024a)
     public var investment: InvestmentMetadata?
 
     public var id: String { accountId }
@@ -43,7 +44,7 @@ public struct Account: Codable, Equatable, Sendable, Identifiable {
 
     public init(accountId: String, displayName: String, institution: String,
                 accountGroup: AccountGroupClass, accountType: String, status: AccountStatus,
-                accountGroupId: String, currentBalance: Decimal? = nil,
+                accountGroupId: String, currentBalance: Decimal? = nil, apy: Decimal? = nil,
                 investment: InvestmentMetadata? = nil) {
         self.accountId = accountId
         self.displayName = displayName
@@ -53,6 +54,7 @@ public struct Account: Codable, Equatable, Sendable, Identifiable {
         self.status = status
         self.accountGroupId = accountGroupId
         self.currentBalance = currentBalance
+        self.apy = apy
         self.investment = investment
     }
 }
