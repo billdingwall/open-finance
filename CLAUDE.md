@@ -111,12 +111,15 @@ Features are built with Spec Kit, in order:
 Branches: `NNN-feature-name` (via `/speckit-git-feature`).
 
 <!-- SPECKIT START -->
-**Active feature**: Phase 3 — Domain Layer I (`004-domain-accounts-budget-overview`),
-**implementation complete on branch** (39/39 tasks; Milestone 3 reached). AccountEngine →
-BudgetEngine → Linking/OverviewEngine + record-mapping seam + seed data + 3 projection CLIs.
-**Pending CI + merge** (`swift build` green; `swift test`/SwiftLint run in macOS CI).
-**Next**: push → CI → PR/merge, then Phase 4 (Savings, Investments & Tax) via `/speckit-specify`.
-**Previous**: `003-parsing-validation` (Phase 2), `002-foundation-architecture` (Phase 1).
+**Active feature**: Phase 4 — Domain Layer II (`005-savings-investments-tax`), **planned, not yet
+implemented**. Plan: [specs/005-savings-investments-tax/plan.md](specs/005-savings-investments-tax/plan.md)
+(spec + 3 `/speckit-clarify` passes + research/data-model/contracts/quickstart). Scope:
+SavingsGoalEngine, PortfolioEngine, BenchmarkEngine, TaxEngine, TaxAdjustmentEngine, TaxPrepEngine +
+LinkingEngine/OverviewEngine completion (live Investments/Taxes cards) + record-mapping extension +
+seed/fixtures + 4 CLIs. Engine/model layer only (UI → Phase 5); read-only except two safe writes
+(standard-adjustment seed, year-close archive). **Next**: `/speckit-tasks` → `/speckit-implement`.
+**Depends on**: Phase 3 (`004-domain-accounts-budget-overview`) — pending CI + merge.
+**Previous**: `004` (Phase 3), `003-parsing-validation` (Phase 2), `002-foundation-architecture` (Phase 1).
 <!-- SPECKIT END -->
 
 ### On spec completion — maintain two living docs
