@@ -169,6 +169,51 @@ public struct SleeveTarget: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
+// MARK: - Benchmark projection models (US4)
+
+/// Growth over a window: simple (≤1Y), CAGR (3Y/5Y), or unknown for lack of history.
+public enum GrowthState: Equatable, Sendable {
+    case simple(Decimal)
+    case cagr(Decimal)
+    case insufficientHistory
+
+    public var value: Decimal? {
+        switch self { case let .simple(v), let .cagr(v): return v; case .insufficientHistory: return nil }
+    }
+}
+
+public struct BenchmarkCell: Equatable, Sendable, Identifiable {
+    public var window: BenchmarkWindow
+    public var growth: GrowthState
+    public var id: String { window.rawValue }
+    public init(window: BenchmarkWindow, growth: GrowthState) { self.window = window; self.growth = growth }
+}
+
+/// One heat-map row (the S&P 500 benchmark, or a portfolio account) across all 8 windows.
+public struct HeatMapRow: Equatable, Sendable, Identifiable {
+    public var label: String
+    public var cells: [BenchmarkCell]
+    public var id: String { label }
+    public init(label: String, cells: [BenchmarkCell]) { self.label = label; self.cells = cells }
+}
+
+/// Period × account heat map plus portfolio sector weights (FR-010/011/012/013).
+public struct HeatMap: Equatable, Sendable {
+    public var benchmark: HeatMapRow
+    public var accounts: [HeatMapRow]
+    public var sectorWeights: [SectorWeight]
+    public init(benchmark: HeatMapRow, accounts: [HeatMapRow], sectorWeights: [SectorWeight]) {
+        self.benchmark = benchmark; self.accounts = accounts; self.sectorWeights = sectorWeights
+    }
+}
+
+public struct SectorWeight: Equatable, Sendable, Identifiable {
+    public var sector: String
+    public var weight: Decimal           // share of priced portfolio market value
+    public var id: String { sector }
+    public init(sector: String, weight: Decimal) { self.sector = sector; self.weight = weight }
+}
+
 // MARK: - Portfolio projection models (US1)
 
 /// A derived money value that may be unknown because no price exists for the asset (FR-009).

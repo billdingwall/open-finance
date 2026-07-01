@@ -135,11 +135,11 @@ CAGR 3Y–5Y) for the benchmark and each portfolio account, plus sector performa
 matches hand-calcs (simple vs CAGR), weekend/holiday anchors resolve to the last prior close, a too-old
 period prints "insufficient history".
 
-- [ ] T033 [P] [US4] Extend investment models (`BenchmarkCell` with `GrowthState`, `HeatMap`, `sectorPerformance`) in `Sources/FinanceWorkspaceKit/Domain/Investments/InvestmentModels.swift` per `data-model.md §B`
-- [ ] T034 [US4] Implement `BenchmarkEngine`: load `benchmarks/sp500.csv`; compute the 8 periods via calendar anchor + `lastCloseOnOrBefore`; simple return ≤1Y, CAGR for 3Y/5Y; `.insufficientHistory` when the start anchor predates the series, in `Sources/FinanceWorkspaceKit/Domain/Investments/BenchmarkEngine.swift` per FR-010/FR-011/FR-013 / research R2
-- [ ] T035 [US4] Implement per-account period growth (identical formula) + the `HeatMap` model (account × period, S&P row) + sector performance weights vs benchmark (`unclassified` bucket for assets without a sector) in `BenchmarkEngine` per FR-011/FR-012
-- [ ] T036 [US4] Wire the `benchmark-overview` CLI (`--workspace`, `--as-of`) in `Sources/benchmark-overview/main.swift` per `contracts/cli-scripts.md`
-- [ ] T037 [P] [US4] Add `BenchmarkEngineTests` (8 periods, CAGR vs simple, weekend-anchor carry-forward, insufficient-history) asserting SC-004 in `Tests/FinanceWorkspaceKitTests/Unit/BenchmarkEngineTests.swift`
+- [X] T033 [P] [US4] Extend investment models (`BenchmarkCell` with `GrowthState`, `HeatMap`, `sectorPerformance`) in `Sources/FinanceWorkspaceKit/Domain/Investments/InvestmentModels.swift` per `data-model.md §B`
+- [X] T034 [US4] Implement `BenchmarkEngine`: load `benchmarks/sp500.csv`; compute the 8 periods via calendar anchor + `lastCloseOnOrBefore`; simple return ≤1Y, CAGR for 3Y/5Y; `.insufficientHistory` when the start anchor predates the series, in `Sources/FinanceWorkspaceKit/Domain/Investments/BenchmarkEngine.swift` per FR-010/FR-011/FR-013 / research R2
+- [X] T035 [US4] Implement per-account period growth (identical formula) + the `HeatMap` model (account × period, S&P row) + sector performance weights vs benchmark (`unclassified` bucket for assets without a sector) in `BenchmarkEngine` per FR-011/FR-012
+- [X] T036 [US4] Wire the `benchmark-overview` CLI (`--workspace`, `--as-of`) in `Sources/benchmark-overview/main.swift` per `contracts/cli-scripts.md`
+- [X] T037 [P] [US4] Add `BenchmarkEngineTests` (8 periods, CAGR vs simple, weekend-anchor carry-forward, insufficient-history) asserting SC-004 in `Tests/FinanceWorkspaceKitTests/Unit/BenchmarkEngineTests.swift`
 
 **Checkpoint**: Benchmark heat map verifiable; needs US1 portfolio value series; US1–US3 still pass.
 
