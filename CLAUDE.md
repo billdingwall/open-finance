@@ -117,15 +117,15 @@ Features are built with Spec Kit, in order:
 Branches: `NNN-feature-name` (via `/speckit-git-feature`).
 
 <!-- SPECKIT START -->
-**Active feature**: Phase 4 — Domain Layer II (`005-savings-investments-tax`), **planned, not yet
-implemented**. Plan: [specs/005-savings-investments-tax/plan.md](specs/005-savings-investments-tax/plan.md)
-(spec + 3 `/speckit-clarify` passes + research/data-model/contracts/quickstart). Scope:
-SavingsGoalEngine, PortfolioEngine, BenchmarkEngine, TaxEngine, TaxAdjustmentEngine, TaxPrepEngine +
-LinkingEngine/OverviewEngine completion (live Investments/Taxes cards) + record-mapping extension +
-seed/fixtures + 4 CLIs. Engine/model layer only (UI → Phase 5); read-only except two safe writes
-(standard-adjustment seed, year-close archive). **Next**: `/speckit-tasks` → `/speckit-implement`.
-**Depends on**: Phase 3 (`004-domain-accounts-budget-overview`) — pending CI + merge.
-**Previous**: `004` (Phase 3), `003-parsing-validation` (Phase 2), `002-foundation-architecture` (Phase 1).
+**Active feature**: Phase 4 — Domain Layer II (`005-savings-investments-tax`), **build complete on
+branch** (52/52 tasks; Milestone 4 reached). SavingsGoalEngine, PortfolioEngine (FIFO lots, sleeve
+drift), BenchmarkEngine (heat map, CAGR), TaxEngine (ST/LT realized gains), TaxAdjustmentEngine
+(deductions/QBI/estimate + standard-adjustment safe write), TaxPrepEngine (checklist + year-close
+archive safe write), LinkingEngine/OverviewEngine completion (all five KPI cards live), record-mapping
+extension, seed/fixtures + 4 CLIs. Additive schema extensions: `transactions.trade_type/quantity/price`,
+`assets.sleeve_id`, `portfolios.expected_return_rate`, `accounts.apy`. `swift build` green; `swift test`
++ `swiftlint --strict` run in macOS CI. **Pending CI + merge.** **Next**: push → CI → PR/merge, then
+Phase 5 (Presentation Layer). **Previous**: `004` (Phase 3), `003` (Phase 2), `002` (Phase 1).
 <!-- SPECKIT END -->
 
 ### On spec completion — maintain two living docs
