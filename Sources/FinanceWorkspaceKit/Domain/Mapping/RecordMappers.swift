@@ -52,7 +52,8 @@ public enum RecordMappers {
         return Account(accountId: accountId, displayName: rec.string("display_name") ?? accountId,
                        institution: rec.string("institution") ?? "", accountGroup: group,
                        accountType: accountType, status: status, accountGroupId: accountGroupId,
-                       currentBalance: rec.decimal("current_balance"), investment: investment)
+                       currentBalance: rec.decimal("current_balance"), apy: rec.decimal("apy"),
+                       investment: investment)
     }
 
     public static func accountGroup(_ rec: ParsedRecord) -> AccountGroup? {

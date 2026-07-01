@@ -174,11 +174,11 @@ set" when absent), removing the Phase 3 stubs.
 KPI cards live; an Investments/Savings card without a stored rate shows "rate not set"; realized gains
 and Schedule C links resolve.
 
-- [ ] T042 [P] [US6] Extend cross-domain models (`PortfolioTaxLink`, `ScheduleCLink`; live Investments/Taxes `OverviewSummaryCard`; `estimatedRate: RateState`) in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/CrossDomainModels.swift` per `data-model.md §B`
-- [ ] T043 [US6] Implement `LinkingEngine.portfolioTaxLinks` (realized gains → tax) and `scheduleCLinks` (business-expense adjustments → owning account-group) in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/LinkingEngine.swift` per FR-023
-- [ ] T044 [US6] Update `OverviewEngine` to compose the Investments card (from `PortfolioEngine`/`BenchmarkEngine`) and Taxes card (from the tax engines), remove the Phase-3 `dataNotAvailable` stubs, and source the Investments/Savings `estimatedRate` from the stored field with a `.rateNotSet` fallback, in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/OverviewEngine.swift` per FR-024/FR-024a / research R5
-- [ ] T045 [US6] Update the `overview-dashboard` CLI to render all five live cards in `Sources/overview-dashboard/main.swift` per `contracts/cli-scripts.md`
-- [ ] T046 [P] [US6] Update `OverviewEngineTests` + `LinkingEngineTests` (live Investments/Taxes cards, "rate not set" SC-012, portfolio-to-tax + Schedule C links) in `Tests/FinanceWorkspaceKitTests/Unit/OverviewEngineTests.swift` and `.../LinkingEngineTests.swift`
+- [X] T042 [P] [US6] Extend cross-domain models (`PortfolioTaxLink`, `ScheduleCLink`; live Investments/Taxes `OverviewSummaryCard`; `estimatedRate: RateState`) in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/CrossDomainModels.swift` per `data-model.md §B`
+- [X] T043 [US6] Implement `LinkingEngine.portfolioTaxLinks` (realized gains → tax) and `scheduleCLinks` (business-expense adjustments → owning account-group) in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/LinkingEngine.swift` per FR-023
+- [X] T044 [US6] Update `OverviewEngine` to compose the Investments card (from `PortfolioEngine`/`BenchmarkEngine`) and Taxes card (from the tax engines), remove the Phase-3 `dataNotAvailable` stubs, and source the Investments/Savings `estimatedRate` from the stored field with a `.rateNotSet` fallback, in `Sources/FinanceWorkspaceKit/Domain/CrossDomain/OverviewEngine.swift` per FR-024/FR-024a / research R5
+- [X] T045 [US6] Update the `overview-dashboard` CLI to render all five live cards in `Sources/overview-dashboard/main.swift` per `contracts/cli-scripts.md`
+- [X] T046 [P] [US6] Update `OverviewEngineTests` + `LinkingEngineTests` (live Investments/Taxes cards, "rate not set" SC-012, portfolio-to-tax + Schedule C links) in `Tests/FinanceWorkspaceKitTests/Unit/OverviewEngineTests.swift` and `.../LinkingEngineTests.swift`
 
 **Checkpoint**: All five engines compose into a live Overview; whole suite green together.
 
