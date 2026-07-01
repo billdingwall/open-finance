@@ -20,6 +20,9 @@ public enum PeriodMath {
     /// "YYYY-MM" for the as-of date (the "current month").
     public static func asOfMonth(_ asOf: Date) -> String { month(asOf) }
 
+    /// Calendar year of a date (used for tax-year anchoring).
+    public static func calendarYear(_ date: Date) -> Int { calendar.component(.year, from: date) }
+
     /// True when `date` is within the YTD window: Jan 1 of `taxYear` through the end of the
     /// as-of month (inclusive). FR-001/R3.
     public static func isInYTD(_ date: Date, taxYear: Int, asOf: Date) -> Bool {

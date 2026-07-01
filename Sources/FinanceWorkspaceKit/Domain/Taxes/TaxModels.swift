@@ -82,6 +82,45 @@ public struct EstimatedPayment: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
+// MARK: - Tax projection models (US2)
+
+/// Per-account tax read model for the tax year (FR-014/015/016).
+public struct AccountTaxProjection: Equatable, Sendable, Identifiable {
+    public var accountId: String
+    public var ytdTaxableIncome: Decimal
+    public var taxesPaid: Decimal              // withholding legs in this account (ledger-derived)
+    public var dividendIncome: Decimal
+    public var interestIncome: Decimal
+    public var effectiveRate: Decimal?         // taxesPaid / gross; nil when gross == 0
+    public var id: String { accountId }
+
+    public init(accountId: String, ytdTaxableIncome: Decimal, taxesPaid: Decimal,
+                dividendIncome: Decimal, interestIncome: Decimal, effectiveRate: Decimal?) {
+        self.accountId = accountId
+        self.ytdTaxableIncome = ytdTaxableIncome
+        self.taxesPaid = taxesPaid
+        self.dividendIncome = dividendIncome
+        self.interestIncome = interestIncome
+        self.effectiveRate = effectiveRate
+    }
+}
+
+/// Realized gain/loss for a tax year, split short-term vs long-term (FIFO holding period, FR-016).
+public struct RealizedGainSummary: Equatable, Sendable {
+    public var taxYear: Int
+    public var shortTermGainLoss: Decimal
+    public var longTermGainLoss: Decimal
+    public var lots: [RealizedDisposal]
+    public var total: Decimal { shortTermGainLoss + longTermGainLoss }
+
+    public init(taxYear: Int, shortTermGainLoss: Decimal, longTermGainLoss: Decimal, lots: [RealizedDisposal]) {
+        self.taxYear = taxYear
+        self.shortTermGainLoss = shortTermGainLoss
+        self.longTermGainLoss = longTermGainLoss
+        self.lots = lots
+    }
+}
+
 public struct TaxArchiveYear: Codable, Equatable, Sendable, Identifiable {
     public var taxYear: Int
     public var closedAt: Date

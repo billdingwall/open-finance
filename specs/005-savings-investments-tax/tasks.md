@@ -91,12 +91,12 @@ gain/loss **split short-term vs long-term** (FIFO), and dividend/interest aggreg
 **Independent Test**: `swift run tax-overview --workspace <fixture> --tax-year <YYYY>` — per-account
 taxable income/paid/rate and ST/LT realized gains match hand-calcs for the fixture tax year.
 
-- [ ] T018 [P] [US2] Extend tax projection models (`RealizedGainSummary` with ST/LT + `RealizedLot`, `AccountTaxProjection`) in `Sources/FinanceWorkspaceKit/Domain/Taxes/TaxModels.swift` per `data-model.md §B`
-- [ ] T019 [US2] Implement realized gain/loss from trade + FIFO lot history, **split short-term vs long-term** by the >365-day holding period, in `Sources/FinanceWorkspaceKit/Domain/Taxes/TaxEngine.swift` per FR-016 / research R1 (reuses the US1 lot logic)
-- [ ] T020 [US2] Implement per-account YTD taxable income (tax-year anchored), taxes paid from `estimated-payments.csv`, and effective rate (paid ÷ gross) in `TaxEngine` per FR-014/FR-015
-- [ ] T021 [US2] Implement dividend (from `dividends.csv`) + interest (from interest-categorized ledger income rows) aggregation for the tax year in `TaxEngine` per FR-016 / research R7
-- [ ] T022 [US2] Wire the read-only tax projection into the `tax-overview` CLI (`--workspace`, `--tax-year`: per-account income/paid/rate + ST/LT realized gains) in `Sources/tax-overview/main.swift` per `contracts/cli-scripts.md`
-- [ ] T023 [P] [US2] Add `TaxEngineTests` (taxable income, ST/LT realized gains across the boundary fixture, effective rate, dividend/interest) asserting SC-005 in `Tests/FinanceWorkspaceKitTests/Unit/TaxEngineTests.swift`
+- [X] T018 [P] [US2] Extend tax projection models (`RealizedGainSummary` with ST/LT + `RealizedLot`, `AccountTaxProjection`) in `Sources/FinanceWorkspaceKit/Domain/Taxes/TaxModels.swift` per `data-model.md §B`
+- [X] T019 [US2] Implement realized gain/loss from trade + FIFO lot history, **split short-term vs long-term** by the >365-day holding period, in `Sources/FinanceWorkspaceKit/Domain/Taxes/TaxEngine.swift` per FR-016 / research R1 (reuses the US1 lot logic)
+- [X] T020 [US2] Implement per-account YTD taxable income (tax-year anchored), taxes paid from `estimated-payments.csv`, and effective rate (paid ÷ gross) in `TaxEngine` per FR-014/FR-015
+- [X] T021 [US2] Implement dividend (from `dividends.csv`) + interest (from interest-categorized ledger income rows) aggregation for the tax year in `TaxEngine` per FR-016 / research R7
+- [X] T022 [US2] Wire the read-only tax projection into the `tax-overview` CLI (`--workspace`, `--tax-year`: per-account income/paid/rate + ST/LT realized gains) in `Sources/tax-overview/main.swift` per `contracts/cli-scripts.md`
+- [X] T023 [P] [US2] Add `TaxEngineTests` (taxable income, ST/LT realized gains across the boundary fixture, effective rate, dividend/interest) asserting SC-005 in `Tests/FinanceWorkspaceKitTests/Unit/TaxEngineTests.swift`
 
 **Checkpoint**: US2 verifiable independently; US1 still passes.
 
