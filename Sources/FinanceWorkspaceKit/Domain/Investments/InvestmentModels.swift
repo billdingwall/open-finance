@@ -178,7 +178,10 @@ public enum GrowthState: Equatable, Sendable {
     case insufficientHistory
 
     public var value: Decimal? {
-        switch self { case let .simple(value), let .cagr(value): return value; case .insufficientHistory: return nil }
+        switch self {
+        case let .simple(value), let .cagr(value): return value
+        case .insufficientHistory: return nil
+        }
     }
 }
 

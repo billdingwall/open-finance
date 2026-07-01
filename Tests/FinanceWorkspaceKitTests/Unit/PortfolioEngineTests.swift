@@ -60,7 +60,8 @@ import Foundation
         let eq = try #require(bySleeve["sl-eq"]); let bond = try #require(bySleeve["sl-bond"])
         #expect(eq.marketValue == Decimal(2600))
         #expect(bond.marketValue == Decimal(1440))
-        #expect((eq.actualWeight + bond.actualWeight) == Decimal(1))     // priced weights sum to 100%
+        let weightSum = eq.actualWeight + bond.actualWeight              // priced weights sum to ~100%
+        #expect(abs(weightSum - 1) < Decimal(string: "0.0000001")!)     // Decimal division isn't exact
         let eqDrift = try #require(eq.drift)
         #expect(eqDrift > Decimal(string: "0.04")! && eqDrift < Decimal(string: "0.05")!)  // ≈ +4.4%
     }

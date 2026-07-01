@@ -80,7 +80,11 @@ public enum PeriodMath {
     }
 
     public static func years(for window: BenchmarkWindow) -> Double {
-        switch window { case .threeYear: return 3; case .fiveYear: return 5; default: return 1 }
+        switch window {
+        case .threeYear: return 3
+        case .fiveYear: return 5
+        default: return 1
+        }
     }
 
     /// Last value at or before `date` in a date/value series **already sorted ascending by date**

@@ -58,7 +58,8 @@ if !projection.sleeveAllocations.isEmpty {
     for sleeve in projection.sleeveAllocations {
         let target = sleeve.targetWeight.map { pct($0) } ?? "—"
         let drift = sleeve.drift.map { (($0 >= 0 ? "+" : "") + pct($0)) } ?? "—"
-        print("  \(padR(sleeve.name, 18)) mv \(money(sleeve.marketValue)) · actual \(pct(sleeve.actualWeight)) · target \(target) · drift \(drift)")
+        print("  \(padR(sleeve.name, 18)) mv \(money(sleeve.marketValue)) · actual "
+              + "\(pct(sleeve.actualWeight)) · target \(target) · drift \(drift)")
     }
 }
 if !projection.dividendTotalsByAsset.isEmpty {
