@@ -82,7 +82,6 @@ open-finance/
 ├── workspace-template/        # Seed files for a new Finance workspace
 ├── .specify/                  # Spec Kit workflow engine, templates, constitution
 ├── .claude/skills/            # Agent skills — Spec Kit + design
-├── MEMORY.md                  # Active state — read first
 ├── DESIGN.md                  # Design system
 ├── CLAUDE.md                  # AI operating instructions
 └── README.md
@@ -92,7 +91,6 @@ open-finance/
 
 | Doc | What it answers |
 |---|---|
-| `MEMORY.md` | Where the project is right now (phase, next steps, blockers). |
 | `DESIGN.md` | The design system — tokens, components, rules. |
 | `docs/product-requirements.md` | What & why — goals, user stories, requirements, IA. |
 | `docs/technical-design.md` → `docs/architecture/` | How & where — architecture, workspace layout, CSV/MD specs, validation, pipelines. |

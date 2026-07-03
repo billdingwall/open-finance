@@ -6,19 +6,14 @@ reference** — architecture and product specs live under `docs/` (see Key docum
 
 ## Project status
 
-- **Phase 1 — Foundation & Architecture** (`002-foundation-architecture`): complete, merged (PR #15).
-- **Phase 2 — Parsing, Validation & Infrastructure** (`003-parsing-validation`): complete, merged
-  (PR #16; Milestone 2 gate passed).
-- **Phase 3 — Domain Layer I (Accounts, Budget, Overview)** (`004-domain-accounts-budget-overview`):
-  build complete on branch (all 43-item task list done; AccountEngine + BudgetEngine + LinkingEngine
-  + OverviewEngine + record-mapping seam + seed data + 3 projection CLIs). **Pending CI + merge** —
-  `swift build` is green; `swift test`/`swiftlint --strict` run in macOS CI (not runnable on the
-  CLT-only dev box).
-- **Phase 4 — Domain Layer II (Savings, Investments, Tax)**: next, not started.
+**Live project and spec state is tracked in Claude's persistent project memory** (auto-loaded each
+session; the repo-root `MEMORY.md` was retired 2026-07-03). Canonical records stay in the repo:
+phase plan in `docs/product-roadmap.md`, feature artifacts in `specs/NNN-*/`, history in git.
+The active feature is named in the Spec Kit block below.
 
 The app is a **Swift Package** (`Package.swift`), not a hand-authored `.xcodeproj` — the build
-environment is Command-Line-Tools-only. An Xcode app target + iCloud entitlement arrive in Phase 5
-when UI/packaging/signing is needed. For live sprint state, read `MEMORY.md`.
+environment is Command-Line-Tools-only. The Xcode app target + iCloud entitlement land with
+Phase 5 (`006`, US8, CI-gated).
 
 ## Build & test
 
@@ -117,15 +112,9 @@ Features are built with Spec Kit, in order:
 Branches: `NNN-feature-name` (via `/speckit-git-feature`).
 
 <!-- SPECKIT START -->
-**Active feature**: Phase 4 — Domain Layer II (`005-savings-investments-tax`), **build complete on
-branch** (52/52 tasks; Milestone 4 reached). SavingsGoalEngine, PortfolioEngine (FIFO lots, sleeve
-drift), BenchmarkEngine (heat map, CAGR), TaxEngine (ST/LT realized gains), TaxAdjustmentEngine
-(deductions/QBI/estimate + standard-adjustment safe write), TaxPrepEngine (checklist + year-close
-archive safe write), LinkingEngine/OverviewEngine completion (all five KPI cards live), record-mapping
-extension, seed/fixtures + 4 CLIs. Additive schema extensions: `transactions.trade_type/quantity/price`,
-`assets.sleeve_id`, `portfolios.expected_return_rate`, `accounts.apy`. `swift build` green; `swift test`
-+ `swiftlint --strict` run in macOS CI. **Pending CI + merge.** **Next**: push → CI → PR/merge, then
-Phase 5 (Presentation Layer). **Previous**: `004` (Phase 3), `003` (Phase 2), `002` (Phase 1).
+**Active feature**: `006-presentation-layer` (Phase 5 — Presentation Layer). Plan:
+`specs/006-presentation-layer/plan.md`. Detailed spec/plan state, clarify decisions, and workflow
+position live in persistent project memory (`active-spec-006-presentation-layer`).
 <!-- SPECKIT END -->
 
 ### On spec completion — maintain two living docs
@@ -153,7 +142,7 @@ Project docs are living, updated per refinement round (detail: `docs/_notes/work
 
 | Document | Purpose |
 |---|---|
-| `MEMORY.md` | **Read first** — active state: current phase, next steps, recent decisions, blockers. |
+| *(persistent memory)* | **Read first** — active state (phase, next steps, blockers) lives in Claude's project memory, auto-loaded each session. Not a repo file. |
 | `DESIGN.md` | Design system (tokens, components, rules). Read before any UI/UX/frontend change. |
 | `docs/product-requirements.md` | What & why — modules, scenarios, data model, IA. |
 | `docs/technical-design.md` | Architecture overview + locked decisions (§21); links to `docs/architecture/`. |
