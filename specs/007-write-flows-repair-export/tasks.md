@@ -33,13 +33,13 @@ testable increment. The write-engine core is foundational (blocks every story).
 **Purpose**: Scaffold the new source groups. No `Package.swift` change — `Write/` is a subdir of the
 existing `FinanceWorkspaceKit` target and `UI/Write/` of the `FinanceWorkspaceApp` target.
 
-- [ ] T001 Create the `Sources/FinanceWorkspaceKit/Persistence/Write/` group with empty
+- [X] T001 Create the `Sources/FinanceWorkspaceKit/Persistence/Write/` group with empty
   `WritePlan.swift`, `CSVRowSerializer.swift`, `WriteService.swift`, `ReferenceScanner.swift`,
   `ImportMapper.swift`, `ExportService.swift` (file headers only)
 - [ ] T002 [P] Create the `Sources/FinanceWorkspaceApp/UI/Write/` group with empty
   `WritePreviewView.swift`, `EntityEditForms.swift`, `ImportView.swift`, `TransactionGroupEditor.swift`,
   `ReassignmentPickerView.swift` (file headers only)
-- [ ] T003 [P] Create test-suite stubs `Tests/FinanceWorkspaceKitTests/WriteEngineTests/` folder with
+- [X] T003 [P] Create test-suite stubs `Tests/FinanceWorkspaceKitTests/WriteEngineTests/` folder with
   empty `WriteServiceTests.swift`, `CSVRowSerializerTests.swift`, `ReferenceScannerTests.swift`,
   `ImportMapperTests.swift`, `ExportServiceTests.swift`, `MultiEntryWriteTests.swift`
 
@@ -52,20 +52,20 @@ existing `FinanceWorkspaceKit` target and `UI/Write/` of the `FinanceWorkspaceAp
 
 **⚠️ CRITICAL**: No user story can begin until this phase is complete.
 
-- [ ] T004 Define the write-engine value types (`WriteIntent`, `WritePlan`, `FileChange`, `RowDiff`,
+- [X] T004 Define the write-engine value types (`WriteIntent`, `WritePlan`, `FileChange`, `RowDiff`,
   `ReferenceGroup`, `Reassignment`, `BackupReference`, `WriteResult`) per data-model.md in
   `Sources/FinanceWorkspaceKit/Persistence/Write/WritePlan.swift`
-- [ ] T005 Implement `CSVRowSerializer.applyDiffs` — in-place row edit that preserves the leading
+- [X] T005 Implement `CSVRowSerializer.applyDiffs` — in-place row edit that preserves the leading
   `# schema_version: N` comment, schema column order, and byte-stability of untouched rows (S2/S4) in
   `Sources/FinanceWorkspaceKit/Persistence/Write/CSVRowSerializer.swift`
-- [ ] T006 Implement `WriteService.apply` — `WriteGate.evaluate` check (G3) → `ManifestStore` hash
+- [X] T006 Implement `WriteService.apply` — `WriteGate.evaluate` check (G3) → `ManifestStore` hash
   drift check (G4) → `BackupService.backup` every touched file (G1) → `FileCoordinatorService`
   atomic coordinated write per `FileChange` (G2) → append `repair-log.csv` entries (G5); plus
   `WriteService.preview` in `Sources/FinanceWorkspaceKit/Persistence/Write/WriteService.swift`
-- [ ] T007 [P] Contract tests `WriteServiceTests` — backup-before-write (G1), atomic-failure-leaves-
+- [X] T007 [P] Contract tests `WriteServiceTests` — backup-before-write (G1), atomic-failure-leaves-
   original (G2), sync-gate-block (G3), drift-throws (G4), log-appended (G5) against a temp workspace
   in `Tests/FinanceWorkspaceKitTests/WriteEngineTests/WriteServiceTests.swift`
-- [ ] T008 [P] Contract tests `CSVRowSerializerTests` framework — empty-diff byte-stability (S2),
+- [X] T008 [P] Contract tests `CSVRowSerializerTests` framework — empty-diff byte-stability (S2),
   schema order + comment-row preservation (S4) in
   `Tests/FinanceWorkspaceKitTests/WriteEngineTests/CSVRowSerializerTests.swift`
 
