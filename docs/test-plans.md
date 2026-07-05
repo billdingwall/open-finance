@@ -8,7 +8,7 @@ the specific user flows to exercise to surface bugs.
 > reviews testability against app completeness and manually tests specific user flows. For the
 > underlying build/run commands see
 > [`docs/_notes/running-and-testing.md`](_notes/running-and-testing.md).
-> Last updated: 2026-06-30 (end of Phase 2).
+> Last updated: 2026-07-04 (Phase 5 build complete — the app is user-testable).
 
 ### Where "expected behavior" is specified
 
@@ -26,15 +26,18 @@ When a flow below surprises you, check it against the source of truth before log
 
 ## 1. Testability status
 
-### 🔴 Not ready for end-user app testing
+### 🟢 Ready for read-only end-user app testing (Phase 5 built)
 
-**There is no usable application to open and use yet.** A non-developer cannot install Open
-Finance, open it, and exercise budgeting/accounts/taxes the way the product is meant to work.
-The native macOS app — the real window, sidebar navigation, and module views — is **Phase 5**
-and has not been built. What ships today is a Swift Package whose `FinanceWorkspaceApp` target
-is a **minimal diagnostic shell**: a single window that resolves the workspace and prints
-availability, sync state, and the workspace path. It has no charts, tables, navigation, create
-or edit flows, or detail panes.
+**The real app exists and is fully navigable.** `swift run FinanceWorkspaceApp` opens the
+native shell — Overview landing, sidebar navigation (no Overview row; the "Finance Dashboard"
+header is the Overview link), all five module view groups connected to live engine
+projections, the collapsible right inspector (⌥⌘I), the §17 menu commands, Swift Charts, and
+full KPI → detail → source-file traceability. **Phase 5 is strictly read-only**: every write
+affordance (Add/Edit/Import/Delete/Export, repair *apply*) renders visible-but-disabled until
+Phase 6; repair *previews* are dry-run only. Verified automatically at build time: the app boots
+against fixture and empty workspaces, and a full app session leaves the workspace
+**byte-identical** (SC-005 tar-compare proof, 2026-07-04). The interactive Milestone-5
+walkthrough (Flow 9 below) awaits a manual pass.
 
 ### What *is* testable right now
 
@@ -49,12 +52,13 @@ feedback on today:
 | **Local workspace provisioning & file index** | ✅ Yes | Run `bootstrap-workspace` / `fixture-generate` / `index-check` |
 | **Accounts / Budget / Overview projections** | ✅ Yes (Phase 3) | Run `accounts-overview` / `budget-overview` / `overview-dashboard` against a fixture (`--as-of`/`--period` for deterministic output) |
 | **Savings / Investments / Tax projections** | ✅ Yes (Phase 4) | Run `savings-overview` / `portfolio-overview` / `benchmark-overview` / `tax-overview` against a fixture; `overview-dashboard` now shows all five KPI cards live. The two safe writes are `tax-overview --seed-standard` / `--close-year` (preview by default; `--apply` to write, backed up + logged) |
-| **How the real app functions** | ❌ No | Blocked on the Phase 5 SwiftUI presentation layer (the domain read model now exists) |
-| **How well iCloud syncing works** | ❌ No | Blocked — needs an Xcode app target + iCloud entitlement (Phase 5) |
+| **How the real app functions (read-only)** | ✅ Yes (Phase 5) | `swift run FinanceWorkspaceApp` against a fixture workspace — every module view, traceability chain, dark mode, keyboard navigation |
+| **Write/edit/import flows & repair apply** | ❌ No | Phase 6 — affordances render disabled |
+| **How well iCloud syncing works** | ❌ No | The entitled app target now exists (`App/project.yml`, CI-built unsigned); real sync testing needs a **signed** build on a dev machine — Phase 7 hardens signing |
 
-So: feedback on **file organization**, the **intended look** (via prototype), and the
-**read/validate/repair pipeline** is valuable now. Feedback on the **living app** and on
-**real iCloud syncing** has to wait for later phases.
+So: feedback on the **living read-only app**, **file organization**, and the
+**read/validate/repair pipeline** is valuable now. Feedback on **writing through the app** and
+**real iCloud syncing** waits for Phases 6–7.
 
 ---
 
@@ -206,12 +210,15 @@ always · **(6)** cross-domain visibility · **(7)** repair when safe.
    unified ledger as trade rows, new R6 files seeded, `schema_version` bumped — losslessly.
 4. Re-run `--apply`. **Expect:** no-op on an already-R6 workspace.
 
-### Flow 7 — Diagnostic app shell · principle 3
+### Flow 7 — App launch & shell · principle 3
 
-1. `swift run FinanceWorkspaceApp` (debug → local-folder provider, no iCloud).
-2. **Expect:** the window resolves/provisions the workspace and shows availability, sync state,
-   and path. A pre-R6 workspace shows a migration notice (never auto-migrates).
-3. This verifies wiring only — there is no usable UI to test beyond these labels.
+1. `swift run FinanceWorkspaceApp` (debug → local-folder provider at `~/Finance-Dev`, no iCloud).
+2. **Expect:** the window opens on the **Overview dashboard** with five live KPI cards, an
+   issues chip immediately left of the sync chip, and the sidebar (Accounts groups, Budget,
+   Savings & Investments, Taxes — **no Overview row**; the "Finance Dashboard" header is the
+   Overview link). Minimum window 900px; the right inspector is closed by default.
+3. On an **empty** freshly bootstrapped workspace, every surface shows a designed empty state
+   (no blanks, zeros, or crashes).
 
 ### Flow 8 — Intended UX review (prototype) · principle 3
 
@@ -221,12 +228,38 @@ always · **(6)** cross-domain visibility · **(7)** repair when safe.
 3. **Judge:** Does the visual design, information architecture, and intended interaction feel
    right? Capture this as design feedback — it informs the Phase 5 build.
 
-### Blocked flows (revisit at Phase 5)
+### Flow 9 — Milestone 5 demo: full navigation & traceability · principles 3, 5, 6 **[Manual pass pending]**
 
-- **[Blocked]** Open the real app and navigate module views with live data.
-- **[Blocked]** Create/edit/delete records through the app and confirm safe writes to disk.
+The end-to-end walkthrough against the 12-month fixture (automated proofs — boot, read-only
+tar-compare, engine⇄view parity via unit tests — passed 2026-07-04; the human pass covers what
+automation can't judge):
+
+1. **Every view by sidebar and by keyboard alone**: Overview → Accounts (grid → group →
+   account) → Budget (overview / history / categories) → S&I (overview / goals / goal detail /
+   portfolio / holding detail) → Taxes (current year / prep checklist / archive).
+2. **KPI drill-down**: tap each of the 5 Overview cards → its module (Business → the business
+   group screen).
+3. **Traceability chain** in each module: select a table/ledger row → inspector slides over
+   with file path, row number, raw fields, provenance tag → "Open in Finder" reveals the real
+   CSV. ⌥⌘I toggles the pane.
+4. **Reconcile figures** on screen against the CLIs (`overview-dashboard`,
+   `accounts-overview`, `budget-overview --period`, `savings-overview`, `portfolio-overview`,
+   `benchmark-overview`, `tax-overview`) for the same `--as-of` date.
+5. **Session selectors**: budget period stepping, portfolio account + heat-map toggle, tax
+   year — persist while navigating, reset on relaunch.
+6. **Repair preview** from the Overview issues table: dry-run diff in the pane, "Apply" visibly
+   disabled; workspace untouched.
+7. **Dark mode** (System Settings → Appearance) across every view; **re-index** (⌘R) keeps the
+   UI responsive with no mixed stale/fresh data.
+
+### Blocked flows (revisit at Phase 6–7)
+
+- **[Blocked]** Create/edit/delete records through the app and confirm safe writes to disk
+  (Phase 6 — affordances render disabled today).
+- **[Blocked]** Repair **apply** through the app (Phase 6; preview works today).
+- **[Blocked]** Export current view (Phase 6).
 - **[Blocked]** Real iCloud sync: edit on one device, observe sync state and the update on
-  another; conflict resolution.
+  another; conflict resolution (needs a signed entitled build — Phase 7).
 
 ---
 

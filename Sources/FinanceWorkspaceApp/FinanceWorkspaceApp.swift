@@ -1,56 +1,10 @@
 import SwiftUI
 import FinanceWorkspaceKit
 
-enum AppConfig {
-    // Reverse-DNS, iCloud.-prefixed ubiquity container identifier (must match the entitlement).
-    static let iCloudContainerIdentifier = "iCloud.app.openfinance.FinanceWorkspace"
-}
-
-// T020 — Minimal app shell + active-provider selection (FR-021, FR-024, FR-025).
-// DEBUG defaults to LocalFolderProvider so the app runs with no iCloud.
-// Release wires ICloudContainerService once it lands in US3.
-
-@MainActor
-@Observable
-final class AppState {
-    var availability: WorkspaceAvailability = .available
-    var syncState: SyncState = .available
-    var workspaceURL: URL?
-    var didProvision = false
-    var missingPaths: [String] = []
-    var needsR6Migration = false
-    var lastError: String?
-
-    let provider: any CloudStorageProvider
-    private let manager: WorkspaceManager
-
-    init() {
-        #if DEBUG
-        provider = LocalFolderProvider()
-        #else
-        provider = ICloudContainerService(containerIdentifier: AppConfig.iCloudContainerIdentifier)
-        #endif
-        manager = WorkspaceManager(provider: provider)
-    }
-
-    /// Resolve + provision-on-first-run + validate (FR-002/004/005/024).
-    func openWorkspace() async {
-        do {
-            let state = try await manager.openWorkspace()
-            workspaceURL = state.workspace?.rootURL
-            availability = state.availability
-            syncState = provider.syncState
-            didProvision = state.didProvision
-            missingPaths = state.missingPaths
-            // T038 — detect-and-prompt: surface a pre-R6 workspace; never auto-migrate (clarify Q5).
-            if let url = workspaceURL { needsR6Migration = MigrationService().isPreR6(workspaceURL: url) }
-        } catch {
-            lastError = String(describing: error)
-            availability = .containerUnavailable
-            Diagnostics.workspace.error("openWorkspace failed: \(self.lastError ?? "", privacy: .public)")
-        }
-    }
-}
+// T019 — the real app scene (replaces the Phase-1 diagnostic shell): three-column shell
+// (sidebar / content / `.inspector` slide-over), §17 menu commands, `NSUserActivity`
+// restoration (research D6), and the ProjectionStore bootstrap. Overview is the default
+// landing (FR-002); minimum window per DESIGN.md.
 
 @main
 struct FinanceWorkspaceApp: App {
@@ -58,38 +12,118 @@ struct FinanceWorkspaceApp: App {
 
     var body: some Scene {
         WindowGroup("Finance Dashboard") {
-            ContentView()
+            AppShellView()
                 .environment(state)
                 .task { await state.openWorkspace() }
+                .userActivity(RouteActivityCodec.activityType) { activity in
+                    activity.userInfo = RouteActivityCodec.encode(
+                        state.route, paneOpen: state.detailPane.isPresented)
+                    activity.becomeCurrent()
+                }
+                .onContinueUserActivity(RouteActivityCodec.activityType) { activity in
+                    let payload = (activity.userInfo as? [String: String]) ?? [:]
+                    if let route = RouteActivityCodec.decode(payload) {
+                        state.router.navigate(to: route)
+                    }
+                }
+        }
+        .defaultSize(width: 1180, height: 760)
+        .commands { AppCommands(state: state) }
+    }
+}
+
+// MARK: - Shell
+
+struct AppShellView: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        @Bindable var state = state
+        NavigationSplitView {
+            NavigationSidebarView()
+        } detail: {
+            VStack(spacing: 0) {
+                GlobalHeaderView()
+                Divider().overlay(DS.Colors.borderSoft)
+                WorkspaceNoticeBar()
+                ModuleContainerView()
+            }
+            .background(DS.Colors.windowBg)
+        }
+        .inspector(isPresented: $state.detailPane.isPresented) {
+            DetailPaneView()
+                .inspectorColumnWidth(
+                    min: DS.Metrics.detailPaneMin, ideal: DS.Metrics.detailPaneMin,
+                    max: DS.Metrics.detailPaneMax)
+        }
+        .frame(minWidth: DS.Metrics.minWindowWidth, minHeight: DS.Metrics.minWindowHeight)
+    }
+}
+
+/// Routes the content column. Module views land with US3–US7; until then each slot renders a
+/// typed placeholder so the shell is independently testable (US1).
+struct ModuleContainerView: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        Group {
+            switch state.phase {
+            case .idle, .indexing:
+                if state.projections == nil {
+                    ScrollView { LoadingSkeletonView().moduleContentPadding() }
+                } else {
+                    routedContent
+                }
+            case .failed(let message):
+                failedState(message)
+            case .ready:
+                routedContent
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    @ViewBuilder private var routedContent: some View {
+        switch state.route {
+        case .overview:
+            OverviewView()
+        case .accounts:
+            AccountsView()
+        case .accountGroup(let id):
+            AccountGroupDetailView(accountGroupId: id)
+        case .account(let id):
+            AccountDetailView(accountId: id)
+        case .budget(let sub):
+            BudgetModuleView(subview: sub)
+        case .savingsInvestments(let sub):
+            SavingsInvestmentsView(subview: sub)
+        case .goal(let id):
+            GoalDetailView(goalId: id)
+        case .holding(let id):
+            HoldingDetailView(assetId: id)
+        case .taxes(let sub):
+            TaxesModuleView(subview: sub)
+        }
+    }
+
+    private func failedState(_ message: String) -> some View {
+        ScrollView {
+            EmptyStateView(model: EmptyStateModel(
+                systemImage: "exclamationmark.triangle",
+                title: "Workspace unavailable",
+                message: message))
+                .moduleContentPadding()
         }
     }
 }
 
-struct ContentView: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Finance Workspace").font(.title2).bold()
-            LabeledContent("Availability", value: state.availability.rawValue)
-            LabeledContent("Sync state", value: state.syncState.rawValue)
-            LabeledContent("Workspace", value: state.workspaceURL?.path ?? "—")
-            if state.didProvision {
-                Text("Provisioned a new workspace on first launch.").font(.caption).foregroundStyle(.secondary)
-            }
-            if !state.missingPaths.isEmpty {
-                Text("Missing: \(state.missingPaths.joined(separator: ", "))").font(.caption).foregroundStyle(.orange)
-            }
-            if state.needsR6Migration {
-                Text("Pre-R6 workspace detected — migration available. Review and run it "
-                     + "explicitly (migrate-r6); it is never applied automatically.")
-                    .font(.caption).foregroundStyle(.orange)
-            }
-            if let err = state.lastError {
-                Text(err).foregroundStyle(.red).font(.caption)
-            }
-        }
-        .padding()
-        .frame(minWidth: 420, minHeight: 200)
+// Light + dark previews (PreviewProvider form — the #Preview macro plugin needs full Xcode,
+// which the CLT-only dev box lacks; CI and Xcode render these identically).
+struct AppShellView_Previews: PreviewProvider {
+    static var previews: some View {
+        AppShellView().environment(AppState()).frame(width: 1100, height: 700)
+            .preferredColorScheme(.light).previewDisplayName("Shell — light")
+        AppShellView().environment(AppState()).frame(width: 1100, height: 700)
+            .preferredColorScheme(.dark).previewDisplayName("Shell — dark")
     }
 }

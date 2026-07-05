@@ -23,17 +23,26 @@ public struct OverviewEngine: Sendable {
         self.taxAdjustmentEngine = taxAdjustmentEngine
     }
 
+    /// Compose the dashboard. The three cross-domain sub-projections it needs (accounts overview,
+    /// aggregate holdings, tax estimate) can be **passed in** by a caller that already computed
+    /// them (e.g. the app's ProjectionStore builds the full snapshot) to avoid re-running those
+    /// engines; when omitted they are computed here, so existing CLI/test callers are unchanged.
     public func dashboard(_ context: WorkspaceContext, asOf: Date,
-                          settings: WorkspaceSettings) -> OverviewDashboard {
-        let overview = accountEngine.overview(context, asOf: asOf, settings: settings)
+                          settings: WorkspaceSettings,
+                          accounts: AccountsOverview? = nil,
+                          aggregateHoldings: HoldingsProjection? = nil,
+                          taxEstimate: TaxEstimateProjection? = nil) -> OverviewDashboard {
+        let overview = accounts ?? accountEngine.overview(context, asOf: asOf, settings: settings)
+        let holdings = aggregateHoldings ?? portfolioEngine.holdings(context, asOf: asOf, scope: .aggregate)
+        let estimate = taxEstimate ?? taxAdjustmentEngine.taxEstimate(context, settings: settings)
         let asOfMonth = PeriodMath.asOfMonth(asOf)
 
         let cards: [OverviewSummaryCard] = [
             budgetCard(context, asOf: asOf, asOfMonth: asOfMonth),
             savingsCard(context, overview: overview),
-            investmentsCard(context, asOf: asOf),
+            investmentsCard(context, holdings: holdings),
             businessCard(overview),
-            taxesCard(context, settings: settings),
+            taxesCard(estimate),
         ]
 
         return OverviewDashboard(
@@ -66,8 +75,7 @@ public struct OverviewEngine: Sendable {
                                    estimatedRate: apy.map(RateState.value) ?? .rateNotSet)
     }
 
-    private func investmentsCard(_ context: WorkspaceContext, asOf: Date) -> OverviewSummaryCard {
-        let holdings = portfolioEngine.holdings(context, asOf: asOf, scope: .aggregate)
+    private func investmentsCard(_ context: WorkspaceContext, holdings: HoldingsProjection) -> OverviewSummaryCard {
         // Estimated rate = a stored portfolio expected-return rate (FR-024a); else "rate not set".
         let rate = context.portfolios.first { $0.expectedReturnRate != nil }?.expectedReturnRate
         return OverviewSummaryCard(kind: "investments", state: .available, value: holdings.totalMarketValue,
@@ -80,11 +88,10 @@ public struct OverviewEngine: Sendable {
         return OverviewSummaryCard(kind: "business", state: .available, value: net)
     }
 
-    private func taxesCard(_ context: WorkspaceContext, settings: WorkspaceSettings) -> OverviewSummaryCard {
-        let estimate = taxAdjustmentEngine.taxEstimate(context, settings: settings)
+    private func taxesCard(_ estimate: TaxEstimateProjection) -> OverviewSummaryCard {
         // Primary = estimated return; secondary = taxes paid (FR-024).
-        return OverviewSummaryCard(kind: "taxes", state: .available, value: estimate.estimatedReturn,
-                                   secondaryValue: estimate.taxesPaid)
+        OverviewSummaryCard(kind: "taxes", state: .available, value: estimate.estimatedReturn,
+                            secondaryValue: estimate.taxesPaid)
     }
 
     // MARK: - Month-over-month (trailing 6 populated months, gaps skipped — FR-018)

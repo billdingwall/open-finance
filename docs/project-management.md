@@ -294,44 +294,43 @@ Roadmap Phase 4 design task specifies "active vs archived tabs" for the Goals ov
 
 ## Phase 5 — Presentation Layer
 
+> **All Phase 5 items resolved by spec `006-presentation-layer` (built 2026-07-04).** Decisions
+> came from the spec's clarify session (spec §Clarifications) and plan research (D1–D8); design
+> values are recorded in `DESIGN.md` (v1.1 Changelog).
+
 ### Product
 
-**[DECIDE]** Filter states per section — for each module, which filters appear, what is the default state, and are filter states persisted across sessions or reset on navigation?
-- Accounts: filter by account group (default all)? Active/inactive toggle?
-- Budget: period selector (default current month)? Persisted?
-- Savings & Investments: account selector (default all)? Goals active/archived tab persisted?
-- Taxes: tax year selector (default current year)? Persisted?
+~~**[DECIDE]** Filter states per section~~ **Resolved (006 clarify Q1)** — selectors are **session-only**: they persist while navigating and reset to current/all on relaunch (only the last module + entity restores via deep-link state). Budget: month selector (default current month); S&I: account selector (default all) + holdings ⇄ heat-map toggle; Taxes: tax-year selector (default settings year). No Accounts filter; goals are a flat list (no tabs); no global filter bar (V2).
 
-**[DECIDE]** Traceability interaction — when the user taps a KPI card, does it navigate to the module main view or open a filtered drill-down? When the user taps a transaction row, does the right pane open automatically or only on an explicit "Inspect" action?
+~~**[DECIDE]** Traceability interaction~~ **Resolved (006 contracts)** — a KPI card navigates to its **module main view** via a fixed route table (Business → the business account-group screen); drill-down filtering happens inside the module. Selecting a row opens the right pane automatically (selection-driven).
 
-**[DECIDE]** Right pane open trigger — what action opens the right pane? Single click on a row, double-click, a dedicated Inspect button, or a keyboard shortcut? Does selecting a row always open it, or only when the pane is already open from a prior interaction?
+~~**[DECIDE]** Right pane open trigger~~ **Resolved (DESIGN.md lock + 006 T018)** — single click/selection opens it; ⌥⌘I toggles; closed by default globally; navigating closes or re-scopes it.
 
-**[DECIDE]** macOS menu bar commands and shortcuts — the full command list needs keyboard shortcuts assigned (no conflicts with system shortcuts) and commands placed in the correct menus (File, Edit, View, Workspace, Window).
+~~**[DECIDE]** macOS menu bar commands and shortcuts~~ **Resolved (006 research D5)** — the full matrix lives in `docs/technical-design.md §17` (File: ⇧⌘N, ⌘O, ⌘R, ⇧⌘V, ⌘E; Workspace: ⇧⌘R, ⌘⏎, ⌥⌘R; View: ⌥⌘I). Phase-6 commands (Export, Repair apply) are present but disabled.
 
 ---
 
 ### Design
 
-**[FIX – C4]** Update `SavingsInvestmentsView` task to remove "Categories" sub-navigation  
-Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with Overview, Goals, Assets, and Categories sub-navigation"`. "Categories" was explicitly removed from S&I in the Round 3 update — deferred with the note "category and tag systems for Budget and S&I to be considered together." Update to: `Overview, Goals, Assets, Portfolio`.
+~~**[FIX – C4]**~~ **Resolved (006)** — `SavingsInvestmentsView` ships Overview / Goals / Portfolio sub-navigation (no "Categories").
 
-**[DECIDE]** `NavigationSplitView` three-column layout spec — sidebar fixed width, minimum window size, column collapse behavior on narrow windows
+~~**[DECIDE]** `NavigationSplitView` three-column layout spec~~ **Resolved** — DESIGN.md tokens: 248px sidebar, min window 900×600, detail pane 360–420px via the native `.inspector` slide-over.
 
-**[DECIDE]** Left sidebar — section header styling, expand/collapse animation, nested entity link appearance, active/selected state, empty group state
+~~**[DECIDE]** Left sidebar~~ **Resolved (006 T015)** — native sidebar list styling, disclosure-group expansion, accent-soft active state, right-aligned count badges, designed empty-group rows; the "Finance Dashboard" header is the Overview link (no Overview nav row).
 
-**[DECIDE]** Context header — title and breadcrumb layout, quick action button set (Import, Add, Export), sync status badge, issue count badge
+~~**[DECIDE]** Context header~~ **Resolved (006 T016/T017)** — issues chip immediately left of the sync chip in the global header; breadcrumb above the page title; local actions right-aligned on the title line (write actions visible-but-disabled until Phase 6).
 
-**[DECIDE]** Right detail pane — slide-over width, close button placement, all supported surface layouts (inspector, source file preview, repair preview, edit form)
+~~**[DECIDE]** Right detail pane~~ **Resolved (006 T018, research D1)** — six surfaces (inspector, source file preview, source row detail, issue detail, repair preview, edit form); close button + ⌥⌘I; disabled Edit/Delete at the bottom for entity surfaces.
 
-**[DECIDE]** Shared component library — data table, KPI card, pie chart, sparkline, bar chart, heat map table, period selector, filter bar, empty state template, loading skeleton
+~~**[DECIDE]** Shared component library~~ **Resolved (006 US2)** — KPI card, data table, pie/sparkline/bar on Swift Charts, Grid heat-map table on the shared pos/neg scale, period selector, empty state, loading skeleton; the filter bar was deliberately not built (V2).
 
-**[DECIDE]** All five module wireframes — Overview (updated post Round 1), Accounts (new), Budget (updated with pie chart + trailing averages), Savings & Investments (unified), Taxes (updated with deductions view, per-account rates, archive)
+~~**[DECIDE]** All five module wireframes~~ **Resolved (006 US3–US7)** — built against the prototype + Round 5/6 refinements; new conventions recorded in DESIGN.md v1.1.
 
 ---
 
 ### Development
 
-**[DECIDE]** Deep link / state restoration format — `AppRouter` must encode navigation state for `NSUserActivity`. What is the format — a custom URL scheme (`openfinance://`) or a `UserActivity` user info dictionary? What is the schema for encoding domain + entity + filter state?
+~~**[DECIDE]** Deep link / state restoration format~~ **Resolved (006 clarify Q2, research D6)** — a versioned `NSUserActivity` user-info dictionary (activity type `app.openfinance.navigation`, v1 schema: module + entity + pane flag; session selector state deliberately excluded). No custom URL scheme in v1.
 
 ---
 
@@ -410,14 +409,20 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 | Phase | FIX open | FIX resolved | DECIDE open | DECIDE resolved | Total open |
 |---|---|---|---|---|---|
 | Phase 1 — Foundation | 5 | 11 | 4 | 9 | 9 |
-| Phase 2 — Parsing | 0 | 8 | 3 | 5 | 3 |
-| Phase 3 — Domain I | 0 | 1 | 6 | 8 | 6 |
+| Phase 2 — Parsing | 0 | 8 | 0 | 8 | 0 |
+| Phase 3 — Domain I | 0 | 1 | 0 | 14 | 0 |
 | Phase 4 — Domain II | 2 | 0 | 21 | 0 | 23 |
-| Phase 5 — Presentation | 1 | 0 | 11 | 0 | 12 |
+| Phase 5 — Presentation | 0 | 1 | 0 | 11 | 0 |
 | Phase 6 — Write Flows | 0 | 0 | 14 | 0 | 14 |
 | Phase 7 — Polish | 0 | 0 | 6 | 0 | 6 |
-| **Total** | **8** | **20** | **65** | **22** | **73** |
+| **Total** | **7** | **22** | **44** | **43** | **51** |
 
+> **Phase 5 build complete (2026-07-04, `006-presentation-layer`)** retired all 12 open Phase 5
+> items (1 FIX + 11 DECIDEs — see the resolutions inline above) **and** the parked UI-design
+> `[DECIDE]`s from earlier phases: Phase 2's 3 (validation issue card, repair preview panel,
+> indexing progress state) and Phase 3's 6 (module view designs) — all shipped as 006 views.
+> The Phase 4 row's open `[DECIDE]`s predate the 005 closeout and still need a bookkeeping pass.
+>
 > **Phase 3 build complete on branch (2026-06-30)** retired 8 open Phase 3 items: `[FIX-C2]` and all
 > seven Phase-3 product `[DECIDE]`s (account-type taxonomy, default category set, employment-group
 > taxonomy, 3-month trailing-average sparse handling, Overview KPI card specs, MoM panel, YTD net
@@ -431,4 +436,4 @@ Roadmap Phase 5 dev task reads: `SavingsInvestmentsView — "top-level view with
 
 ---
 
-*Last updated: 2026-06-30 (Phase 3 build complete on branch — pending CI + merge)*
+*Last updated: 2026-07-04 (Phase 5 build complete on branch `006-presentation-layer`)*

@@ -1,0 +1,64 @@
+# T060 — XcodeGen spec for the real macOS app target (contracts/app-target.md, research D2).
+# The .xcodeproj is GENERATED (never committed): `xcodegen generate --spec App/project.yml`.
+# The app target compiles the same Sources/FinanceWorkspaceApp/ views the SwiftPM executable
+# builds (one source of truth) and links the package's FinanceWorkspaceKit library product.
+# CI builds it unsigned (CODE_SIGNING_ALLOWED=NO); signing stays a developer-machine action.
+name: FinanceWorkspace
+options:
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+packages:
+  FinanceWorkspacePackage:
+    path: ..
+targets:
+  FinanceWorkspace:
+    type: application
+    platform: macOS
+    sources:
+      - path: ../Sources/FinanceWorkspaceApp
+        name: FinanceWorkspaceApp
+    dependencies:
+      - package: FinanceWorkspacePackage
+        product: FinanceWorkspaceKit
+    info:
+      path: Info.plist
+      properties:
+        CFBundleName: Finance Workspace
+        CFBundleDisplayName: Finance Workspace
+        CFBundleShortVersionString: "0.5.0"
+        CFBundleVersion: "1"
+        LSMinimumSystemVersion: "15.0"
+        NSUserActivityTypes:
+          - app.openfinance.navigation
+        NSHumanReadableCopyright: ""
+    # XcodeGen GENERATES the entitlements file from these properties (T060 — resolves
+    # deferred T004/OOS-1). The container id must match AppConfig.iCloudContainerIdentifier.
+    entitlements:
+      path: FinanceWorkspace.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.app.openfinance.FinanceWorkspace
+        com.apple.developer.icloud-services:
+          - CloudDocuments
+        com.apple.developer.ubiquity-container-identifiers:
+          - iCloud.app.openfinance.FinanceWorkspace
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.openfinance.FinanceWorkspace
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_VERSION: "6.0"
+        CODE_SIGN_ENTITLEMENTS: App/FinanceWorkspace.entitlements
+# A shared scheme so `xcodebuild -scheme FinanceWorkspace` resolves in CI (the default
+# per-target schemes XcodeGen would otherwise generate are NOT shared / not written to disk).
+schemes:
+  FinanceWorkspace:
+    build:
+      targets:
+        FinanceWorkspace: all
+    run:
+      config: Debug
+    archive:
+      config: Release

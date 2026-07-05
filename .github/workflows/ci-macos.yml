@@ -5,9 +5,10 @@ on:
     branches: [main]
   pull_request:
 
-# Builds the package and runs the test suite on a macOS runner (full Xcode toolchain),
-# since XCTest / Swift Testing are not available on the Linux SwiftLint runner or a
-# Command-Line-Tools-only machine. Full app packaging / signing CI remains a Phase 5 concern.
+# Builds the package + runs the test suite on a macOS runner (full Xcode toolchain), since
+# XCTest / Swift Testing are not available on the Linux SwiftLint runner or a CLT-only machine.
+# Phase 5 added the entitled app-target build (unsigned) as the Milestone-5 packaging gate
+# (SC-009); signing/notarization remain developer-machine actions until Phase 7.
 jobs:
   build-test:
     runs-on: macos-15
@@ -21,3 +22,13 @@ jobs:
         run: swift build
       - name: Test
         run: swift test
+      # Phase 5 (T061) — generate + build the entitled app target, unsigned.
+      - name: Generate app project
+        run: |
+          brew install xcodegen
+          xcodegen generate --spec App/project.yml
+      - name: Build app target (unsigned)
+        run: |
+          xcodebuild build -project App/FinanceWorkspace.xcodeproj \
+            -scheme FinanceWorkspace -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO
