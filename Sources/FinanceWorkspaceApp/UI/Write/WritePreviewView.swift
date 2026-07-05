@@ -19,6 +19,15 @@ struct WritePreviewView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     if let plan {
+                        if !plan.references.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                OverlineLabel(text: "Referencing rows reassigned")
+                                ForEach(Array(plan.references.enumerated()), id: \.offset) { _, group in
+                                    Text("\(group.rows.count) in \(group.collection).\(group.column) — \(group.nullable ? "reassigned or unlinked" : "reassigned")")
+                                        .font(DS.Fonts.caption).foregroundStyle(DS.Colors.muted)
+                                }
+                            }
+                        }
                         ForEach(Array(plan.changes.enumerated()), id: \.offset) { _, change in
                             fileChange(change)
                         }

@@ -8,7 +8,30 @@ the specific user flows to exercise to surface bugs.
 > reviews testability against app completeness and manually tests specific user flows. For the
 > underlying build/run commands see
 > [`docs/_notes/running-and-testing.md`](_notes/running-and-testing.md).
-> Last updated: 2026-07-04 (Phase 5 build complete — the app is user-testable).
+> Last updated: 2026-07-05 (Phase 6 `007` — the app is now **writable**; write/import/repair/export
+> flows testable, multi-entry editor UI pending — see below).
+
+### 🟢 Phase 6 (007) makes these write flows testable
+
+The read-only app is now writable through the safe-write path (preview → backup → atomic apply →
+re-index). Exercise against a **throwaway** workspace (`swift run bootstrap-workspace` +
+`fixture-generate` into `/tmp`), never real data:
+
+- **Add / edit / delete** any of the 12 row entities: ⌘N adds one for the active module; select a row →
+  the inspector's **Edit/Delete** (panel bottom) opens a form / delete preview; every write shows a
+  before/after diff + backup location and is sync-gated.
+- **Import** (⇧⌘I): pick a bank CSV → confirm mapping + target account + sign → month-grouped preview
+  with duplicates flagged → apply appends to `Accounts/transactions/YYYY-MM.csv`.
+- **Delete with references**: deleting a referenced object (e.g. a category used by transactions)
+  surfaces the referencing rows and reassigns them atomically — never orphaned.
+- **Repair** (⇧⌘R): auto-repairable issues → Preview repair → Apply → the issue clears on re-validate.
+- **Export** (⌘E): the active module's primary file → CSV with `source_file`/`source_row` columns.
+- **Close Tax Year**: Taxes → "Close Tax Year…" archives the year (read-only thereafter).
+
+**Not yet testable (deferred, see `docs/out-of-scope-followups.md`):** authoring multi-entry
+paycheck/transfer groups in-app (OOS-10 — engine done, editor UI pending); choosing a specific
+reassignment target via a picker (OOS-11); the Markdown budget-summary export button (OOS-12).
+`swift test` (write-engine + view-model suites) and SwiftLint run in macOS CI.
 
 ### Where "expected behavior" is specified
 

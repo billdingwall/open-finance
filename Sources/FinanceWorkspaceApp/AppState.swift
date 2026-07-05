@@ -85,6 +85,8 @@ final class AppState {
     var writeError: String?
     // The entity add/edit form sheet (nil ⇒ closed).
     var editForm: EntityEditContext?
+    // The CSV import sheet.
+    var showingImport = false
 
     let provider: any CloudStorageProvider
     private let manager: WorkspaceManager
@@ -257,12 +259,83 @@ final class AppState {
                                      before: before, fileText: text)
     }
 
-    /// Build a delete plan for the row a source reference points at and open its preview.
-    /// (Reference-aware reassignment is layered on in US4.)
+    /// Build a delete plan for the row a source reference points at, scanning for referencing rows
+    /// and expanding the delete + reassignments into one atomic plan (FR-019–022, SC-005). Rows that
+    /// reference the deleted id are reassigned to the first available same-collection target, or
+    /// unlinked/removed where the reference is nullable/list-valued. The preview shows every change.
     func requestDelete(_ ref: SourceRef) {
         guard let row = ref.rowNumber, let text = readWorkspaceFile(ref.filePath),
-              let before = dataLine(in: text, rowRef: row) else { return }
-        presentWrite(WritePlanBuilder.delete(rowRef: row, before: before, in: ref.filePath))
+              let before = dataLine(in: text, rowRef: row),
+              let header = CSVRowSerializer.header(of: text) else { return }
+        // The deleted row's id (primary key = first column) and its collection.
+        let cells = CSVLine.fields(before)
+        let deletedId = cells.first ?? ""
+        guard let subtype = Self.parentSubtype(forFile: ref.filePath),
+              let context = projections?.context else {
+            presentWrite(WritePlanBuilder.delete(rowRef: row, before: before, in: ref.filePath))
+            return
+        }
+        _ = header
+        let scanner = ReferenceScanner(context: context)
+        let groups = scanner.referencesTo(id: deletedId, parentSubtype: subtype)
+        guard !groups.isEmpty else {
+            presentWrite(WritePlanBuilder.delete(rowRef: row, before: before, in: ref.filePath))
+            return
+        }
+        // Default reassignment target: first available id that is not itself being deleted (FR-022).
+        let target = scanner.reassignTargets(parentSubtype: subtype, excluding: [deletedId]).first
+
+        // Assemble modify diffs for every referencing row, grouped by file, plus the delete.
+        var diffsByFile: [String: [WriteRowDiff]] = [ref.filePath: [
+            WriteRowDiff(rowRef: row, kind: .delete(before: before)),
+        ]]
+        for group in groups {
+            for rowRef in group.rows {
+                guard let refText = readWorkspaceFile(rowRef.relativePath),
+                      let refHeader = CSVRowSerializer.header(of: refText),
+                      let refLine = dataLine(in: refText, rowRef: rowRef.rowRef),
+                      let colIndex = refHeader.firstIndex(of: group.column) else { continue }
+                var refCells = CSVLine.fields(refLine)
+                while refCells.count < refHeader.count { refCells.append("") }
+                refCells[colIndex] = reassignedValue(current: refCells[colIndex], deletedId: deletedId,
+                                                     target: group.nullable ? target ?? "" : target ?? "",
+                                                     unlink: group.nullable && target == nil,
+                                                     isList: group.isList)
+                let after = refCells.enumerated().map { CSVRowSerializer.escape($1) }.joined(separator: ",")
+                diffsByFile[rowRef.relativePath, default: []].append(
+                    WriteRowDiff(rowRef: rowRef.rowRef, kind: .modify(before: refLine, after: after)))
+            }
+        }
+        let changes = diffsByFile.map { FileChange(relativePath: $0.key, expectedHash: nil, rowDiffs: $0.value) }
+        presentWrite(WritePlan(intent: .delete, changes: changes, references: groups))
+    }
+
+    /// New value for a referencing cell: replace/remove the deleted id (list) or repoint/clear it.
+    private func reassignedValue(current: String, deletedId: String, target: String,
+                                 unlink: Bool, isList: Bool) -> String {
+        if isList {
+            var members = current.split(separator: "|").map(String.init)
+            members.removeAll { $0 == deletedId }
+            if !unlink, !target.isEmpty, !members.contains(target) { members.append(target) }
+            return members.joined(separator: "|")
+        }
+        return unlink ? "" : target
+    }
+
+    /// Map a workspace file to the `ReferenceScanner` parent-collection key.
+    static func parentSubtype(forFile path: String) -> String? {
+        switch path {
+        case "Accounts/accounts.csv": return "registry"
+        case "Accounts/account-groups.csv": return "account-groups"
+        case "Accounts/liabilities.csv": return "liabilities"
+        case "Budget/categories.csv": return "categories"
+        case "Budget/budgets.csv": return "budgets"
+        case "Savings/goals.csv": return "goals"
+        case "Investments/assets.csv": return "assets"
+        case "Investments/portfolios.csv": return "portfolios"
+        case "Investments/sleeves.csv": return "sleeves"
+        default: return nil
+        }
     }
 
     /// Called by the form on submit: build the add/edit plan and hand off to the write preview.
@@ -309,6 +382,28 @@ final class AppState {
         }
     }
 
+    // MARK: - Repair apply (US5, FR-023/026)
+
+    /// Whether the current detail-pane selection is an auto-repairable issue.
+    var hasRepairableSelection: Bool {
+        if case .issueDetail(let issue) = detailPane.surface { return issue.repairClass == .auto }
+        if case .repairPreview = detailPane.surface { return true }
+        return false
+    }
+
+    /// Apply the deterministic auto-repairs, then re-index + re-validate so resolved issues clear.
+    func applyRepair() async {
+        guard let workspaceURL else { return }
+        do {
+            _ = try RepairService().apply(workspaceURL: workspaceURL)
+            await reindex()
+            detailPane.isPresented = false
+        } catch {
+            writeError = String(describing: error)
+            Diagnostics.workspace.error("repair apply failed: \(String(describing: error), privacy: .public)")
+        }
+    }
+
     // MARK: - Close Tax Year (FR-011a)
 
     /// Archive the given tax year via the existing safe-write engine, then re-index.
@@ -323,6 +418,59 @@ final class AppState {
             writeError = String(describing: error)
             Diagnostics.workspace.error("year-close failed: \(String(describing: error), privacy: .public)")
         }
+    }
+
+    // MARK: - Import (US2)
+
+    /// Turn a confirmed import batch into an append plan and open the write preview.
+    func applyImport(batch: ImportBatch, mapping: ColumnMapping) {
+        let plan = ImportMapper().writePlan(from: batch) { month in
+            let rel = "Accounts/transactions/\(month).csv"
+            if let text = readWorkspaceFile(rel), let header = CSVRowSerializer.header(of: text) { return header }
+            return ["transaction_id", "account_id", "date", "amount", "type"]   // header for a new month
+        }
+        presentWrite(plan)
+    }
+
+    // MARK: - Export (US6, FR-027)
+
+    /// The active module's primary file, exported by ⌘E.
+    private var activeExportFile: String? {
+        switch route.parentModule {
+        case .accounts: return "Accounts/accounts.csv"
+        case .budget: return "Budget/categories.csv"
+        case .savingsInvestments: return "Savings/goals.csv"
+        case .taxes: return "Taxes/tax-adjustments.csv"
+        default: return nil
+        }
+    }
+
+    /// Build a CSV of the active module's primary file with source-provenance columns.
+    func exportCurrentViewCSV() -> (suggestedName: String, text: String)? {
+        guard let rel = activeExportFile, let text = readWorkspaceFile(rel),
+              let header = CSVRowSerializer.header(of: text) else { return nil }
+        var lines = text.components(separatedBy: "\n")
+        if text.hasSuffix("\n") { lines.removeLast() }
+        var i = 0
+        while i < lines.count && lines[i].trimmingCharacters(in: .whitespaces).hasPrefix("#") { i += 1 }
+        let dataLines = Array(lines.dropFirst(i + 1))       // skip comments + header
+        var rows: [[String: String]] = []
+        var provenance: [(file: String, row: Int)] = []
+        for (offset, line) in dataLines.enumerated() {
+            let cells = CSVLine.fields(line)
+            var row: [String: String] = [:]
+            for (c, column) in header.enumerated() where c < cells.count { row[column] = cells[c] }
+            rows.append(row)
+            provenance.append((file: rel, row: offset + 1))
+        }
+        let csv = ExportService().csv(rows: rows, columns: header, provenance: provenance)
+        return ((rel as NSString).lastPathComponent, csv)
+    }
+
+    /// Write exported text to a user-chosen destination (never inside the workspace).
+    func writeExport(_ text: String, to destination: URL) {
+        do { try ExportService().write(text, to: destination, workspaceURL: workspaceURL) }
+        catch { writeError = String(describing: error) }
     }
 
     // MARK: - File helpers

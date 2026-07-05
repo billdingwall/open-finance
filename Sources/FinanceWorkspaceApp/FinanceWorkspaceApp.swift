@@ -59,6 +59,9 @@ struct AppShellView: View {
         .sheet(item: $state.editForm) { context in
             EntityEditForm(context: context)
         }
+        .sheet(isPresented: $state.showingImport) {
+            ImportView { state.showingImport = false }
+        }
         .sheet(isPresented: Binding(
             get: { state.pendingWrite != nil },
             set: { if !$0 { state.cancelWrite() } })) {

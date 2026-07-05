@@ -130,7 +130,7 @@ land in the two correct `YYYY-MM.csv` files with backups; duplicates were flagge
 
 ### Tests for User Story 2
 
-- [ ] T020 [P] [US2] `ImportMapperTests` — required-column block (I1), target-account stamp (I2),
+- [X] T020 [P] [US2] `ImportMapperTests` — required-column block (I1), target-account stamp (I2),
   month-split (I3), duplicate flag on date+amount+description (I4), sign convention (I5),
   included-only plan (I6) in `Tests/FinanceWorkspaceKitTests/WriteEngineTests/ImportMapperTests.swift`
 - [ ] T021 [P] [US2] Import view-model tests — required-unmapped blocks advance, duplicates default
@@ -138,17 +138,17 @@ land in the two correct `YYYY-MM.csv` files with backups; duplicates were flagge
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Implement `ImportMapper.autoDetect` + `buildBatch` (mapping, `CSVNormalizer` sign
+- [X] T022 [US2] Implement `ImportMapper.autoDetect` + `buildBatch` (mapping, `CSVNormalizer` sign
   convention, month-split, single target-account stamp) in
   `Sources/FinanceWorkspaceKit/Persistence/Write/ImportMapper.swift`
-- [ ] T023 [US2] Add duplicate detection (date + amount + description/merchant within target account;
+- [X] T023 [US2] Add duplicate detection (date + amount + description/merchant within target account;
   default excluded) to `Sources/FinanceWorkspaceKit/Persistence/Write/ImportMapper.swift`
-- [ ] T024 [US2] Implement `ImportMapper.writePlan` (append only included rows to monthly files, via
+- [X] T024 [US2] Implement `ImportMapper.writePlan` (append only included rows to monthly files, via
   `WriteService`) in `Sources/FinanceWorkspaceKit/Persistence/Write/ImportMapper.swift`
-- [ ] T025 [US2] Build the two-step `ImportView` (`fileImporter` → editable mapping + sign control +
+- [X] T025 [US2] Build the two-step `ImportView` (`fileImporter` → editable mapping + sign control +
   required target-account picker → month-grouped preview with per-row duplicate toggles + unparseable
   list) in `Sources/FinanceWorkspaceApp/UI/Write/ImportView.swift`
-- [ ] T026 [US2] Wire the Import action into the shell (menu/local action) + post-import re-index in
+- [X] T026 [US2] Wire the Import action into the shell (menu/local action) + post-import re-index in
   `Sources/FinanceWorkspaceApp/UI/Shell/AppCommands.swift`; confirm no structured single-add form is
   exposed for single transactions, prices, or trades (FR-018 — import-only)
 
@@ -165,13 +165,13 @@ all legs written together; delete the group — all legs removed atomically.
 
 ### Tests for User Story 3
 
-- [ ] T027 [P] [US3] `MultiEntryWriteTests` — unbalanced blocks apply, balanced group written
+- [X] T027 [P] [US3] `MultiEntryWriteTests` — unbalanced blocks apply, balanced group written
   atomically to one file, whole-group delete removes every leg in
   `Tests/FinanceWorkspaceKitTests/WriteEngineTests/MultiEntryWriteTests.swift`
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Add the multi-entry group `WritePlan` (N `RowDiff`s sharing a generated `group_id`
+- [X] T028 [US3] Add the multi-entry group `WritePlan` (N `RowDiff`s sharing a generated `group_id`
   in one `FileChange`) + reconciliation assertion (transfers net to zero; `net = gross − Σ
   withholding`) before apply in `Sources/FinanceWorkspaceKit/Persistence/Write/WriteService.swift`
 - [ ] T029 [US3] Build `TransactionGroupEditor` (author N entries, live reconciliation indicator,
@@ -194,7 +194,7 @@ category gone, every referencing transaction repointed, both in one atomic plan 
 
 ### Tests for User Story 4
 
-- [ ] T031 [P] [US4] `ReferenceScannerTests` — full FK-edge coverage per research D3 (assert an
+- [X] T031 [P] [US4] `ReferenceScannerTests` — full FK-edge coverage per research D3 (assert an
   account delete finds `goals.source_account_id` + `budgets.account_ids`; a category delete finds
   `budget-allocations.category_id` + `account-rules.category_id`; a goal delete finds
   `transactions.savings_goal_id` + `progress.goal_id`; an asset delete finds both transaction asset FKs; any linkable
@@ -206,14 +206,14 @@ category gone, every referencing transaction repointed, both in one atomic plan 
 
 ### Implementation for User Story 4
 
-- [ ] T033 [US4] Implement `ReferenceScanner` — schema-derived FK edge map (research D3 table:
+- [X] T033 [US4] Implement `ReferenceScanner` — schema-derived FK edge map (research D3 table:
   allocations→`category_id`; six transaction FKs incl. `savings_goal_id`/`sending_asset_id`/
   `receiving_asset_id`/`liability_id`; `goals.source_account_id`; `account-rules.category_id`;
   `sleeve-targets.sleeve_id`; the **polymorphic** `tax-adjustments.linked_id` matched for any deleted
   parent id; and the **list-valued** `budgets.account_ids`/`account_group_ids`), `referencesTo`,
   `reassignTargets` (schema-driven nullable; list columns allow replace/remove) in
   `Sources/FinanceWorkspaceKit/Persistence/Write/ReferenceScanner.swift`
-- [ ] T034 [US4] Extend the delete `WritePlan` with `ReferenceGroup[]` + `Reassignment[]` written
+- [X] T034 [US4] Extend the delete `WritePlan` with `ReferenceGroup[]` + `Reassignment[]` written
   atomically across all affected files (FR-021/022) in
   `Sources/FinanceWorkspaceKit/Persistence/Write/WritePlan.swift`
 - [ ] T035 [US4] Build `ReassignmentPickerView` (one picker per group, "leave unlinked" only when
@@ -239,13 +239,13 @@ Repair (⇧⌘R) — issue clears after re-validation; a repair-log entry is wri
 
 ### Implementation for User Story 5
 
-- [ ] T037 [US5] Wire `RepairService.plan()` preview → confirm → `RepairService.apply()` from **both**
+- [X] T037 [US5] Wire `RepairService.plan()` preview → confirm → `RepairService.apply()` from **both**
   the Overview issues table (⇧⌘R) and the detail-pane repair surface (FR-023), reusing
   `RepairPreviewSurface`, in `Sources/FinanceWorkspaceApp/UI/Overview/OverviewIssuesTableView.swift`
   and `Sources/FinanceWorkspaceApp/UI/Shell/DetailPaneView.swift`
-- [ ] T038 [US5] Trigger re-index + re-validate after apply so the resolved issue drops from the
+- [X] T038 [US5] Trigger re-index + re-validate after apply so the resolved issue drops from the
   table/chip (FR-026) in `Sources/FinanceWorkspaceApp/AppState.swift`
-- [ ] T039 [US5] Ensure manual-only issues render guidance with no apply affordance (FR-025) in
+- [X] T039 [US5] Ensure manual-only issues render guidance with no apply affordance (FR-025) in
   `Sources/FinanceWorkspaceApp/UI/Shell/DetailPaneView.swift`
 
 **Checkpoint**: Repairable issues are fixable in-app end-to-end; other stories unaffected.
@@ -262,16 +262,16 @@ columns; export the Budget monthly summary → Markdown has the period header + 
 
 ### Tests for User Story 6
 
-- [ ] T040 [P] [US6] `ExportServiceTests` — provenance columns (E1), Markdown header+table (E2),
+- [X] T040 [P] [US6] `ExportServiceTests` — provenance columns (E1), Markdown header+table (E2),
   workspace-path rejected (E3), empty-view headers-only (E4) in
   `Tests/FinanceWorkspaceKitTests/WriteEngineTests/ExportServiceTests.swift`
 
 ### Implementation for User Story 6
 
-- [ ] T041 [US6] Implement `ExportService.csv` (+ `source_file`/`source_row` columns),
+- [X] T041 [US6] Implement `ExportService.csv` (+ `source_file`/`source_row` columns),
   `budgetSummaryMarkdown`, and `write` (reject workspace-internal destinations) in
   `Sources/FinanceWorkspaceKit/Persistence/Write/ExportService.swift`
-- [ ] T042 [US6] Wire "Export Current View" (⌘E) `fileExporter`/save panel for tabular/ledger views in
+- [X] T042 [US6] Wire "Export Current View" (⌘E) `fileExporter`/save panel for tabular/ledger views in
   `Sources/FinanceWorkspaceApp/UI/Shell/AppCommands.swift`
 - [ ] T043 [US6] Add the Budget monthly-summary export action in
   `Sources/FinanceWorkspaceApp/UI/Budget/BudgetOverviewView.swift`
@@ -282,16 +282,16 @@ columns; export the Budget monthly summary → Markdown has the period header + 
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T044 Finalize `CommandMatrix` (`exportCurrentView`, `repairSelectedIssue`, `newRecord`) and
+- [X] T044 Finalize `CommandMatrix` (`exportCurrentView`, `repairSelectedIssue`, `newRecord`) and
   update `CommandMatrixTests` per contracts/commands.md in
   `Sources/FinanceWorkspaceApp/UI/Shell/AppCommands.swift` +
   `Tests/FinanceWorkspaceAppTests/CommandMatrixTests.swift`
-- [ ] T045 [P] Apply runtime `WriteGate` gating (disable + inline reason) uniformly across every write
+- [X] T045 [P] Apply runtime `WriteGate` gating (disable + inline reason) uniformly across every write
   affordance (edit/import/multi-entry/reassign/repair/year-close) — audit pass (FR-005/SC-008)
-- [ ] T046 [P] Clear the `design-adherence` gate for all new/changed views (`WritePreviewView`,
+- [X] T046 [P] Clear the `design-adherence` gate for all new/changed views (`WritePreviewView`,
   `EntityEditForms`, `ImportView`, `TransactionGroupEditor`, `ReassignmentPickerView`, edited module
   views); confirm `DesignSystem` tokens only
-- [ ] T047 [P] Update `docs/out-of-scope-followups.md` with any Phase-6 items deferred during build
+- [X] T047 [P] Update `docs/out-of-scope-followups.md` with any Phase-6 items deferred during build
 - [ ] T048 [P] Update `docs/test-plans.md` — mark the write/import/repair/export flows testable +
   add the manual user-flow steps (quickstart mapping)
 - [ ] T049 Run `specs/007-write-flows-repair-export/quickstart.md` end-to-end against a temp workspace

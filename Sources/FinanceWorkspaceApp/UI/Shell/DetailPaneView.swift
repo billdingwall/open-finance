@@ -132,6 +132,7 @@ private struct IssueDetailSurface: View {
 }
 
 private struct RepairPreviewSurface: View {
+    @Environment(AppState.self) private var state
     let preview: RepairPreviewModel
 
     var body: some View {
@@ -158,10 +159,14 @@ private struct RepairPreviewSurface: View {
             if !preview.backupNote.isEmpty {
                 Text(preview.backupNote).font(DS.Fonts.caption).foregroundStyle(DS.Colors.muted)
             }
-            // Apply is a Phase-6 write flow — present but disabled (clarify Q3).
-            Button("Apply repair", systemImage: "checkmark.circle") {}
-                .buttonStyle(PrimaryButtonStyle()).disabled(true)
-                .help("Apply — available with write flows (Phase 6)")
+            // Apply the deterministic repair through the safe-write path (US5, FR-024/026).
+            let repairable = !preview.diffs.isEmpty || preview.actionDescriptions.contains { !$0.hasPrefix("No auto-repair") }
+            Button("Apply repair", systemImage: "checkmark.circle") {
+                Task { await state.applyRepair() }
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(!repairable)
+            .help("Back up, apply the deterministic repair, then re-validate")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -30,7 +30,7 @@ public enum CSVRowSerializer {
     }
 
     /// RFC-4180-style minimal escaping: quote a field containing a comma, quote, or newline.
-    static func escape(_ value: String) -> String {
+    public static func escape(_ value: String) -> String {
         guard value.contains(",") || value.contains("\"") || value.contains("\n") else { return value }
         return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
