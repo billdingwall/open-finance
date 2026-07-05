@@ -194,10 +194,12 @@ category gone, every referencing transaction repointed, both in one atomic plan 
 
 ### Tests for User Story 4
 
-- [ ] T031 [P] [US4] `ReferenceScannerTests` — full FK-edge coverage per research D3 (assert a goal
-  delete finds `transactions.savings_goal_id`, an asset delete finds both transaction asset FKs, a
-  category delete finds `budget-allocations.category_id`, and any linkable delete finds
-  `tax-adjustments.linked_id`), nullable detection (R2), self-deleted target rejected (R3) in
+- [ ] T031 [P] [US4] `ReferenceScannerTests` — full FK-edge coverage per research D3 (assert an
+  account delete finds `goals.source_account_id` + `budgets.account_ids`; a category delete finds
+  `budget-allocations.category_id` + `account-rules.category_id`; a goal delete finds
+  `transactions.savings_goal_id` + `progress.goal_id`; an asset delete finds both transaction asset FKs; any linkable
+  delete finds `tax-adjustments.linked_id`), list-membership reassign replace/remove (R4), nullable
+  detection (R2), self-deleted target rejected (R3) in
   `Tests/FinanceWorkspaceKitTests/WriteEngineTests/ReferenceScannerTests.swift`
 - [ ] T032 [P] [US4] Reassignment view-model tests — apply blocked until every group has a choice,
   self-deleted target rejected in `Tests/FinanceWorkspaceAppTests/ReassignmentViewModelTests.swift`
@@ -206,15 +208,17 @@ category gone, every referencing transaction repointed, both in one atomic plan 
 
 - [ ] T033 [US4] Implement `ReferenceScanner` — schema-derived FK edge map (research D3 table:
   allocations→`category_id`; six transaction FKs incl. `savings_goal_id`/`sending_asset_id`/
-  `receiving_asset_id`/`liability_id`; `sleeve-targets.sleeve_id`; and the **polymorphic**
-  `tax-adjustments.linked_id` matched for any deleted parent id), `referencesTo`, `reassignTargets`
-  (schema-driven nullable) in `Sources/FinanceWorkspaceKit/Persistence/Write/ReferenceScanner.swift`
+  `receiving_asset_id`/`liability_id`; `goals.source_account_id`; `account-rules.category_id`;
+  `sleeve-targets.sleeve_id`; the **polymorphic** `tax-adjustments.linked_id` matched for any deleted
+  parent id; and the **list-valued** `budgets.account_ids`/`account_group_ids`), `referencesTo`,
+  `reassignTargets` (schema-driven nullable; list columns allow replace/remove) in
+  `Sources/FinanceWorkspaceKit/Persistence/Write/ReferenceScanner.swift`
 - [ ] T034 [US4] Extend the delete `WritePlan` with `ReferenceGroup[]` + `Reassignment[]` written
   atomically across all affected files (FR-021/022) in
   `Sources/FinanceWorkspaceKit/Persistence/Write/WritePlan.swift`
 - [ ] T035 [US4] Build `ReassignmentPickerView` (one picker per group, "leave unlinked" only when
-  nullable) and wire it into the delete preview in
-  `Sources/FinanceWorkspaceApp/UI/Write/ReassignmentPickerView.swift`
+  nullable; for list-valued groups offer replace-in-list or remove-from-list) and wire it into the
+  delete preview in `Sources/FinanceWorkspaceApp/UI/Write/ReassignmentPickerView.swift`
 
 **Checkpoint**: Referenced deletes never orphan a row; simple deletes (US1) still work.
 

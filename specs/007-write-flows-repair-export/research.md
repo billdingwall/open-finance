@@ -48,29 +48,47 @@ grouped by the parent collection a delete targets:
 
 | Delete target | Referencing (child.column) |
 |---|---|
-| `accounts` (`account_id`) | `transactions.account_id`, `liabilities.account_id`, `account-rules.account_id`, `assets.account_id`, `portfolios.account_id`, `tax-adjustments.linked_id` |
-| `account-groups` (`account_group_id`) | `accounts.account_group_id`, `tax-adjustments.linked_id` |
-| `categories` (`category_id`) | `transactions.category_id`, `budget-allocations.category_id`, `categories.parent_category_id` (self), `tax-adjustments.linked_id` |
-| `goals` (`goal_id`) | `transactions.savings_goal_id`, `tax-adjustments.linked_id` |
+| `accounts` (`account_id`) | `transactions.account_id`, `liabilities.account_id`, `account-rules.account_id`, `assets.account_id`, `portfolios.account_id`, `goals.source_account_id`, `budgets.account_ids` ⓛ, `tax-adjustments.linked_id` |
+| `account-groups` (`account_group_id`) | `accounts.account_group_id`, `budgets.account_group_ids` ⓛ, `tax-adjustments.linked_id` |
+| `categories` (`category_id`) | `transactions.category_id`, `budget-allocations.category_id`, `account-rules.category_id`, `categories.parent_category_id` (self), `tax-adjustments.linked_id` |
+| `goals` (`goal_id`) | `transactions.savings_goal_id`, `tax-adjustments.linked_id`, plus goal-owned data (`progress.goal_id`) |
 | `assets` (`asset_id`) | `transactions.sending_asset_id`, `transactions.receiving_asset_id`, plus asset-owned import data (`prices.asset_id`, `dividends.asset_id`, `tax-lots.asset_id`) |
 | `liabilities` (`liability_id`) | `transactions.liability_id`, `tax-adjustments.linked_id` |
 | `portfolios` (`portfolio_id`) | `sleeves.portfolio_id` |
 | `sleeves` (`sleeve_id`) | `assets.sleeve_id`, `sleeve-targets.sleeve_id` |
 | `budgets` (`budget_id`) | `budget-allocations.budget_id` |
 
-Two schema realities the map must honor: (1) **`budget-allocations` references `category_id`**
-(and `budget_id`), *not* an account/group; (2) **`tax-adjustments.linked_id` is a single
-*polymorphic* link** (no type-discriminator column) — so a delete of *any* linkable parent
-(account, group, category, asset, liability) scans `tax-adjustments.linked_id` for a matching id.
-`transactions` carries six FKs (`account_id, category_id, savings_goal_id, sending_asset_id,
-receiving_asset_id, liability_id`); `group_id`/`group_role` are multi-entry connectors, not FKs.
+ⓛ = **list-valued (multi-value) column** — see the list-membership note below.
+
+Schema realities the map must honor: (1) **`budget-allocations` references `category_id`** (and
+`budget_id`), *not* an account/group — a **budget's account/group scope lives on `budgets.csv`** as
+the comma-separated list columns `account_ids` / `account_group_ids`; (2) **`tax-adjustments.linked_id`
+is a single *polymorphic* link** (no type-discriminator column) — so a delete of *any* linkable
+parent (account, group, category, asset, liability) scans `tax-adjustments.linked_id` for a matching
+id; (3) `goals.source_account_id` and `account-rules.category_id` are real FKs and must be scanned;
+(4) `transactions` carries six FKs (`account_id, category_id, savings_goal_id, sending_asset_id,
+receiving_asset_id, liability_id`); `group_id`/`group_role` are multi-entry connectors, not FKs;
+(5) `goals.linked_note_id` targets V2 Notes (not editable/deletable in v1) → no edge.
+
+**List-membership handling (M1)**: for a list-valued FK (`budgets.account_ids`,
+`budgets.account_group_ids`), a reference is *membership of the deleted id in the list*, not a whole
+cell. On delete, the reassignment options are: **replace** the deleted id in the list with the chosen
+target (de-duplicating if already present), or **remove** it from the list (the "leave unlinked"
+equivalent — always available for a list). The scanner reports these as a `ReferenceGroup` whose rows
+are the budgets containing the id; the serializer rewrites only the list cell.
 
 On delete, the scanner returns `ReferenceGroup[]` (one per referencing collection+column with its
 rows). Reassignment offers same-collection targets excluding the deletion set; "leave unlinked" is
-offered only when the schema marks the column optional/nullable. A reassignment naming a target also
-deleted in the plan is rejected (FR-022). Asset-owned import rows (prices/dividends/tax-lots) are
+offered when the schema marks the column optional/nullable (and always for list columns, as removal).
+A reassignment naming a target also deleted in the plan is rejected (FR-022). Owned child rows —
+asset-owned import data (`prices`/`dividends`/`tax-lots`) and goal-owned `progress` snapshots — are
 surfaced in the preview; where no meaningful reassignment target exists they are offered "leave
-unlinked" (nullable) or cascade with the asset — never silently orphaned (SC-005).
+unlinked" (nullable) or cascade with the parent — never silently orphaned (SC-005).
+
+The map is exhaustive against the shipped schemas: every non-primary-key `*_id`/`*_ids` column across
+all 23 schemas is accounted for. `categories.category_group_id` is a grouping label (no
+`category-groups` collection to delete against); `goals.linked_note_id` targets V2 Notes — both are
+non-edges.
 
 **Rationale**: A single declarative edge map is testable and matches the locked reassign policy
 (PRD §12, constitution P-VI). Deriving edges from the schemas (not prose) keeps the no-orphan
@@ -197,7 +215,7 @@ fixed v1 entity set, poor native feel, hard to satisfy `design-adherence` per fi
 |----|----------|
 | D1 | One `WritePlan` type is the atomic, previewable unit for all mutations |
 | D2 | `CSVRowSerializer` = inverse of `RecordMappers`; byte-stable, schema-ordered, sign-preserving, in-place row edit |
-| D3 | Schema-derived FK edge map drives `ReferenceScanner` (allocations→`category_id`; polymorphic `tax-adjustments.linked_id`; six transaction FKs; `sleeve-targets.sleeve_id`); nullable from schema; reject self-deleted reassign targets |
+| D3 | Schema-derived FK edge map drives `ReferenceScanner` (allocations→`category_id`; polymorphic `tax-adjustments.linked_id`; six transaction FKs; `goals.source_account_id`; `account-rules.category_id`; `sleeve-targets.sleeve_id`; list-valued `budgets.account_ids`/`account_group_ids`); nullable from schema; list-membership reassign (replace/remove); reject self-deleted reassign targets |
 | D4 | `ImportMapper` auto-detect + confirmed sign + single target account + month-split + date/amount/description duplicate flag |
 | D5 | Multi-entry group = shared `group_id` `RowDiff`s in one `FileChange`; reconcile before apply; whole-group edit/delete |
 | D6 | Repair apply reuses `RepairService.plan()/apply()` + `ProjectionStore` re-index/re-validate |

@@ -72,11 +72,15 @@ public struct ReferenceScanner {
 ```
 
 **Guarantees**
-- **R1**: Every FK edge in the declared map is scanned; a delete surfaces *all* referencing rows
-  (FR-019) — no silent orphan (SC-005).
+- **R1**: Every FK edge in the schema-derived map (research D3) is scanned — including
+  `goals.source_account_id`, `account-rules.category_id`, the six `transactions` FKs, the polymorphic
+  `tax-adjustments.linked_id`, and the list-valued `budgets.account_ids`/`account_group_ids`; a delete
+  surfaces *all* referencing rows (FR-019) — no silent orphan (SC-005).
 - **R2**: `nullable` is true iff the schema marks the FK column optional (enables "leave unlinked",
-  FR-020).
+  FR-020); list-valued columns (`isList`) always allow removal.
 - **R3**: `reassignTargets` never returns an id in `deleted` (FR-022).
+- **R4**: For a list-valued FK, reassignment replaces the deleted id within the cell's list (or
+  removes it), never rewrites unrelated members; the serializer edits only that cell.
 
 ## Contract tests (Swift Testing, macOS CI)
 

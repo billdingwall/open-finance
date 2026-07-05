@@ -40,6 +40,7 @@ The previewable, atomic unit for one mutation.
 | `column` | `String` | FK column (e.g. `category_id`) |
 | `rows` | `[RowRef]` | referencing rows (file + row) |
 | `nullable` | `Bool` | from schema `required` set — enables "leave unlinked" |
+| `isList` | `Bool` | list-valued FK (`budgets.account_ids`/`account_group_ids`) — reassign = replace/remove id within the list; removal always available |
 
 ### Reassignment
 | Field | Type | Notes |
@@ -105,11 +106,11 @@ Validation: every **required** canonical transaction column MUST be mapped (FR-0
 | AccountGroup | `Accounts/account-groups.csv` | `account_group_id` | referenced by accounts + `tax-adjustments.linked_id` |
 | Account | `Accounts/accounts.csv` | `account_id` | master registry; dedicated-screen edit (accounts) |
 | Liability | `Accounts/liabilities.csv` | `liability_id` | FK `account_id` |
-| AccountRule | `Accounts/account-rules.csv` | `rule_id` | FK `account_id` |
+| AccountRule | `Accounts/account-rules.csv` | `rule_id` | FK `account_id`, `category_id` |
 | Category | `Budget/categories.csv` | `category_id` | self-FK `parent_category_id`, group `category_group_id` |
-| Budget | `Budget/budgets.csv` | `budget_id` | scope via allocations |
+| Budget | `Budget/budgets.csv` | `budget_id` | scope on **list columns** `account_ids` / `account_group_ids` (comma-separated); allocations hold per-category amounts |
 | BudgetAllocation | `Budget/budget-allocations.csv` | `allocation_id` | FK `budget_id`, `category_id` (per shipped schema — *not* account/group) |
-| SavingsGoal | `Savings/goals.csv` | `goal_id` | flat list, no lifecycle |
+| SavingsGoal | `Savings/goals.csv` | `goal_id` | flat list, no lifecycle; FK `source_account_id` |
 | Asset | `Investments/assets.csv` | `asset_id` | FK `account_id`, `sleeve_id` (optional) |
 | Portfolio | `Investments/portfolios.csv` | `portfolio_id` | container above sleeves; FK `account_id` |
 | PortfolioSleeve | `Investments/sleeves.csv` | `sleeve_id` | FK `portfolio_id` |
