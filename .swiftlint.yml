@@ -2,6 +2,7 @@ excluded:
   - .build
   - DerivedData
   - Tests
+  - scripts        # standalone dev scripts (icon / app-bundle builders), not app source
 
 disabled_rules:
   # Trailing commas in multiline literals are intentional (diff-friendly, idiomatic Swift).
@@ -30,5 +31,6 @@ identifier_name:
 
 type_name:
   min_length: 3
+  excluded: [DS]   # deliberately-terse DesignSystem namespace (DS.Colors / DS.Fonts / DS.Metrics)
 
 todo: warning

@@ -62,10 +62,13 @@ import FinanceWorkspaceKit
 }
 
 extension ISO8601DateFormatter {
-    static let day: ISO8601DateFormatter = {
+    /// A UTC full-date parser. Computed (a fresh instance per access) so there's no shared
+    /// mutable static — `ISO8601DateFormatter` isn't `Sendable`, and Swift 6 rejects a shared
+    /// `static let` of it.
+    static var day: ISO8601DateFormatter {
         let fmt = ISO8601DateFormatter()
         fmt.formatOptions = [.withFullDate]
         fmt.timeZone = TimeZone(identifier: "UTC")
         return fmt
-    }()
+    }
 }

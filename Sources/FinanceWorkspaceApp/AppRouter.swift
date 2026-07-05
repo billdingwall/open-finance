@@ -5,22 +5,22 @@ import FinanceWorkspaceKit
 // `NSUserActivity` codec (research D6), and the router (sidebar/KPI navigation, stale-ID
 // fallback). Session selectors are deliberately NOT encoded (clarify Q1 — session-only).
 
-enum BudgetSubview: String, CaseIterable {
+enum BudgetSubview: String, CaseIterable, Sendable {
     case overview, history, categories
 }
 
-enum SISubview: String, CaseIterable {
+enum SISubview: String, CaseIterable, Sendable {
     case overview, goals, portfolio
 }
 
-enum TaxSubview: String, CaseIterable {
+enum TaxSubview: String, CaseIterable, Sendable {
     case currentYear = "current-year"
     case prepChecklist = "prep-checklist"
     case archive
 }
 
 /// The single typed description of the user's location (data-model.md).
-enum Route: Hashable {
+enum Route: Hashable, Sendable {
     case overview
     case accounts
     case accountGroup(String)
@@ -116,15 +116,19 @@ struct AppRouter {
         case "savings": return .savingsInvestments(.goals)
         case "investments": return .savingsInvestments(.portfolio)
         case "taxes": return .taxes(.currentYear)
-        case "business":
-            let businessGroups = projections?.accounts.groups.filter { $0.groupType == .business } ?? []
-            if businessGroups.count == 1, let only = businessGroups.first {
-                return .accountGroup(only.accountGroupId)
-            }
-            return .accounts
-        default:
-            return .overview
+        case "business": return businessRoute(in: projections)
+        default: return .overview
         }
+    }
+
+    /// The Business card opens its group screen when there's exactly one business group, else
+    /// the Accounts grid.
+    private nonisolated static func businessRoute(in projections: WorkspaceProjections?) -> Route {
+        let groups = projections?.accounts.groups.filter { $0.groupType == .business } ?? []
+        if groups.count == 1, let only = groups.first {
+            return .accountGroup(only.accountGroupId)
+        }
+        return .accounts
     }
 
     /// Entity routes whose ID no longer resolves fall back to the parent module (never crash).
