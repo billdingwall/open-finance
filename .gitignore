@@ -15,6 +15,9 @@ App/FinanceWorkspace.xcodeproj/
 App/Info.plist
 App/FinanceWorkspace.entitlements
 
+# Local dev app bundle (rebuild: scripts/build-app.sh)
+/Finance Workspace.app/
+
 # Dev workspace (local-folder provider root)
 Finance-Dev/
 
