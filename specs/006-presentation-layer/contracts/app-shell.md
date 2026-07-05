@@ -11,7 +11,15 @@
 
 - `navigate(to: Route)` — updates `route`, syncs sidebar selection + breadcrumb, closes/re-scopes
   the detail pane.
-- `route(forKPI: OverviewSummaryCard.ID) -> Route` — KPI tap mapping (FR-015).
+- `route(forKPI: OverviewSummaryCard.ID) -> Route` — KPI tap mapping (FR-015), fixed table:
+
+  | KPI card | Route |
+  |---|---|
+  | Budget | `.budget(.overview)` |
+  | Savings | `.savingsInvestments(.goals)` |
+  | Investments | `.savingsInvestments(.portfolio)` |
+  | Taxes | `.taxes(.currentYear)` |
+  | Business | the business account-group screen (`.accountGroup(id)`) when exactly one business group exists, else `.accounts` |
 - `RouteActivityCodec.encode(Route, DetailPaneState) -> [String: AnyHashable]` /
   `decode(_:) -> Route?` — `NSUserActivity` payload, versioned (`v: 1`), activity type
   `app.openfinance.navigation` (D6). Session selectors are **not** encoded (clarify Q1).

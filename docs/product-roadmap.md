@@ -563,137 +563,142 @@ is connected. Module views are blocked on their respective domain engines from P
 
 ### Product Tasks
 
-- [ ] Write acceptance criteria for each module view against PRD functional requirements
-- [ ] Define filter states: which filters appear per section, default state, persistence scope
+- [x] Write acceptance criteria for each module view against PRD functional requirements
+- [x] Define filter states: which filters appear per section, default state, persistence scope
   (session-only vs persisted), and interaction with the detail pane
-- [ ] Define the traceability interaction: what tapping a KPI does, what tapping a detail row
+- [x] Define the traceability interaction: what tapping a KPI does, what tapping a detail row
   does, how the source file inspector appears and what it shows
-- [ ] Define the collapsible right pane interaction spec: trigger (click, keyboard shortcut,
+- [x] Define the collapsible right pane interaction spec: trigger (click, keyboard shortcut,
   selection-driven auto-open), animation, width, and content rules per context
-- [ ] Document all macOS menu bar commands and their keyboard shortcuts
+- [x] Document all macOS menu bar commands and their keyboard shortcuts
   (reference `docs/technical-design.md §17`)
 
 ### Design Tasks
 
 #### App Shell
-- [ ] Finalize `NavigationSplitView` three-column layout spec: sidebar width, column collapse
+- [x] Finalize `NavigationSplitView` three-column layout spec: sidebar width, column collapse
   behavior, minimum window size
-- [ ] Design left sidebar: section headers, expandable/collapsible groups, nested entity links,
+- [x] Design left sidebar: section headers, expandable/collapsible groups, nested entity links,
   active/selected state, empty group state
-- [ ] Design the context header: title, breadcrumb, quick actions (Import, Add, Export),
+- [x] Design the context header: title, breadcrumb, quick actions (Import, Add, Export),
   sync status badge, issue count badge
-- [ ] Design the right detail pane: slide-over width, close button, all supported surfaces
+- [x] Design the right detail pane: slide-over width, close button, all supported surfaces
   (inspector, source file preview, source row detail, validation issue detail, repair preview,
   edit form)
-- [ ] Design shared component library: data table (sortable, filterable), KPI card, chart
+- [x] Design shared component library: data table (sortable, filterable), KPI card, chart
   components (pie chart, sparkline, bar chart, heat map table), period selector, filter bar,
   empty state template, loading skeleton
 
 #### Module Views
-- [ ] Finalize Overview dashboard wireframe (updated post Round 1 — see `docs/_refinement/`)
-- [ ] Finalize app-shell wireframe (Round 5: Overview is the default landing via the sidebar
+- [x] Finalize Overview dashboard wireframe (updated post Round 1 — see `docs/_refinement/`)
+- [x] Finalize app-shell wireframe (Round 5: Overview is the default landing via the sidebar
   header; issues chip in the global header; local-actions on the page-title line; no filter bar)
-- [ ] Finalize Accounts views wireframe (new — account-group screen with individual-account
+- [x] Finalize Accounts views wireframe (new — account-group screen with individual-account
   cards + inline ledger, no sub-tabs; dedicated per-account screen with transactions table)
-- [ ] Finalize Budget updated wireframe (pie chart + trailing averages + 50/50 Spend Mix /
+- [x] Finalize Budget updated wireframe (pie chart + trailing averages + 50/50 Spend Mix /
   Spending Variance panels)
-- [ ] All chart visuals designed for a real charting implementation (Swift Charts), not
+- [x] All chart visuals designed for a real charting implementation (Swift Charts), not
   placeholder SVGs
-- [ ] Finalize Savings & Investments unified wireframe
-- [ ] Finalize Taxes updated wireframe (deductions view, per-account rates)
+- [x] Finalize Savings & Investments unified wireframe
+- [x] Finalize Taxes updated wireframe (deductions view, per-account rates)
 
 ### Development Tasks
 
 #### App Shell
-- [ ] `FinanceWorkspaceApp` — define `WindowGroup` scene, main menu commands (`NSApplication`
+- [x] `FinanceWorkspaceApp` — define `WindowGroup` scene, main menu commands (`NSApplication`
   delegate or `.commands` modifier), app-level keyboard shortcuts
-- [ ] `AppState` — `@Observable` root state object holding workspace state, indexing state,
+- [x] `AppState` — `@Observable` root state object holding workspace state, indexing state,
   active module selection, navigation path, detail pane open/closed state; **Overview is the
   default selection on launch**
-- [ ] `AppRouter` — manage navigation selection for `NavigationSplitView`, encode/decode deep
+- [x] `AppRouter` — manage navigation selection for `NavigationSplitView`, encode/decode deep
   link state (domain + group/account selection), handle programmatic navigation from KPI links;
   the sidebar header ("Finance Dashboard") navigates to the Overview dashboard
-- [ ] `NavigationSidebarView` — left sidebar with expandable section groups, nested account-
+- [x] `NavigationSidebarView` — left sidebar with expandable section groups, nested account-
   group/account/goal/sleeve links, active selection highlight, keyboard navigation; **no
   Overview nav row** (Overview is reached via the header); Accounts nested group is labelled
   "Account groups" with a "New group" action
-- [ ] Global top header — issues-count chip immediately left of the sync-status chip; per-view
+- [x] Global top header — issues-count chip immediately left of the sync-status chip; per-view
   local-actions row rendered on the page-title line (right-aligned)
-- [ ] `DetailPaneView` — collapsible slide-over container with all supported surface types,
+- [x] `DetailPaneView` — collapsible slide-over container with all supported surface types,
   open/close animation, closed by default; edit and delete actions at the bottom for
   right-panel objects
 
 #### Shared UI Components (`UI/Shared/`)
-- [ ] `KPICardView` — reusable card with title, primary value, secondary value, trend indicator,
+- [x] `KPICardView` — reusable card with title, primary value, secondary value, trend indicator,
   tap target → navigation action
-- [ ] `DataTableView` — sortable/filterable table with column definitions, row selection,
+- [x] `DataTableView` — sortable/filterable table with column definitions, row selection,
   traceability tap target per row
-- [ ] `PieChartView` — configurable donut/pie with legend, labels, percentage display (Swift Charts)
-- [ ] `SparklineView` — small in-line trend line for month-over-month panels (Swift Charts)
-- [ ] `HeatMapTableView` — benchmark comparison table with period columns, color-scaled cells,
+- [x] `PieChartView` — configurable donut/pie with legend, labels, percentage display (Swift Charts)
+- [x] `SparklineView` — small in-line trend line for month-over-month panels (Swift Charts)
+- [x] `HeatMapTableView` — benchmark comparison table with period columns, color-scaled cells,
   benchmark comparison row (Swift Charts)
-- [ ] `PeriodSelectorView` — month/quarter/year selector with previous/next navigation
-- [ ] ~~`FilterBarView` — composable filter chips~~ **(deferred to V2 — filter bar removed from v1)**
-- [ ] `EmptyStateView` — configurable empty state with icon, title, message, and optional CTA
-- [ ] `SourceInspectorView` — shows file path, row number, last modified date, raw field values
+- [x] `PeriodSelectorView` — month/quarter/year selector with previous/next navigation
+- [x] ~~`FilterBarView` — composable filter chips~~ **(deferred to V2 — filter bar removed from v1)**
+- [x] `EmptyStateView` — configurable empty state with icon, title, message, and optional CTA
+- [x] `SourceInspectorView` — shows file path, row number, last modified date, raw field values
   for a selected record; "Open in Finder" and "Open in Editor" actions
-- [ ] `ValueProvenanceLabel` — inline label distinguishing imported / derived / repaired /
+- [x] `ValueProvenanceLabel` — inline label distinguishing imported / derived / repaired /
   user-edited values
 
 #### Overview Module (`UI/Overview/`)
-- [ ] `OverviewView` — 5 KPI card grid (no filters), month-over-month panel, inline issues table;
+- [x] `OverviewView` — 5 KPI card grid (no filters), month-over-month panel, inline issues table;
   each KPI card navigates to its module on tap
-- [ ] `OverviewIssuesTableView` — validation issues grouped by severity, repairable badge,
+- [x] `OverviewIssuesTableView` — validation issues grouped by severity, repairable badge,
   "Preview Repair" action per repairable issue
 
 #### Accounts Module (`UI/Accounts/`)
-- [ ] `AccountsView` — card grid of all accounts with aggregate header; grouped by account
+- [x] `AccountsView` — card grid of all accounts with aggregate header; grouped by account
   group; account cards tap → per-account screen
-- [ ] `AccountGroupDetailView` — account-group screen with an individual-account card section
+- [x] `AccountGroupDetailView` — account-group screen with an individual-account card section
   above the transaction ledger (no sub-tabs); for business groups, P&L summary + monthly
   net-income chart with the ledger inline below it, category budgets, linked notes
-- [ ] `AccountDetailView` — per-account screen: transactions table, monthly gross vs expenses/tax
+- [x] `AccountDetailView` — per-account screen: transactions table, monthly gross vs expenses/tax
   chart, YTD net income; Import, Add, Edit, Delete actions; account rules and estimates panel;
   edit in local actions, delete inside the edit flow
 
 #### Budget Module (`UI/Budget/`)
-- [ ] `BudgetOverviewView` — pie chart, Spend Mix / Spending Variance panels at 50/50, category
+- [x] `BudgetOverviewView` — pie chart, Spend Mix / Spending Variance panels at 50/50, category
   table with plan/actual/variance/trailing-average, period selector; tap category → filtered
   transaction view
-- [ ] `BudgetHistoryView` — month-over-month variance view, period range selector
-- [ ] `BudgetCategoriesView` — category and subcategory management, manual create/edit forms
+- [x] `BudgetHistoryView` — month-over-month variance view, period range selector
+- [x] `BudgetCategoriesView` — category and subcategory management, manual create/edit forms
 
 #### Savings & Investments Module (`UI/SavingsInvestments/`)
-- [ ] `SavingsInvestmentsView` — top-level view with Overview, Goals, and Portfolio sub-navigation
-- [ ] `GoalsListView` — flat list of goal cards with progress bar (no active/archived grouping),
+- [x] `SavingsInvestmentsView` — top-level view with Overview, Goals, and Portfolio sub-navigation
+- [x] `GoalsListView` — flat list of goal cards with progress bar (no active/archived grouping),
   tap → goal detail
-- [ ] `GoalDetailView` — progress history chart, funding source links, monthly contribution
+- [x] `GoalDetailView` — progress history chart, funding source links, monthly contribution
   tracker, source traceability
-- [ ] `PortfolioView` — holdings table as the primary surface with a standard ⇄ heat-map view
+- [x] `PortfolioView` — holdings table as the primary surface with a standard ⇄ heat-map view
   toggle (heat map: 8 periods × accounts, S&P 500 comparison row, sector performance section);
   allocation donut and account selector as supporting elements; sleeve table at the bottom
   (target vs actual weights, contribution target, drift indicator)
-- [ ] `HoldingDetailView` — security detail, tax lot drill-down, trade history, dividend summary
+- [x] `HoldingDetailView` — security detail, tax lot drill-down, trade history, dividend summary
 
 #### Taxes Module (`UI/Taxes/`)
-- [ ] `CurrentTaxYearView` — YTD taxable income, taxes paid vs owed, effective rate per account
+- [x] `CurrentTaxYearView` — YTD taxable income, taxes paid vs owed, effective rate per account
   table; estimated payments section (quarterly schedule, paid/due status); gains & income section
   (realized gain/loss, dividends, interest); deductions section (standard vs itemized,
   above-the-line, Schedule A, Schedule C linked to business themes/entities, taxable income
   projection); no prep checklist
-- [ ] `TaxPrepChecklistView` — full-width checklist with complete/incomplete/missing item states,
+- [x] `TaxPrepChecklistView` — full-width checklist with complete/incomplete/missing item states,
   source links, and educational content per step
-- [ ] `TaxArchiveView` — prior-year read-only archive selector, archived deductions and payments
+- [x] `TaxArchiveView` — prior-year read-only archive selector, archived deductions and payments
 
 #### Round 6 — module surfaces
-- [ ] Account-group and per-account screens surface both assets and liabilities (net-worth view)
-- [ ] Savings & Investments organized by Portfolio; add Portfolio views above the sleeve table
-- [ ] Multi-entry transaction editor: a paycheck (gross → withholdings → net) or split mortgage payment (principal/interest) is entered as one grouped unit, not flat rows
+- [x] Account-group and per-account screens surface both assets and liabilities (net-worth view)
+- [x] Savings & Investments organized by Portfolio; add Portfolio views above the sleeve table
+- [x] Multi-entry transaction editor: a paycheck (gross → withholdings → net) or split mortgage payment (principal/interest) is entered as one grouped unit, not flat rows
 
 ### Milestone 5
 > **Fully navigable app.** All v1 module views are built and connected to real domain engine
 > projections. The right detail pane works across all contexts. Traceability links are live
 > (KPI → detail → source inspector). The app is demoed end-to-end against a fixture workspace.
+>
+> **Status (2026-07-04, `006-presentation-layer`)**: build complete — automated gate evidence
+> passed (boot against fixture + empty workspaces, SC-005 read-only proof, engine⇄view parity
+> tests); the interactive demo script is `docs/test-plans.md` Flow 9 (manual pass pending);
+> CI (`swift test` + SwiftLint + unsigned app-target build) validates on push.
 
 ---
 

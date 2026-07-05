@@ -34,7 +34,10 @@ reconcile with the corresponding CLI output on the same fixture (SC-001/004).
 
 ## Savings & Investments (`UI/SavingsInvestments/`) — FR-023–026
 
-- `SavingsInvestmentsView`: Overview / Goals / Portfolio sub-navigation (no "Categories").
+- `SavingsInvestmentsView`: Overview / Goals / Portfolio sub-navigation (no "Categories"). The
+  **Overview sub-tab** is a module summary composed from US2 components: Savings and Investments
+  KPI cards (module-scoped mirrors of the dashboard cards incl. `RateState`), a goals progress
+  snapshot list, and the allocation donut — no data not already exposed by the engines.
 - `GoalsListView`: flat goal cards + progress bars; `GoalDetailView`: progress history chart,
   funding-source links (`GoalFundingLink`), monthly contribution tracker, traceability.
 - `PortfolioView`: holdings `DataTableView` primary; standard ⇄ heat-map toggle

@@ -112,9 +112,11 @@ Features are built with Spec Kit, in order:
 Branches: `NNN-feature-name` (via `/speckit-git-feature`).
 
 <!-- SPECKIT START -->
-**Active feature**: `006-presentation-layer` (Phase 5 — Presentation Layer). Plan:
-`specs/006-presentation-layer/plan.md`. Detailed spec/plan state, clarify decisions, and workflow
-position live in persistent project memory (`active-spec-006-presentation-layer`).
+**Active feature**: `006-presentation-layer` (Phase 5 — Presentation Layer), **build complete on
+branch 2026-07-04** (68/68 tasks; Milestone 5 automated gates passed; manual demo = Flow 9 in
+`docs/test-plans.md`). Plan: `specs/006-presentation-layer/plan.md`. Detailed state lives in
+persistent project memory (`active-spec-006-presentation-layer`). **Next**: manual demo pass →
+commit/push → CI (`swift test` + SwiftLint + unsigned app-target build) → PR/merge → Phase 6.
 <!-- SPECKIT END -->
 
 ### On spec completion — maintain two living docs

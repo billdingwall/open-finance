@@ -385,17 +385,24 @@ lives in `.finance-meta/logs/repair-log.csv`.
 
 ## 17. Commands and menus
 
-Recommended macOS commands:
-- New Workspace
-- Open Workspace
-- Reindex Workspace
-- Validate Workspace
-- Repair Selected Issue
-- Open Source File
-- Reveal in Finder
-- Export Current View
-- Toggle Inspector
-- Open Backup Folder
+The macOS command set with its final menu placement and shortcuts (assigned in Phase 5, spec
+`006-presentation-layer` research D5; implemented in `AppCommands` with the unit-tested
+`CommandMatrix` enable/disable logic):
+
+| Command | Menu | Shortcut | Phase 5 state |
+|---|---|---|---|
+| New Workspace | File | ⇧⌘N | enabled |
+| Open Workspace | File | ⌘O | enabled |
+| Reindex Workspace | File | ⌘R | enabled (rebuilds the projection snapshot) |
+| Validate Workspace | File | ⇧⌘V | enabled (re-validate → Overview issues) |
+| Export Current View | File | ⌘E | **disabled** until Phase 6 |
+| Repair Selected Issue | Workspace | ⇧⌘R | **disabled** until Phase 6 (dry-run preview via the issues table) |
+| Open Source File | Workspace | ⌘⏎ | enabled with a source selection |
+| Reveal in Finder | Workspace | ⌥⌘R | enabled with a source selection |
+| Open Backup Folder | Workspace | — | enabled |
+| Toggle Inspector | View | ⌥⌘I | enabled |
+
+⌘N is reserved for the future "new record" primary action (Phase 6).
 
 ## 18. Performance and caching
 

@@ -96,7 +96,7 @@ disabled):
 | Export Current View | File | ⌘E | **disabled** (Phase 6) |
 | Repair Selected Issue | Workspace | ⇧⌘R | **disabled** (preview via issues table only; apply Phase 6) |
 | Open Source File | Workspace | ⌘⏎ | enabled (selection context) |
-| Reveal in Finder | Workspace | ⇧⌘F… → **⌥⌘R** | enabled |
+| Reveal in Finder | Workspace | ⌥⌘R | enabled |
 | Open Backup Folder | Workspace | — (no shortcut) | enabled |
 | Toggle Inspector | View | ⌥⌘I | enabled |
 

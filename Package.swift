@@ -9,6 +9,11 @@ import PackageDescription
 let package = Package(
     name: "FinanceWorkspaceApp",
     platforms: [.macOS(.v15)],
+    products: [
+        // Exported for the Phase-5 Xcode app wrapper (App/project.yml); the CLI/executable
+        // targets below are unaffected.
+        .library(name: "FinanceWorkspaceKit", targets: ["FinanceWorkspaceKit"]),
+    ],
     targets: [
         .target(
             name: "FinanceWorkspaceKit",
@@ -75,6 +80,10 @@ let package = Package(
         .testTarget(
             name: "FinanceWorkspaceKitTests",
             dependencies: ["FinanceWorkspaceKit"]
+        ),
+        .testTarget(
+            name: "FinanceWorkspaceAppTests",
+            dependencies: ["FinanceWorkspaceApp"]
         ),
     ]
 )

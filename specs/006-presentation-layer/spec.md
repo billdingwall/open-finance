@@ -413,10 +413,11 @@ iCloud-entitled release configuration builds and the DEBUG local-folder path sti
 - **FR-009**: The system MUST provide a sortable data table with column definitions, sticky
   uppercase header, dense rows per the row-height token, right-aligned tabular numerals, row
   selection, and a per-row traceability target.
-- **FR-010**: The system MUST provide pie/donut, sparkline, and heat-map-table chart components
-  implemented on **Swift Charts** (not placeholder SVGs or hand-drawn shapes), following the
-  chart styling rules: single-accent series, tabular axis labels, pos/neg heat-map cell scale,
-  benchmark comparison row support.
+- **FR-010**: The system MUST provide pie/donut, sparkline, and bar chart components implemented
+  on **Swift Charts** (not placeholder SVGs or hand-drawn shapes), plus a heat-map table that
+  renders as a native grid on the **shared pos/neg chart color scale** (plan D4), following the
+  chart styling rules: single-accent series, tabular axis labels, benchmark comparison row
+  support.
 - **FR-011**: The system MUST provide a period selector (month/quarter/year with previous/next),
   a configurable empty state (glyph, title, one-line message, optional CTA), and a loading
   skeleton for projection-pending surfaces.
@@ -563,8 +564,9 @@ iCloud-entitled release configuration builds and the DEBUG local-folder path sti
 - **SC-007**: Every color, font, spacing, and radius in the shipped views resolves to a
   `DESIGN.md` token (design-token-sync audit passes; light and dark mode both render correctly
   on all views).
-- **SC-008**: All charts are Swift Charts implementations; zero placeholder/static chart assets
-  remain in the app target.
+- **SC-008**: All marks-based charts (pie, sparkline, bar) are Swift Charts implementations and
+  the heat map uses the shared chart color scale; zero placeholder/static chart assets remain in
+  the app target.
 - **SC-009**: The release configuration builds with the iCloud container entitlement and DEBUG
   runs against a local folder; `swift build` stays green and `swiftlint --strict` + `swift test`
   pass in macOS CI.

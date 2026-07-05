@@ -3,8 +3,8 @@
 Items that were **in a Spec Kit spec's field of view but deliberately skipped or deferred during
 implementation** — captured here so nothing falls through the cracks between phases.
 
-> **Last updated**: 2026-06-30 (seeded from specs `002-foundation-architecture` and
-> `003-parsing-validation`).
+> **Last updated**: 2026-07-04 (Phase 5 `006-presentation-layer` follow-ups added; OOS-1/3/6
+> moved to Resolved).
 
 This is distinct from [`docs/project-management.md`](project-management.md), which tracks the
 *planned* `[FIX]`/`[DECIDE]` backlog for upcoming phases. This doc tracks the *unplanned residue* of
@@ -43,7 +43,8 @@ work already done: the "we shipped the spec, but consciously left X for later" i
 - **Suggested next step / target phase**: **Phase 5** (Presentation Layer), when the Xcode app
   target is created for UI/packaging/signing. Until then, real iCloud sync cannot be tested (see
   [`docs/test-plans.md`](test-plans.md)).
-- **Status**: Open.
+- **Status**: **Resolved (partially)** by `006` T060/T061 — see *Resolved / promoted* below;
+  signing remains Phase 7.
 
 ### From spec `003-parsing-validation` (Phase 2 — merged PR #16)
 
@@ -69,7 +70,7 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   committed design specs.
 - **Suggested next step / target phase**: **Phase 5** (Presentation Layer), with the rest of the UI
   design work.
-- **Status**: Open.
+- **Status**: **Resolved (preview scope)** by `006` — see *Resolved / promoted* below.
 
 #### OOS-4 — Investment/reinvested-gain retained equity
 - **Source**: spec `004-domain-accounts-budget-overview` (FR-001 / clarify A1) — the
@@ -98,7 +99,8 @@ work already done: the "we shipped the spec, but consciously left X for later" i
 - **Skipped because**: spec `004` is the engine/model/seed layer only (no SwiftUI); the rate formulas
   are Phase-4 product decisions.
 - **Suggested next step / target phase**: **Phase 5** (module UI) and **Phase 4** (rate formulas).
-- **Status**: Open.
+- **Status**: **Resolved** — rate formulas by `005` (Phase 4), module UI by `006` (Phase 5); see
+  *Resolved / promoted* below.
 
 ---
 
@@ -116,6 +118,39 @@ work already done: the "we shipped the spec, but consciously left X for later" i
 
 ---
 
+## Phase 5 (`006-presentation-layer`) — deferred during implementation
+
+- **OOS-7 — Itemized tax-archive read model**: the parser deliberately skips `Taxes/archive/`
+  (read-only year-close snapshots), so `TaxArchiveView` renders closed years as **raw file
+  previews** rather than typed adjustment/payment tables. A typed archive projection would need a
+  parser/engine extension. *(Source: 006 T055/T058, FR-029.)* Target: Phase 6 (alongside the
+  year-close write flow) or close as won't-do if raw previews suffice. **Status: Open.**
+- **OOS-8 — Account estimates surface**: the per-account "Rules & estimates" panel lists
+  `account-rules` rows; the separate `AccountEstimate` entity has no `WorkspaceContext` accessor /
+  engine projection, so it isn't rendered. *(Source: 006 T041, FR-019.)* Target: Phase 6 with the
+  rules/estimates edit flows. **Status: Open.**
+- **OOS-9 — `NSUserActivity` restoration end-to-end**: the codec + scene modifiers are implemented
+  and unit-tested, but OS-level state restoration is only fully exercisable inside the bundled app
+  target (the SwiftPM executable has no `NSUserActivityTypes` registration at runtime). Verify in
+  the Xcode-built app during the Phase 7 polish pass. *(Source: 006 T011/T019, research D6.)*
+  **Status: Open.**
+- **XCUITest automation** deferred to Phase 7 (as planned, research D8); view rendering is covered
+  by light/dark previews + the manual Flow 9 demo script in `docs/test-plans.md`.
+- **Milestone-5 interactive demo (Flow 9)**: automated proofs passed (boot, SC-005 read-only
+  tar-compare, engine⇄view parity tests); the human keyboard/dark-mode/traceability walkthrough is
+  recorded as **[Manual pass pending]** in `docs/test-plans.md`. *(Source: 006 T063.)*
+  **Status: Open (PM action).**
+
+---
+
 ## Resolved / promoted
 
-_None yet._
+- **OOS-1 — iCloud ubiquity-container entitlement + code signing**: **Resolved (partially) by
+  `006-presentation-layer` T060/T061** — the XcodeGen app target (`App/project.yml`) carries the
+  container entitlement and builds unsigned in CI; signing/notarization remain developer-machine
+  actions until Phase 7.
+- **OOS-3 — Phase 2 validation/repair UI design**: **Resolved (preview scope) by
+  `006-presentation-layer`** — issue cards/table, issue-detail pane surface, and the dry-run
+  repair-preview surface shipped (US3); repair *apply* UI is Phase 6.
+- **OOS-6 — Phase 3 module UI design**: **Resolved by `006-presentation-layer`** — all five module
+  view groups shipped (US3–US7).

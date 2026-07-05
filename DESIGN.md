@@ -279,6 +279,16 @@ When any one changes, reconcile the others in the same change. The `design-token
 
 ## Changelog
 
+- **2026-07-04 — v1.1** — Phase 5 SwiftUI token layer shipped
+  (`Sources/FinanceWorkspaceApp/DesignSystem/` — Tokens/Typography/Components, mirroring the
+  front matter 1:1; brand accent expressed as a dynamic light/dark color from the token hexes,
+  since the SwiftPM target has no asset catalog). New conventions settled during the build:
+  **value-provenance tag colors** (imported = `info-soft`, derived = `surface-sunken`/muted,
+  repaired = `warn-soft`, user-edited = `accent-soft` — red stays reserved for money/severity);
+  **heat-map cell intensity** = pos/neg at `opacity(0.08 + 0.32 × min(|growth| / 25%, 1))`, typed
+  no-data cells on `surface-sunken`; **categorical chart ramp** = accent at opacity steps
+  `[1.0, .75, .55, .4, .28, .18]`; previews use the macro-free `PreviewProvider` form (light +
+  dark) so the CLT-only box builds. Detail pane = native `.inspector` slide-over.
 - **2026-06-30 — v1.0** — Initial system. Native-macOS-first direction; full light + dark token set
   derived from `prototype/styles.css`; framework-agnostic CSS↔SwiftUI mapping; component contracts
   for the v1 module set. Authored alongside the `design-adherence`, `swiftui-view-scaffold`,

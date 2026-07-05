@@ -10,6 +10,11 @@ Package.resolved
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
 
+# XcodeGen output (regenerate: xcodegen generate --spec App/project.yml)
+App/FinanceWorkspace.xcodeproj/
+App/Info.plist
+App/FinanceWorkspace.entitlements
+
 # Dev workspace (local-folder provider root)
 Finance-Dev/
 

@@ -48,6 +48,16 @@ public enum PeriodMath {
         }
     }
 
+    /// The "YYYY-MM" period `delta` calendar months from `period` (delta may be negative), using
+    /// the same calendar as the rest of the engine. Returns `period` unchanged if it can't parse.
+    public static func adding(_ delta: Int, to period: String) -> String {
+        let parts = period.split(separator: "-")
+        guard parts.count == 2, let year = Int(parts[0]), let monthNum = Int(parts[1]),
+              let anchor = calendar.date(from: DateComponents(year: year, month: monthNum, day: 1)),
+              let shifted = calendar.date(byAdding: .month, value: delta, to: anchor) else { return period }
+        return month(shifted)
+    }
+
     /// The `count` "YYYY-MM" strings ending at (and including) the as-of month, oldest first.
     public static func trailingMonths(endingAt asOf: Date, count: Int) -> [String] {
         let comps = calendar.dateComponents([.year, .month], from: asOf)
