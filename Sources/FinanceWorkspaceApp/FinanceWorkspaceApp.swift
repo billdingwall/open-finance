@@ -56,6 +56,11 @@ struct AppShellView: View {
                     min: DS.Metrics.detailPaneMin, ideal: DS.Metrics.detailPaneMin,
                     max: DS.Metrics.detailPaneMax)
         }
+        .sheet(isPresented: Binding(
+            get: { state.pendingWrite != nil },
+            set: { if !$0 { state.cancelWrite() } })) {
+            WritePreviewView()
+        }
         .frame(minWidth: DS.Metrics.minWindowWidth, minHeight: DS.Metrics.minWindowHeight)
     }
 }

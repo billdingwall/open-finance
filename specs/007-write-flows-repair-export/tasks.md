@@ -96,7 +96,7 @@ appears; backup exists), then edit its target amount and delete it — each with
   `Sources/FinanceWorkspaceKit/Persistence/Write/CSVRowSerializer.swift`
 - [X] T012 [US1] Add per-intent `WritePlan` builders for simple add/edit/delete (no references yet) in
   `Sources/FinanceWorkspaceKit/Persistence/Write/WritePlan.swift`
-- [ ] T013 [P] [US1] Build the shared `WritePreviewView` (intent title, per-file target, before/after
+- [X] T013 [P] [US1] Build the shared `WritePreviewView` (intent title, per-file target, before/after
   diff, backup location, Apply/Cancel; drift re-preview; `WriteGate`-reason disable) in
   `Sources/FinanceWorkspaceApp/UI/Write/WritePreviewView.swift`
 - [ ] T014 [US1] Build `EntityEditForms` for the 11 right-panel entities (account group, category,
@@ -108,7 +108,7 @@ appears; backup exists), then edit its target amount and delete it — each with
   `Sources/FinanceWorkspaceApp/UI/Shell/DetailPaneView.swift` (FR-010 right-panel placement)
 - [ ] T016 [US1] Wire Account add/edit (local actions) + delete-inside-edit on the dedicated screen in
   `Sources/FinanceWorkspaceApp/UI/Accounts/AccountDetailView.swift` and `.../AccountsView.swift`
-- [ ] T017 [US1] Add the post-write re-index + re-validate hook (rebuild `ProjectionStore` snapshot,
+- [X] T017 [US1] Add the post-write re-index + re-validate hook (rebuild `ProjectionStore` snapshot,
   refresh issues) in `Sources/FinanceWorkspaceApp/AppState.swift`
 - [ ] T018 [US1] Add the context-sensitive ⌘N add-record action (active-module primary entity;
   disabled where none) in `Sources/FinanceWorkspaceApp/UI/Shell/AppCommands.swift` + `AppState.swift`

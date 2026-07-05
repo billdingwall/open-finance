@@ -80,6 +80,10 @@ final class AppState {
     var detailPane = DetailPaneState()
     var selections = SessionSelections()
 
+    // Phase 6 write flows: the plan awaiting confirmation drives the write-preview sheet.
+    var pendingWrite: WritePlan?
+    var writeError: String?
+
     let provider: any CloudStorageProvider
     private let manager: WorkspaceManager
 
@@ -182,6 +186,46 @@ final class AppState {
                 actionDescriptions: ["Repair preview unavailable: \(error)"],
                 diffs: [],
                 backupNote: "")))
+        }
+    }
+
+    // MARK: - Write flows (Phase 6)
+
+    /// Whether the target file(s) of the pending write are writable right now (sync gate, FR-005).
+    /// Returns the first blocking reason, or nil when every touched file may be written.
+    var writeBlockReason: String? {
+        guard let plan = pendingWrite else { return nil }
+        for change in plan.changes {
+            let decision = WriteGate.evaluate(workspaceState: syncState, fileState: .available)
+            if !decision.allowed { return decision.reason ?? "Writing is unavailable for \(change.relativePath)." }
+        }
+        return nil
+    }
+
+    /// Stamp the plan with current file hashes (drift baseline) and open the write-preview sheet.
+    func presentWrite(_ plan: WritePlan) {
+        guard let workspaceURL else { return }
+        pendingWrite = WriteService(workspaceURL: workspaceURL).preview(plan)
+        writeError = nil
+    }
+
+    func cancelWrite() {
+        pendingWrite = nil
+        writeError = nil
+    }
+
+    /// Apply the pending plan through the safe-write path, then re-index + re-validate (FR-008).
+    func applyPendingWrite() async {
+        guard let plan = pendingWrite, let workspaceURL else { return }
+        do {
+            let service = WriteService(workspaceURL: workspaceURL)
+            _ = try service.apply(plan, workspaceState: syncState, fileStates: [:])
+            pendingWrite = nil
+            writeError = nil
+            await reindex()
+        } catch {
+            writeError = String(describing: error)
+            Diagnostics.workspace.error("write failed: \(String(describing: error), privacy: .public)")
         }
     }
 }
