@@ -84,17 +84,17 @@ appears; backup exists), then edit its target amount and delete it — each with
 
 ### Tests for User Story 1
 
-- [ ] T009 [P] [US1] `CSVRowSerializer` round-trip + sign tests (S1/S3) across all 12 entity types in
+- [X] T009 [P] [US1] `CSVRowSerializer` round-trip + sign tests (S1/S3) across all 12 entity types in
   `Tests/FinanceWorkspaceKitTests/WriteEngineTests/CSVRowSerializerTests.swift`
 - [ ] T010 [P] [US1] WritePreview view-model tests — apply triggers re-index, cancel is a no-op,
   `driftDetected` → re-preview in `Tests/FinanceWorkspaceAppTests/WritePreviewViewModelTests.swift`
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement `CSVRowSerializer.row` (entity → canonical row) for all write-target
+- [X] T011 [US1] Implement `CSVRowSerializer.row` (entity → canonical row) for all write-target
   entities per the data-model entity→file map (the 12 entities + `SleeveTarget` for sleeve weights) in
   `Sources/FinanceWorkspaceKit/Persistence/Write/CSVRowSerializer.swift`
-- [ ] T012 [US1] Add per-intent `WritePlan` builders for simple add/edit/delete (no references yet) in
+- [X] T012 [US1] Add per-intent `WritePlan` builders for simple add/edit/delete (no references yet) in
   `Sources/FinanceWorkspaceKit/Persistence/Write/WritePlan.swift`
 - [ ] T013 [P] [US1] Build the shared `WritePreviewView` (intent title, per-file target, before/after
   diff, backup location, Apply/Cancel; drift re-preview; `WriteGate`-reason disable) in

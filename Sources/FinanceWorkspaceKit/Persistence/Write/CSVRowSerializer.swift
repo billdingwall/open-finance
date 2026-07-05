@@ -8,6 +8,35 @@ import Foundation
 
 public enum CSVRowSerializer {
 
+    // MARK: - Value → canonical row (T011)
+    //
+    // Column order is authoritative from the file's own header row (the JSON schema stores columns
+    // in an *unordered* dictionary, so it cannot supply order). Edit forms build the typed
+    // `[column: value]` field dictionary; this renders it into a canonical, CSV-escaped line.
+
+    /// The canonical column order for a file, read from its header row (skipping `#` comments).
+    public static func header(of fileText: String) -> [String]? {
+        for line in fileText.components(separatedBy: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
+            return line.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        }
+        return nil
+    }
+
+    /// Render `fields` (canonical column → value) as one CSV line ordered by `header`.
+    public static func row(fields: [String: String], header: [String]) -> String {
+        header.map { escape(fields[$0] ?? "") }.joined(separator: ",")
+    }
+
+    /// RFC-4180-style minimal escaping: quote a field containing a comma, quote, or newline.
+    static func escape(_ value: String) -> String {
+        guard value.contains(",") || value.contains("\"") || value.contains("\n") else { return value }
+        return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
+
+    // MARK: - Row-diff application
+
     /// Apply row diffs to existing CSV `fileText`, editing only the referenced data rows.
     /// - Comment lines (leading `#…`) and the header row are preserved verbatim.
     /// - `.modify`/`.delete` target a 1-based data-row index and assert `before` still matches.

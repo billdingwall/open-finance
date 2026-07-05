@@ -76,4 +76,38 @@ import Foundation
             try CSVRowSerializer.applyDiffs([diff], to: sample)
         }
     }
+
+    // T009 — value→row orders fields by the file's header regardless of dict order.
+    @Test func rowOrdersFieldsByHeader() throws {
+        let header = try #require(CSVRowSerializer.header(of: sample))
+        #expect(header == ["goal_id", "name", "target_amount", "source_account_id"])
+        let line = CSVRowSerializer.row(
+            fields: ["name": "Boat", "goal_id": "goal-9", "source_account_id": "acct-1", "target_amount": "30000"],
+            header: header)
+        #expect(line == "goal-9,Boat,30000,acct-1")
+    }
+
+    // T009 — a value containing a comma is quote-escaped, and an add round-trips through applyDiffs.
+    @Test func addRoundTripsWithEscaping() throws {
+        let header = try #require(CSVRowSerializer.header(of: sample))
+        let line = CSVRowSerializer.row(
+            fields: ["goal_id": "goal-9", "name": "House, Down Payment", "target_amount": "50000", "source_account_id": "acct-2"],
+            header: header)
+        #expect(line == "goal-9,\"House, Down Payment\",50000,acct-2")
+        let plan = WritePlanBuilder.add(
+            fields: ["goal_id": "goal-9", "name": "House, Down Payment", "target_amount": "50000", "source_account_id": "acct-2"],
+            to: "Savings/goals.csv", fileText: sample)
+        let out = try CSVRowSerializer.applyDiffs(plan.changes[0].rowDiffs, to: sample)
+        #expect(out.components(separatedBy: "\n").last == line)
+    }
+
+    // T012 — the edit builder produces a modify diff that applyDiffs applies in place.
+    @Test func editBuilderModifiesTargetRow() throws {
+        let plan = WritePlanBuilder.edit(
+            fields: ["goal_id": "goal-2", "name": "Vacation", "target_amount": "6500", "source_account_id": "acct-2"],
+            rowRef: 2, before: "goal-2,Vacation,5000,acct-2", in: "Savings/goals.csv", fileText: sample)
+        let out = try CSVRowSerializer.applyDiffs(plan.changes[0].rowDiffs, to: sample)
+        #expect(out.contains("goal-2,Vacation,6500,acct-2"))
+        #expect(!out.contains("goal-2,Vacation,5000,acct-2"))
+    }
 }

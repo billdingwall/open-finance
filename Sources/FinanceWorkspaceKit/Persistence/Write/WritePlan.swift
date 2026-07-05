@@ -116,6 +116,42 @@ public struct WritePlan: Sendable, Equatable {
     public var touchedPaths: [String] { changes.map(\.relativePath) }
 }
 
+/// Builds single-file `WritePlan`s for structured add/edit/delete (T012). Reference-aware deletes
+/// (reassignment) are layered on in US4 via `ReferenceScanner`. Callers pass the current file text so
+/// the builder can resolve canonical header order and, for edit/delete, the exact `before` line.
+public enum WritePlanBuilder {
+
+    /// Append a new row built from `fields`, ordered by the file's header.
+    public static func add(fields: [String: String], to relativePath: String,
+                           fileText: String) -> WritePlan {
+        let header = CSVRowSerializer.header(of: fileText) ?? Array(fields.keys).sorted()
+        let line = CSVRowSerializer.row(fields: fields, header: header)
+        return WritePlan(intent: .add, changes: [
+            FileChange(relativePath: relativePath, expectedHash: nil,
+                       rowDiffs: [WriteRowDiff(rowRef: nil, kind: .add(after: line))]),
+        ])
+    }
+
+    /// Replace the data row at `rowRef` (1-based) — current line `before` — with `fields`.
+    public static func edit(fields: [String: String], rowRef: Int, before: String,
+                            in relativePath: String, fileText: String) -> WritePlan {
+        let header = CSVRowSerializer.header(of: fileText) ?? Array(fields.keys).sorted()
+        let after = CSVRowSerializer.row(fields: fields, header: header)
+        return WritePlan(intent: .edit, changes: [
+            FileChange(relativePath: relativePath, expectedHash: nil,
+                       rowDiffs: [WriteRowDiff(rowRef: rowRef, kind: .modify(before: before, after: after))]),
+        ])
+    }
+
+    /// Delete the data row at `rowRef` (1-based) whose current line is `before`.
+    public static func delete(rowRef: Int, before: String, in relativePath: String) -> WritePlan {
+        WritePlan(intent: .delete, changes: [
+            FileChange(relativePath: relativePath, expectedHash: nil,
+                       rowDiffs: [WriteRowDiff(rowRef: rowRef, kind: .delete(before: before))]),
+        ])
+    }
+}
+
 /// Result of a successful apply.
 public struct WriteResult: Sendable, Equatable {
     public let backups: [BackupReference]
