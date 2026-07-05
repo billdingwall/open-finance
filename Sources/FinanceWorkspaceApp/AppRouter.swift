@@ -71,21 +71,24 @@ enum RouteActivityCodec {
         guard payload["v"] == String(version), let module = payload["module"] else { return nil }
         switch module {
         case "overview": return .overview
-        case "accounts":
-            if let id = payload["group"] { return .accountGroup(id) }
-            if let id = payload["account"] { return .account(id) }
-            return .accounts
-        case "budget":
-            return .budget(payload["sub"].flatMap(BudgetSubview.init(rawValue:)) ?? .overview)
-        case "si":
-            if let id = payload["goal"] { return .goal(id) }
-            if let id = payload["holding"] { return .holding(id) }
-            return .savingsInvestments(payload["sub"].flatMap(SISubview.init(rawValue:)) ?? .overview)
-        case "taxes":
-            return .taxes(payload["sub"].flatMap(TaxSubview.init(rawValue:)) ?? .currentYear)
-        default:
-            return nil
+        case "accounts": return decodeAccounts(payload)
+        case "budget": return .budget(payload["sub"].flatMap(BudgetSubview.init(rawValue:)) ?? .overview)
+        case "si": return decodeSavingsInvestments(payload)
+        case "taxes": return .taxes(payload["sub"].flatMap(TaxSubview.init(rawValue:)) ?? .currentYear)
+        default: return nil
         }
+    }
+
+    private static func decodeAccounts(_ payload: [String: String]) -> Route {
+        if let id = payload["group"] { return .accountGroup(id) }
+        if let id = payload["account"] { return .account(id) }
+        return .accounts
+    }
+
+    private static func decodeSavingsInvestments(_ payload: [String: String]) -> Route {
+        if let id = payload["goal"] { return .goal(id) }
+        if let id = payload["holding"] { return .holding(id) }
+        return .savingsInvestments(payload["sub"].flatMap(SISubview.init(rawValue:)) ?? .overview)
     }
 }
 
