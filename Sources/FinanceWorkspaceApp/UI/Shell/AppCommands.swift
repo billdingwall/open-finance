@@ -9,12 +9,14 @@ import FinanceWorkspaceKit
 enum AppCommand: CaseIterable {
     case newWorkspace, openWorkspace, reindexWorkspace, validateWorkspace, exportCurrentView
     case repairSelectedIssue, openSourceFile, revealInFinder, openBackupFolder, toggleInspector
+    case newRecord
 }
 
 /// Pure enable/disable matrix — the single source for both the menu and its tests.
 struct CommandMatrix {
     var hasWorkspace: Bool
     var hasSourceSelection: Bool
+    var activeModuleHasAddTarget: Bool = false
 
     func isEnabled(_ command: AppCommand) -> Bool {
         switch command {
@@ -22,8 +24,10 @@ struct CommandMatrix {
             return true
         case .reindexWorkspace, .validateWorkspace, .openBackupFolder:
             return hasWorkspace
+        case .newRecord:
+            return hasWorkspace && activeModuleHasAddTarget      // context-sensitive (FR-030a)
         case .exportCurrentView, .repairSelectedIssue:
-            return false                               // Phase 6 write/export flows
+            return false                               // US5/US6 (later Phase-6 stories)
         case .openSourceFile, .revealInFinder:
             return hasSourceSelection
         }
@@ -41,7 +45,9 @@ extension AppState {
     }
 
     var commandMatrix: CommandMatrix {
-        CommandMatrix(hasWorkspace: workspaceURL != nil, hasSourceSelection: selectedSourceRef != nil)
+        CommandMatrix(hasWorkspace: workspaceURL != nil,
+                      hasSourceSelection: selectedSourceRef != nil,
+                      activeModuleHasAddTarget: activeModuleHasAddTarget)
     }
 }
 
@@ -51,6 +57,9 @@ struct AppCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
+            Button("New Record") { state.presentAddForActiveModule() }
+                .keyboardShortcut("n", modifiers: .command)
+                .disabled(!state.commandMatrix.isEnabled(.newRecord))
             Button("New Workspace") { Task { await state.openWorkspace() } }
                 .keyboardShortcut("n", modifiers: [.shift, .command])
                 .disabled(!state.commandMatrix.isEnabled(.newWorkspace))

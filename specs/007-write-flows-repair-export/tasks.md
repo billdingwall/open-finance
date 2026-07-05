@@ -99,20 +99,20 @@ appears; backup exists), then edit its target amount and delete it — each with
 - [X] T013 [P] [US1] Build the shared `WritePreviewView` (intent title, per-file target, before/after
   diff, backup location, Apply/Cancel; drift re-preview; `WriteGate`-reason disable) in
   `Sources/FinanceWorkspaceApp/UI/Write/WritePreviewView.swift`
-- [ ] T014 [US1] Build `EntityEditForms` for the 11 right-panel entities (account group, category,
+- [X] T014 [US1] Build `EntityEditForms` for the 11 right-panel entities (account group, category,
   budget, allocation, goal, asset, liability, portfolio, sleeve, tax-adjustment, account rule) —
   canonical fields only (FR-011); sleeve editing spans `sleeves.csv` + `sleeve-targets.csv`, and the
   tax-adjustment form writes the polymorphic `linked_id` — in
   `Sources/FinanceWorkspaceApp/UI/Write/EntityEditForms.swift`
-- [ ] T015 [US1] Enable the `.editForm` surface + panel-bottom Edit/Delete in
+- [X] T015 [US1] Enable the `.editForm` surface + panel-bottom Edit/Delete in
   `Sources/FinanceWorkspaceApp/UI/Shell/DetailPaneView.swift` (FR-010 right-panel placement)
-- [ ] T016 [US1] Wire Account add/edit (local actions) + delete-inside-edit on the dedicated screen in
+- [X] T016 [US1] Wire Account add/edit (local actions) + delete-inside-edit on the dedicated screen in
   `Sources/FinanceWorkspaceApp/UI/Accounts/AccountDetailView.swift` and `.../AccountsView.swift`
 - [X] T017 [US1] Add the post-write re-index + re-validate hook (rebuild `ProjectionStore` snapshot,
   refresh issues) in `Sources/FinanceWorkspaceApp/AppState.swift`
-- [ ] T018 [US1] Add the context-sensitive ⌘N add-record action (active-module primary entity;
+- [X] T018 [US1] Add the context-sensitive ⌘N add-record action (active-module primary entity;
   disabled where none) in `Sources/FinanceWorkspaceApp/UI/Shell/AppCommands.swift` + `AppState.swift`
-- [ ] T019 [US1] Wire the in-app "Close Tax Year" action → `WritePreviewView` → existing
+- [X] T019 [US1] Wire the in-app "Close Tax Year" action → `WritePreviewView` → existing
   `TaxPrepEngine`/`TaxSafeWrite` archive write → re-index (FR-011a) in
   `Sources/FinanceWorkspaceApp/UI/Taxes/CurrentTaxYearView.swift`
 

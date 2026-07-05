@@ -7,10 +7,22 @@ import Testing
 
 @Suite struct CommandMatrixTests {
 
-    @Test func phase6CommandsAreAlwaysDisabled() {
-        let everything = CommandMatrix(hasWorkspace: true, hasSourceSelection: true)
+    // Export + Repair-apply land with US5/US6 — still disabled after US1.
+    @Test func exportAndRepairRemainDisabled() {
+        let everything = CommandMatrix(hasWorkspace: true, hasSourceSelection: true,
+                                       activeModuleHasAddTarget: true)
         #expect(everything.isEnabled(.exportCurrentView) == false)
         #expect(everything.isEnabled(.repairSelectedIssue) == false)
+    }
+
+    // ⌘N New Record is context-sensitive: needs a workspace AND an active module with an add target.
+    @Test func newRecordIsContextSensitive() {
+        #expect(CommandMatrix(hasWorkspace: true, hasSourceSelection: false,
+                              activeModuleHasAddTarget: true).isEnabled(.newRecord))
+        #expect(CommandMatrix(hasWorkspace: true, hasSourceSelection: false,
+                              activeModuleHasAddTarget: false).isEnabled(.newRecord) == false)
+        #expect(CommandMatrix(hasWorkspace: false, hasSourceSelection: false,
+                              activeModuleHasAddTarget: true).isEnabled(.newRecord) == false)
     }
 
     @Test func selectionContextCommandsGateOnSourceSelection() {

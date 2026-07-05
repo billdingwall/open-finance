@@ -56,6 +56,9 @@ struct AppShellView: View {
                     min: DS.Metrics.detailPaneMin, ideal: DS.Metrics.detailPaneMin,
                     max: DS.Metrics.detailPaneMax)
         }
+        .sheet(item: $state.editForm) { context in
+            EntityEditForm(context: context)
+        }
         .sheet(isPresented: Binding(
             get: { state.pendingWrite != nil },
             set: { if !$0 { state.cancelWrite() } })) {

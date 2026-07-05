@@ -83,6 +83,8 @@ final class AppState {
     // Phase 6 write flows: the plan awaiting confirmation drives the write-preview sheet.
     var pendingWrite: WritePlan?
     var writeError: String?
+    // The entity add/edit form sheet (nil ⇒ closed).
+    var editForm: EntityEditContext?
 
     let provider: any CloudStorageProvider
     private let manager: WorkspaceManager
@@ -227,5 +229,117 @@ final class AppState {
             writeError = String(describing: error)
             Diagnostics.workspace.error("write failed: \(String(describing: error), privacy: .public)")
         }
+    }
+
+    // MARK: - Structured add/edit/delete (US1)
+
+    /// Open the add form for a target file, seeding a fresh id in `idColumn`.
+    func presentAdd(relativePath: String, title: String, idColumn: String, idPrefix: String) {
+        guard let text = readWorkspaceFile(relativePath),
+              let header = CSVRowSerializer.header(of: text) else { return }
+        var fields = Dictionary(uniqueKeysWithValues: header.map { ($0, "") })
+        fields[idColumn] = idPrefix + UUID().uuidString.prefix(8).lowercased()
+        editForm = EntityEditContext(title: title, relativePath: relativePath, columns: header,
+                                     idColumn: idColumn, fields: fields, rowRef: nil, before: nil,
+                                     fileText: text)
+    }
+
+    /// Open the edit form for the row a source reference points at.
+    func presentEdit(_ ref: SourceRef) {
+        guard let row = ref.rowNumber, let text = readWorkspaceFile(ref.filePath),
+              let header = CSVRowSerializer.header(of: text),
+              let before = dataLine(in: text, rowRef: row) else { return }
+        let cells = CSVLine.fields(before)
+        var fields: [String: String] = [:]
+        for (i, column) in header.enumerated() { fields[column] = i < cells.count ? cells[i] : "" }
+        editForm = EntityEditContext(title: "Edit", relativePath: ref.filePath, columns: header,
+                                     idColumn: header.first ?? "id", fields: fields, rowRef: row,
+                                     before: before, fileText: text)
+    }
+
+    /// Build a delete plan for the row a source reference points at and open its preview.
+    /// (Reference-aware reassignment is layered on in US4.)
+    func requestDelete(_ ref: SourceRef) {
+        guard let row = ref.rowNumber, let text = readWorkspaceFile(ref.filePath),
+              let before = dataLine(in: text, rowRef: row) else { return }
+        presentWrite(WritePlanBuilder.delete(rowRef: row, before: before, in: ref.filePath))
+    }
+
+    /// Called by the form on submit: build the add/edit plan and hand off to the write preview.
+    func finishEditForm(context: EntityEditContext, fields: [String: String]) {
+        let plan: WritePlan
+        if let rowRef = context.rowRef, let before = context.before {
+            plan = WritePlanBuilder.edit(fields: fields, rowRef: rowRef, before: before,
+                                         in: context.relativePath, fileText: context.fileText)
+        } else {
+            plan = WritePlanBuilder.add(fields: fields, to: context.relativePath, fileText: context.fileText)
+        }
+        editForm = nil
+        // Hop to the next runloop so the form sheet fully dismisses before the preview sheet opens.
+        Task { @MainActor in self.presentWrite(plan) }
+    }
+
+    // MARK: - ⌘N add-record (context-sensitive, FR-030a)
+
+    /// Whether the active module has a primary object the ⌘N action can add.
+    var activeModuleHasAddTarget: Bool {
+        switch route.parentModule {
+        case .accounts, .budget, .savingsInvestments, .taxes: return true
+        default: return false
+        }
+    }
+
+    /// Add a new record of the active module's primary object type.
+    func presentAddForActiveModule() {
+        switch route.parentModule {
+        case .accounts:
+            presentAdd(relativePath: "Accounts/accounts.csv", title: "New account",
+                       idColumn: "account_id", idPrefix: "acct-")
+        case .budget:
+            presentAdd(relativePath: "Budget/categories.csv", title: "New category",
+                       idColumn: "category_id", idPrefix: "cat-")
+        case .savingsInvestments:
+            presentAdd(relativePath: "Savings/goals.csv", title: "New savings goal",
+                       idColumn: "goal_id", idPrefix: "goal-")
+        case .taxes:
+            presentAdd(relativePath: "Taxes/tax-adjustments.csv", title: "New tax adjustment",
+                       idColumn: "tax_adjustment_id", idPrefix: "adj-")
+        default:
+            break   // Overview has no primary add target.
+        }
+    }
+
+    // MARK: - Close Tax Year (FR-011a)
+
+    /// Archive the given tax year via the existing safe-write engine, then re-index.
+    func closeTaxYear(_ year: Int) async {
+        guard let workspaceURL else { return }
+        do {
+            if !TaxPrepEngine().isYearClosed(workspaceURL: workspaceURL, year: year) {
+                _ = try TaxPrepEngine().archiveYear(workspaceURL: workspaceURL, year: year)
+            }
+            await reindex()
+        } catch {
+            writeError = String(describing: error)
+            Diagnostics.workspace.error("year-close failed: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    // MARK: - File helpers
+
+    private func readWorkspaceFile(_ relativePath: String) -> String? {
+        guard let workspaceURL else { return nil }
+        return try? String(contentsOf: workspaceURL.appendingPathComponent(relativePath), encoding: .utf8)
+    }
+
+    /// The raw data-row line at a 1-based index (skipping leading `#` comments and the header).
+    private func dataLine(in fileText: String, rowRef: Int) -> String? {
+        var lines = fileText.components(separatedBy: "\n")
+        if fileText.hasSuffix("\n") { lines.removeLast() }
+        var i = 0
+        while i < lines.count && lines[i].trimmingCharacters(in: .whitespaces).hasPrefix("#") { i += 1 }
+        let idx = i + 1 + (rowRef - 1)   // + header
+        guard idx >= 0 && idx < lines.count else { return nil }
+        return lines[idx]
     }
 }

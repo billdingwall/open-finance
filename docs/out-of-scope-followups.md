@@ -141,6 +141,17 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   recorded as **[Manual pass pending]** in `docs/test-plans.md`. *(Source: 006 T063.)*
   **Status: Open (PM action).**
 
+- **OOS-7 — Phase 6 US1 entity forms are schema/header-driven, not per-entity** *(Source: 007 T014;
+  deviates from plan research D10)*: US1 ships one `EntityEditForm` that renders a labelled field per
+  canonical column of the target file (all 12 row entities editable through the same safe-write path).
+  Per-entity typed controls (grouped pickers for account-group/category parents, sign-aware amount
+  fields, enum pickers) are the D10 refinement, deferred. **Status: Open (Phase 6/7 polish).**
+- **OOS-8 — Account edit uses the shared right-panel path, not dedicated-screen local actions**
+  *(Source: 007 T016; FR-010)*: accounts are add/edit/deletable via ⌘N + the detail-pane
+  edit/delete buttons like every other entity. The FR-010 placement for a dedicated-screen object
+  (edit in the screen's local actions, delete inside the edit flow) on `AccountDetailView` is not yet
+  wired. **Status: Open (Phase 6 US1 refinement).**
+
 ---
 
 ## Resolved / promoted

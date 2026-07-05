@@ -33,16 +33,18 @@ struct DetailPaneView: View {
                     .padding(14)
             }
 
-            if showsEntityActions {
+            if case .inspector(let ref) = state.detailPane.surface {
                 Divider().overlay(DS.Colors.borderSoft)
                 HStack {
-                    // Phase-6 write affordances — visible but disabled (clarify Q3).
-                    Button("Edit", systemImage: "pencil") {}
-                        .buttonStyle(SecondaryButtonStyle()).disabled(true)
-                        .help("Edit — available with write flows (Phase 6)")
-                    Button("Delete", systemImage: "trash") {}
-                        .buttonStyle(SecondaryButtonStyle()).disabled(true)
-                        .help("Delete — available with write flows (Phase 6)")
+                    // Edit/Delete at the panel bottom for right-panel objects (FR-010).
+                    Button("Edit", systemImage: "pencil") { state.presentEdit(ref) }
+                        .buttonStyle(SecondaryButtonStyle())
+                        .disabled(ref.rowNumber == nil)
+                        .help("Edit this record")
+                    Button("Delete", systemImage: "trash") { state.requestDelete(ref) }
+                        .buttonStyle(SecondaryButtonStyle())
+                        .disabled(ref.rowNumber == nil)
+                        .help("Delete this record")
                     Spacer()
                 }
                 .padding(10)
@@ -58,11 +60,6 @@ struct DetailPaneView: View {
         case .editForm: return "Edit"
         case nil: return "Details"
         }
-    }
-
-    private var showsEntityActions: Bool {
-        if case .inspector = state.detailPane.surface { return true }
-        return false
     }
 
     @ViewBuilder private var surfaceBody: some View {
