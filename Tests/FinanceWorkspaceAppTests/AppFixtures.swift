@@ -27,6 +27,14 @@ struct AppFixture {
         try? Data(content.utf8).write(to: url)
     }
 
+    /// Write a file verbatim (no `# schema_version` prefix) — e.g. Workspace.md.
+    func writeRaw(_ relativePath: String, _ content: String) {
+        let url = root.appendingPathComponent(relativePath)
+        try? FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? Data(content.utf8).write(to: url)
+    }
+
     func cleanup() { try? FileManager.default.removeItem(at: root.deletingLastPathComponent()) }
 
     /// A small but complete workspace: two account groups (personal + business), a savings
@@ -34,9 +42,13 @@ struct AppFixture {
     /// and one asset with a trade + price.
     static func standard() -> AppFixture {
         let fixture = AppFixture()
+        // Workspace.md is a required file; its absence is a workspace-level validation error.
+        fixture.writeRaw("Workspace.md", "---\nworkspace_id: fixture\n---\n")
+        // `account_group` is the account CLASS enum (checking/savings/business/…), NOT the
+        // group's type; the account's group membership is `account_group_id`.
         fixture.write("Accounts/accounts.csv",
                       "account_id,display_name,institution,account_group,account_type,status,account_group_id",
-                      ["A1,Checking,Bank,personal,checking,active,G1",
+                      ["A1,Checking,Bank,checking,checking,active,G1",
                        "A2,Savings,Bank,savings,savings,active,G1",
                        "B1,Studio,Bank,business,checking,active,G2"])
         fixture.write("Accounts/account-groups.csv", "account_group_id,name,group_type",

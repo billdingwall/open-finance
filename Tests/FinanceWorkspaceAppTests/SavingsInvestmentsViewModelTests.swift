@@ -29,7 +29,7 @@ import FinanceWorkspaceKit
                       ["ST1,SL1,0.8"])
         fixture.write("Investments/benchmarks/sp500.csv", "date,close",
                       ["2026-06-26,5000", "2026-06-29,5050"])
-        fixture.write("Savings/savings-progress.csv", "progress_id,goal_id,as_of,balance",
+        fixture.write("Savings/progress.csv", "progress_id,goal_id,as_of,balance",
                       ["PR1,SG1,2026-06-15,2500"])
         let snapshot = try ProjectionStore.buildSync(
             workspaceURL: fixture.root, asOf: ISO8601DateFormatter.day.date(from: "2026-06-30")!)
