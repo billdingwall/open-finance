@@ -21,6 +21,7 @@ struct TaxesModuleView: View {
 
 struct CurrentTaxYearView: View {
     @Environment(AppState.self) private var state
+    @State private var confirmingClose = false
 
     var body: some View {
         @Bindable var state = state
@@ -53,6 +54,21 @@ struct CurrentTaxYearView: View {
             .help("Session-scoped tax-year selection")
             TagView(kind: .info, label: "estimates")
                 .help("The tax module estimates obligations; it is not a filing engine.")
+            Spacer()
+            let closed = viewModel.closedYears.contains(year)
+            Button(closed ? "Year closed" : "Close Tax Year…", systemImage: closed ? "lock" : "lock.open") {
+                confirmingClose = true
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            .disabled(closed)
+            .help(closed ? "This year is archived and read-only." : "Archive \(String(year)) — writes read-only snapshot files.")
+            .confirmationDialog("Close tax year \(String(year))?", isPresented: $confirmingClose) {
+                Button("Close \(String(year))") { Task { await state.closeTaxYear(year) } }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Archives this year's tax-adjustments and estimated payments to Taxes/archive/. "
+                     + "A timestamped backup is taken and the year becomes read-only.")
+            }
         }
     }
 

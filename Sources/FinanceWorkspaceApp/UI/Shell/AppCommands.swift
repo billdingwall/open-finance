@@ -9,21 +9,26 @@ import FinanceWorkspaceKit
 enum AppCommand: CaseIterable {
     case newWorkspace, openWorkspace, reindexWorkspace, validateWorkspace, exportCurrentView
     case repairSelectedIssue, openSourceFile, revealInFinder, openBackupFolder, toggleInspector
+    case newRecord
 }
 
 /// Pure enable/disable matrix — the single source for both the menu and its tests.
 struct CommandMatrix {
     var hasWorkspace: Bool
     var hasSourceSelection: Bool
+    var activeModuleHasAddTarget: Bool = false
+    var hasRepairableSelection: Bool = false
 
     func isEnabled(_ command: AppCommand) -> Bool {
         switch command {
         case .newWorkspace, .openWorkspace, .toggleInspector:
             return true
-        case .reindexWorkspace, .validateWorkspace, .openBackupFolder:
+        case .reindexWorkspace, .validateWorkspace, .openBackupFolder, .exportCurrentView:
             return hasWorkspace
-        case .exportCurrentView, .repairSelectedIssue:
-            return false                               // Phase 6 write/export flows
+        case .newRecord:
+            return hasWorkspace && activeModuleHasAddTarget      // context-sensitive (FR-030a)
+        case .repairSelectedIssue:
+            return hasWorkspace && hasRepairableSelection        // US5
         case .openSourceFile, .revealInFinder:
             return hasSourceSelection
         }
@@ -41,7 +46,10 @@ extension AppState {
     }
 
     var commandMatrix: CommandMatrix {
-        CommandMatrix(hasWorkspace: workspaceURL != nil, hasSourceSelection: selectedSourceRef != nil)
+        CommandMatrix(hasWorkspace: workspaceURL != nil,
+                      hasSourceSelection: selectedSourceRef != nil,
+                      activeModuleHasAddTarget: activeModuleHasAddTarget,
+                      hasRepairableSelection: hasRepairableSelection)
     }
 }
 
@@ -51,6 +59,9 @@ struct AppCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
+            Button("New Record") { state.presentAddForActiveModule() }
+                .keyboardShortcut("n", modifiers: .command)
+                .disabled(!state.commandMatrix.isEnabled(.newRecord))
             Button("New Workspace") { Task { await state.openWorkspace() } }
                 .keyboardShortcut("n", modifiers: [.shift, .command])
                 .disabled(!state.commandMatrix.isEnabled(.newWorkspace))
@@ -70,15 +81,18 @@ struct AppCommands: Commands {
             .keyboardShortcut("v", modifiers: [.shift, .command])
             .disabled(!state.commandMatrix.isEnabled(.validateWorkspace))
             Divider()
-            Button("Export Current View…") {}
+            Button("Import Transactions…") { state.showingImport = true }
+                .keyboardShortcut("i", modifiers: [.shift, .command])
+                .disabled(state.workspaceURL == nil)
+            Button("Export Current View…") { exportCurrentView() }
                 .keyboardShortcut("e", modifiers: .command)
-                .disabled(true)                        // Phase 6
+                .disabled(!state.commandMatrix.isEnabled(.exportCurrentView))
         }
 
         CommandMenu("Workspace") {
-            Button("Repair Selected Issue…") {}
+            Button("Repair Selected Issue…") { Task { await state.applyRepair() } }
                 .keyboardShortcut("r", modifiers: [.shift, .command])
-                .disabled(true)                        // Phase 6 (preview via issues table)
+                .disabled(!state.commandMatrix.isEnabled(.repairSelectedIssue))
             Divider()
             Button("Open Source File") { openSelectedSource(inEditor: true) }
                 .keyboardShortcut(.return, modifiers: .command)
@@ -111,5 +125,16 @@ struct AppCommands: Commands {
         guard let root = state.workspaceURL else { return }
         let backups = root.appendingPathComponent(".finance-meta/backups", isDirectory: true)
         NSWorkspace.shared.activateFileViewerSelecting([backups])
+    }
+
+    /// Export the active module's primary view as CSV (with provenance) to a chosen destination.
+    private func exportCurrentView() {
+        guard let export = state.exportCurrentViewCSV() else { return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "export-\(export.suggestedName)"
+        panel.allowedContentTypes = [.commaSeparatedText]
+        if panel.runModal() == .OK, let url = panel.url {
+            state.writeExport(export.text, to: url)
+        }
     }
 }

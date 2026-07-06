@@ -80,6 +80,14 @@ final class AppState {
     var detailPane = DetailPaneState()
     var selections = SessionSelections()
 
+    // Phase 6 write flows: the plan awaiting confirmation drives the write-preview sheet.
+    var pendingWrite: WritePlan?
+    var writeError: String?
+    // The entity add/edit form sheet (nil ⇒ closed).
+    var editForm: EntityEditContext?
+    // The CSV import sheet.
+    var showingImport = false
+
     let provider: any CloudStorageProvider
     private let manager: WorkspaceManager
 
@@ -184,4 +192,5 @@ final class AppState {
                 backupNote: "")))
         }
     }
+
 }

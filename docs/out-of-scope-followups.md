@@ -141,6 +141,37 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   recorded as **[Manual pass pending]** in `docs/test-plans.md`. *(Source: 006 T063.)*
   **Status: Open (PM action).**
 
+- **OOS-7 — Phase 6 US1 entity forms are schema/header-driven, not per-entity** *(Source: 007 T014;
+  deviates from plan research D10)*: US1 ships one `EntityEditForm` that renders a labelled field per
+  canonical column of the target file (all 12 row entities editable through the same safe-write path).
+  Per-entity typed controls (grouped pickers for account-group/category parents, sign-aware amount
+  fields, enum pickers) are the D10 refinement, deferred. **Status: Open (Phase 6/7 polish).**
+- **OOS-8 — Account edit uses the shared right-panel path, not dedicated-screen local actions**
+  *(Source: 007 T016; FR-010)*: accounts are add/edit/deletable via ⌘N + the detail-pane
+  edit/delete buttons like every other entity. The FR-010 placement for a dedicated-screen object
+  (edit in the screen's local actions, delete inside the edit flow) on `AccountDetailView` is not yet
+  wired. **Status: Open (Phase 6 US1 refinement).**
+
+- **OOS-9 — transactions schema has no description/merchant column** *(Source: 007 US2; FR-015a)*:
+  the canonical `transactions` schema is `transaction_id, account_id, date, amount, type, …` with no
+  memo/payee/description field, so imported bank memos are **not retained** and the duplicate key is
+  **date + amount + account** (not date+amount+description as the clarified spec assumed). Adding an
+  *optional* `description` column (non-breaking per the constitution) is the fix. **Status: Open.**
+- **OOS-10 — US3 multi-entry transaction editor UI deferred** *(Source: 007 T029/T030)*: the
+  reconciliation + atomic group-write/delete **engine** shipped and is unit-tested (`MultiEntry`,
+  `MultiEntryWriteTests`), but the `TransactionGroupEditor` SwiftUI view and the ledger group
+  edit/delete affordances are not built. Paychecks/transfers cannot yet be authored in-app.
+  **Status: Open (Phase 6 US3 UI).**
+- **OOS-11 — US4 reassignment uses a default target + preview surfacing, not an interactive picker**
+  *(Source: 007 T035)*: delete-with-reference **works and never orphans** (scan → expand delete +
+  reassignments into one atomic plan, shown in the preview) but the per-collection reassignment
+  **picker** (`ReassignmentPickerView`) is not built — the target defaults to the first available id
+  (or unlink/remove where nullable/list). User choice of target is the refinement. **Status: Open.**
+- **OOS-12 — US6 budget Markdown export button not wired** *(Source: 007 T043)*: ⌘E exports the
+  active module's primary file as CSV-with-provenance (FR-027); `ExportService.budgetSummaryMarkdown`
+  exists and is tested but has no in-view button yet (FR-028). Generic per-table "current view" CSV
+  (visible rows of any table) is also simplified to the module's primary file. **Status: Open.**
+
 ---
 
 ## Resolved / promoted

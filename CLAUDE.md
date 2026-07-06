@@ -112,11 +112,16 @@ Features are built with Spec Kit, in order:
 Branches: `NNN-feature-name` (via `/speckit-git-feature`).
 
 <!-- SPECKIT START -->
-**Active feature**: `006-presentation-layer` (Phase 5 — Presentation Layer), **build complete on
-branch 2026-07-04** (68/68 tasks; Milestone 5 automated gates passed; manual demo = Flow 9 in
-`docs/test-plans.md`). Plan: `specs/006-presentation-layer/plan.md`. Detailed state lives in
-persistent project memory (`active-spec-006-presentation-layer`). **Next**: manual demo pass →
-commit/push → CI (`swift test` + SwiftLint + unsigned app-target build) → PR/merge → Phase 6.
+**Active feature**: `007-write-flows-repair-export` (Phase 6 — Write Flows, Repair & Export),
+**planning complete 2026-07-05** (spec + 2 clarify sessions + plan/research/data-model/contracts/
+quickstart). Plan: `specs/007-write-flows-repair-export/plan.md`. Makes the read-only Phase-5 app
+writable via one Kit-level write engine (`FinanceWorkspaceKit/Persistence/Write/`:
+`WritePlan`/`WriteService`/`CSVRowSerializer`/`ReferenceScanner`/`ImportMapper`/`ExportService`)
+composing the Phase-1 safe-write primitives — never reimplementing them. Covers add/edit/delete of 12
+entity types, CSV import (single target account, month-split, date+amount+description duplicate
+flag), atomic multi-entry groups, delete-with-reassign, repair apply, export (CSV+Markdown), and the
+in-app Close-Tax-Year action. No schema change. **Previous**: `006-presentation-layer` (Phase 5,
+build complete). **Next**: `/speckit-tasks` → `/speckit-implement`.
 <!-- SPECKIT END -->
 
 ### On spec completion — maintain two living docs
