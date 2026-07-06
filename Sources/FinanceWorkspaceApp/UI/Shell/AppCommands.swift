@@ -84,6 +84,9 @@ struct AppCommands: Commands {
             Button("Import Transactions…") { state.showingImport = true }
                 .keyboardShortcut("i", modifiers: [.shift, .command])
                 .disabled(state.workspaceURL == nil)
+            Button("New Paycheck Group…") { state.showingGroupEditor = true }
+                .keyboardShortcut("g", modifiers: [.shift, .command])
+                .disabled(!state.writesEnabled)
             Button("Export Current View…") { exportCurrentView() }
                 .keyboardShortcut("e", modifiers: .command)
                 .disabled(!state.commandMatrix.isEnabled(.exportCurrentView))

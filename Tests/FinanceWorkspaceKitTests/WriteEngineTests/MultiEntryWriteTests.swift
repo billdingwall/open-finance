@@ -63,4 +63,22 @@ import Foundation
         #expect(plan.changes[0].rowDiffs.count == 2)
         #expect(plan.changes[0].rowDiffs.allSatisfy { if case .delete = $0.kind { return true } else { return false } })
     }
+
+    @Test func paycheckGroupWritesThreeLegsToOneFile() throws {
+        let legs = [
+            MultiEntryLeg(role: .gross, amount: 5000, fields: ["transaction_id": "t1", "account_id": "a1", "date": "2026-06-01", "amount": "5000", "type": "standard"]),
+            MultiEntryLeg(role: .withholding, amount: 1200, fields: ["transaction_id": "t2", "account_id": "a1", "date": "2026-06-01", "amount": "-1200", "type": "standard"]),
+            MultiEntryLeg(role: .net, amount: 3800, fields: ["transaction_id": "t3", "account_id": "a1", "date": "2026-06-01", "amount": "3800", "type": "standard"]),
+        ]
+        let plan = try #require(MultiEntry.plan(kind: .grossNet, month: "2026-06", groupId: "grp-pay", legs: legs, header: header))
+        #expect(plan.changes.count == 1)                          // all legs in one monthly file
+        #expect(plan.changes[0].rowDiffs.count == 3)
+        #expect(plan.changes[0].rowDiffs.allSatisfy { $0.groupId == "grp-pay" })
+        for (leg, diff) in zip(legs, plan.changes[0].rowDiffs) {
+            if case .add(let line) = diff.kind {
+                #expect(line.contains("grp-pay"))
+                #expect(line.contains(leg.role.rawValue))
+            }
+        }
+    }
 }

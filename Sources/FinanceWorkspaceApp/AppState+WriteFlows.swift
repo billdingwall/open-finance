@@ -283,13 +283,30 @@ extension AppState {
 
     /// Turn a confirmed import batch into an append plan and open the write preview.
     func applyImport(batch: ImportBatch, mapping: ColumnMapping) {
-        let plan = ImportMapper().writePlan(from: batch) { month in
-            let rel = "Accounts/transactions/\(month).csv"
-            if let text = readWorkspaceFile(rel), let header = CSVRowSerializer.header(of: text) { return header }
-            // Seed header for a brand-new monthly file — includes the optional description (008 US2).
-            return ["transaction_id", "account_id", "date", "amount", "description", "type"]
-        }
+        let plan = ImportMapper().writePlan(from: batch) { self.monthlyLedgerHeader($0) }
         presentWrite(plan)
+    }
+
+    /// The canonical header for a monthly ledger file: the existing file's header, or — for a
+    /// brand-new month — a seed that includes `description` (008 US2) and the multi-entry
+    /// `group_id`/`group_role` columns so grouped writes link correctly.
+    func monthlyLedgerHeader(_ month: String) -> [String] {
+        let rel = "Accounts/transactions/\(month).csv"
+        if let text = readWorkspaceFile(rel), let header = CSVRowSerializer.header(of: text) { return header }
+        return ["transaction_id", "account_id", "date", "amount", "description", "type",
+                "category_id", "group_id", "group_role"]
+    }
+
+    // MARK: - Multi-entry transaction groups (008 US2 · FR-005)
+
+    /// Build an atomic multi-entry group plan (all legs → one monthly file) and open the write
+    /// preview. No-op when the group does not reconcile (the engine returns nil — never partial).
+    func presentGroupWrite(kind: MultiEntryKind, month: String, legs: [MultiEntryLeg]) {
+        let groupId = "grp-" + UUID().uuidString.prefix(8).lowercased()
+        guard let plan = MultiEntry.plan(kind: kind, month: month, groupId: groupId,
+                                         legs: legs, header: monthlyLedgerHeader(month)) else { return }
+        showingGroupEditor = false
+        Task { @MainActor in self.presentWrite(plan) }
     }
 
     // MARK: - Export (US6, FR-027)

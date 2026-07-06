@@ -87,6 +87,8 @@ final class AppState {
     var editForm: EntityEditContext?
     // The CSV import sheet.
     var showingImport = false
+    // The multi-entry transaction group editor sheet (008 US2).
+    var showingGroupEditor = false
 
     let provider: any CloudStorageProvider
     private let manager: WorkspaceManager

@@ -102,12 +102,16 @@ via typed controls; import a memo CSV and see it retained + used for dedup.
 
 ### Multi-entry editor (D1 · OOS-16)
 
-- [ ] T017 [P] [US2] Extend `MultiEntryWriteTests` — same-month/one-file group write, whole-group
-  delete removes every leg, cross-month rejected in
+- [X] T017 [P] [US2] Extend `MultiEntryWriteTests` — added the grossNet paycheck one-file/3-leg write
+  case (balanced one-file write + whole-group delete already covered) in
   `Tests/FinanceWorkspaceKitTests/WriteEngineTests/MultiEntryWriteTests.swift`
-- [ ] T018 [US2] Build `TransactionGroupEditor` (author N legs in one month, live reconciliation,
-  apply blocked until balanced → one `FileChange`) in
-  `Sources/FinanceWorkspaceApp/UI/Write/TransactionGroupEditor.swift`
+  (`cross-month` isn't representable — `MultiEntry.plan` takes a single month)
+- [~] T018 [US2] Build `TransactionGroupEditor` — **paycheck (grossNet)** flow shipped (author gross +
+  N withholdings + net in one month, live reconciliation bar, Add blocked until balanced → one
+  `FileChange` via `MultiEntry.plan`), reached by ⇧⌘G "New Paycheck Group…" + sheet in
+  `Sources/FinanceWorkspaceApp/UI/Write/TransactionGroupEditor.swift`. **Transfer (balanced
+  debit/credit) deferred** — the shipped `MultiEntryLeg.Role` enum lacks credit/debit, so a transfer
+  would emit a schema-invalid `group_role`; needs a small additive engine change (follow-up).
 - [ ] T019 [US2] Wire **whole-group** edit/delete from the ledger in
   `Sources/FinanceWorkspaceApp/UI/Shared/LedgerTableView.swift` and
   `Sources/FinanceWorkspaceApp/UI/Accounts/AccountGroupDetailView.swift`
