@@ -1,19 +1,26 @@
 import SwiftUI
 
 // T017 — breadcrumb (11px muted, above the title) + the page-title line with right-aligned
-// local actions (FR-005). Write actions render visible but DISABLED until Phase 6 (clarify Q3).
+// local actions (FR-005). Write actions are live and sync-gated (008 US1); the only disabled
+// state is a runtime WriteGate block, shown with its reason as a tooltip (FR-003).
 
-/// A per-view local action on the page-title line. Phase-6 write actions ship disabled.
+/// A per-view local action on the page-title line.
 struct LocalAction: Identifiable {
     let id: String
     var title: String
     var systemImage: String
     var isEnabled = true
+    var disabledReason: String?
     var action: () -> Void = {}
 
-    /// A visible-but-disabled Phase-6 write affordance.
-    static func writeStub(_ title: String, systemImage: String) -> LocalAction {
-        LocalAction(id: title, title: title, systemImage: systemImage, isEnabled: false)
+    /// A live, sync-gated write affordance (Import / Add / Edit). Enabled unless the workspace
+    /// sync state blocks writing, in which case `disabledReason` explains why (008 FR-001/003).
+    @MainActor
+    static func write(_ title: String, systemImage: String, state: AppState,
+                      perform: @escaping () -> Void) -> LocalAction {
+        LocalAction(id: title, title: title, systemImage: systemImage,
+                    isEnabled: state.writesEnabled, disabledReason: state.writeGateReason,
+                    action: perform)
     }
 }
 
@@ -52,11 +59,10 @@ struct PageTitleActionsView: View {
                     } label: {
                         Label(action.title, systemImage: action.systemImage)
                     }
-                    // All page-title actions are secondary in v1; a primary variant returns with
-                    // Phase 6's real write flows.
+                    // All page-title actions are secondary in v1.
                     .buttonStyle(SecondaryButtonStyle())
                     .disabled(!action.isEnabled)
-                    .help(action.isEnabled ? action.title : "\(action.title) — available with write flows (Phase 6)")
+                    .help(action.isEnabled ? action.title : (action.disabledReason ?? action.title))
                 }
             }
         }
@@ -67,13 +73,13 @@ struct PageTitleActionsView_Previews: PreviewProvider {
     static var previews: some View {
         PageTitleActionsView(
             title: "Accounts", breadcrumbs: ["Accounts", "Household"],
-            actions: [.writeStub("Import", systemImage: "square.and.arrow.down"),
-                      .writeStub("Add", systemImage: "plus")])
+            actions: [LocalAction(id: "Import", title: "Import", systemImage: "square.and.arrow.down"),
+                      LocalAction(id: "Add", title: "Add", systemImage: "plus")])
             .padding().frame(width: 700)
             .preferredColorScheme(.light).previewDisplayName("Title line — light")
         PageTitleActionsView(
             title: "Accounts", breadcrumbs: ["Accounts", "Household"],
-            actions: [.writeStub("Add", systemImage: "plus")])
+            actions: [LocalAction(id: "Add", title: "Add", systemImage: "plus")])
             .padding().frame(width: 700)
             .preferredColorScheme(.dark).previewDisplayName("Title line — dark")
     }

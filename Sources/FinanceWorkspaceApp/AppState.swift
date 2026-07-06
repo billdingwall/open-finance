@@ -87,6 +87,8 @@ final class AppState {
     var editForm: EntityEditContext?
     // The CSV import sheet.
     var showingImport = false
+    // The multi-entry transaction group editor sheet (008 US2).
+    var showingGroupEditor = false
 
     let provider: any CloudStorageProvider
     private let manager: WorkspaceManager
@@ -120,6 +122,7 @@ final class AppState {
             return
         }
         await reindex()
+        pruneBackups()          // 008 FR-025 — prune backups beyond retention once on launch
     }
 
     /// Rebuild the snapshot (menu ⌘R / launch). The previous snapshot stays visible until the

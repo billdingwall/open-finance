@@ -1,31 +1,32 @@
 # Pre-Build Items
 
 **Generated**: 2026-06-10  
-**Last updated**: 2026-06-30 (Phase 3 build complete on branch `004-domain-accounts-budget-overview`, pending CI + merge)  
+**Last updated**: 2026-07-06 (Phases 1–6 complete and merged to `main`, PRs #15–#21; Phase 7 active)  
 **Sources**: `docs/_notes/consistency-audit.md` · `docs/_notes/open-decisions.md`  
 **Purpose**: Single consolidated reference of every outstanding item before and during each build phase. Replaces both source documents for day-to-day use.
 
-> **Build status (2026-06-30):** **Phases 1 and 2 are complete and merged to `main`** (specs
-> `002-foundation-architecture`, PR #15; `003-parsing-validation`, PR #16). The app is a **Swift
-> Package** (`Sources/FinanceWorkspaceKit/{Platform,Parsing,Validation,Domain,Persistence,Migration}/`
-> + the `FinanceWorkspaceApp`/`bootstrap-workspace`/`fixture-generate`/`index-check`/`validate-workspace`/`repair-workspace`/`migrate-r6`
-> executables), not a hand-authored `.xcodeproj`. macOS build/test CI (`ci-macos.yml`) landed in
-> Phase 1.
+> **Build status (2026-07-06):** **Phases 1–6 are complete and merged to `main`** (PRs #15–#21).
+> The app is a **Swift Package** (`Sources/FinanceWorkspaceKit/{Platform,Parsing,Validation,Domain,Persistence,Migration,Persistence/Write}/`
+> + the `FinanceWorkspaceApp` app and the projection/validation/write CLIs), with a **generated
+> XcodeGen app target** (`App/project.yml`, CI-built unsigned). macOS build/test CI (`ci-macos.yml`)
+> + SwiftLint gate every push.
 >
-> **Phase 2 delivered** the Parsing layer, `ValidationEngine` + full `RuleCatalog` (34 rules),
-> `RepairService`, `SettingsStore`, `MigrationService`, and 23 bundled JSON schemas — confirmed by
-> the Milestone 2 gate (T043). This retires the two partially-resolved Phase 2 `[DECIDE]`s (CSV
-> spec gaps, validation rule catalog) and all five `R6-M1…M5` `[FIX]`s below.
+> - **Phases 1–2** delivered the Platform + Parsing/Validation layers (`ValidationEngine` + 34-rule
+>   `RuleCatalog`, `RepairService`, `MigrationService`, 23 bundled JSON schemas).
+> - **Phases 3–4** delivered every domain engine (Accounts/Budget/Overview, then Savings/Portfolio/
+>   Benchmark/Tax/TaxAdjustment/TaxPrep) with the five live Overview KPI cards.
+> - **Phase 5** (`006`) delivered the full SwiftUI presentation layer + the app target
+>   (read-only). **Phase 6** (`007`) made it **writable** via one Kit-level write engine composing
+>   the Phase-1 safe-write primitives.
 >
-> **Still deferred:** the iCloud ubiquity-container **entitlement** + dev code signing (needs the
-> Xcode app target, added in Phase 5). The implemented domain models settle several Phase 1
-> doc-naming FIX items in code — `UnifiedTransaction` (M6), `AccountGroup` (C6/S9), single `Account`
-> + optional `InvestmentMetadata` (C1) — though the architecture-doc text for M1/M3/M4 may still
-> warrant a consistency pass in a future round. **Phase 3 (Domain Layer I) is build-complete on branch
-`004-domain-accounts-budget-overview`** (39/39 tasks; Milestone 3 reached) — pending CI + merge. It
-retires `[FIX-C2]` and all seven Phase-3 product `[DECIDE]`s (taxonomy, category seed, employment
-groups, trailing-average sparse handling, KPI card specs, MoM panel, YTD net income); the six Phase-3
-**Design** `[DECIDE]`s remain Phase-5 work. **Phase 4 (Domain Layer II) is next, not started.**
+> **Still deferred to Phase 7:** code signing + notarization of the app target (the entitlement is
+> attached; the target builds unsigned in CI), real iCloud sync testing on a signed build, **and the
+> unfinished Phase-6 write-flow work** (multi-entry editor, reassignment picker, Budget-MD export
+> button, typed forms — OOS-13…OOS-18, tracked in `docs/out-of-scope-followups.md`, now folded into
+> **roadmap Phase 7** under *Complete Phase 6 write flows*). Several Phase 1
+> doc-naming `[FIX]`s (M1/M3/M4/C6) remain open as architecture-doc consistency passes; the code has
+> long since settled them (`UnifiedTransaction`, `AccountGroup`, single `Account` + optional
+> `InvestmentMetadata`).
 
 ---
 
@@ -221,6 +222,17 @@ Tech Design §10 and Roadmap Phase 1 list both `PersonalTransaction` and `Busine
 
 ## Phase 4 — Domain Layer II: Savings, Investments & Tax
 
+> **Nearly all Phase 4 items resolved by spec `005-savings-investments-tax` (merged PR #19) and
+> spec `006` (S&I/Tax UI).** The 005 build locked the engine/product decisions — savings-goal
+> progress derivation, portfolio drift threshold, benchmark period formulas (simple ≤1Y / CAGR for
+> 3Y–5Y), sector-weight source, S&P 500 import format, standard-deduction seeding, simplified ~20%
+> QBI, the tax-prep checklist, the year-close archive scope, FIFO tax-lot derivation — and 006
+> shipped every Phase-4 design surface. Two items remain genuinely open as follow-ups, tracked in
+> `docs/out-of-scope-followups.md`: **sector-vs-benchmark comparison** (needs benchmark sector data —
+> a future schema round) and **per-account tax allocation** precision (v1 uses withholding legs).
+> The individual `[DECIDE]`/`[FIX]` entries below are kept for history; treat them as resolved
+> unless echoed in the out-of-scope doc.
+
 ### Product
 
 **[FIX – S3]** Define requirements for the S&I "Overview" sub-nav item  
@@ -336,6 +348,16 @@ Roadmap Phase 4 design task specifies "active vs archived tabs" for the Goals ov
 
 ## Phase 6 — Write Flows, Repair & Export
 
+> **All Phase 6 items resolved by spec `007-write-flows-repair-export` (merged PR #21).** The spec's
+> two clarify sessions + build locked them: **write scope** — transactions/holdings/trades/prices are
+> import-only (FR-018), the 12 structured entities are add/edit/delete; **write preview** — every
+> plan shows target file + before/after diff + backup location, sync-gated; **export columns** —
+> `source_file`/`source_row` provenance included (FR-027); **import column mapper** — auto-detect by
+> name similarity with user confirmation; **atomic temp-file location** — via `FileCoordinatorService`.
+> All Design `[DECIDE]`s (forms, panels, dialogs) shipped as 007 views. The one item that carries
+> into Phase 7 is **backup retention policy** (the `backup-prune` script + policy — a Phase-7 dev
+> task). The individual entries below are kept for history; treat as resolved unless noted.
+
 ### Product
 
 **[DECIDE]** V1 write scope — confirm which entities are import-only in v1 (no in-app add/edit form). Candidates: transactions, holdings, trades, prices, dividends, tax lots. Are dividends import-only or can the user add them manually?
@@ -405,17 +427,30 @@ Roadmap Phase 4 design task specifies "active vs archived tabs" for the Goals ov
 ## Item counts by phase
 
 > Resolved items (~~strikethrough~~) are kept for history but excluded from open counts.
+>
+> **Phases 1–6 complete (2026-07-06, PRs #15–#21)** — the open count drops to **15**: the 9 Phase-1
+> items (5 doc-consistency `[FIX]`s + 4 onboarding/shell design `[DECIDE]`s, none blocking) and the 6
+> pre-spec Phase-7 `[DECIDE]`s. Phase 4 (spec `005`) retired its 2 `[FIX]`s + 21 `[DECIDE]`s (2 residual
+> follow-ups moved to the out-of-scope doc); Phase 6 (spec `007`) retired all 14 `[DECIDE]`s (backup
+> retention + the unfinished write-flow work (OOS-13…OOS-18) both carry to Phase 7).
 
 | Phase | FIX open | FIX resolved | DECIDE open | DECIDE resolved | Total open |
 |---|---|---|---|---|---|
 | Phase 1 — Foundation | 5 | 11 | 4 | 9 | 9 |
 | Phase 2 — Parsing | 0 | 8 | 0 | 8 | 0 |
 | Phase 3 — Domain I | 0 | 1 | 0 | 14 | 0 |
-| Phase 4 — Domain II | 2 | 0 | 21 | 0 | 23 |
+| Phase 4 — Domain II | 0 | 2 | 0 | 21 | 0 † |
 | Phase 5 — Presentation | 0 | 1 | 0 | 11 | 0 |
-| Phase 6 — Write Flows | 0 | 0 | 14 | 0 | 14 |
+| Phase 6 — Write Flows | 0 | 0 | 0 | 14 | 0 ‡ |
 | Phase 7 — Polish | 0 | 0 | 6 | 0 | 6 |
-| **Total** | **7** | **22** | **44** | **43** | **51** |
+| **Total** | **5** | **23** | **10** | **77** | **15** |
+
+> **†** Phase 4's two residual items (sector-vs-benchmark comparison, per-account tax allocation)
+> are follow-ups tracked in `docs/out-of-scope-followups.md`, not counted as open `[DECIDE]`s here.
+> **‡** Phase 6's carry-overs are all in **Phase 7**: the backup retention policy + `backup-prune`
+> dev task, and the unfinished write-flow work (OOS-13…OOS-18, *Complete Phase 6 write flows*);
+> neither is an open `[DECIDE]` here.
+> The 6 open Phase-7 `[DECIDE]`s remain pre-spec (to be resolved when `008-polish-launch` is specced).
 
 > **Phase 5 build complete (2026-07-04, `006-presentation-layer`)** retired all 12 open Phase 5
 > items (1 FIX + 11 DECIDEs — see the resolutions inline above) **and** the parked UI-design
@@ -436,4 +471,4 @@ Roadmap Phase 4 design task specifies "active vs archived tabs" for the Goals ov
 
 ---
 
-*Last updated: 2026-07-04 (Phase 5 build complete on branch `006-presentation-layer`)*
+*Last updated: 2026-07-06 (Phases 1–6 complete and merged, PRs #15–#21; Phase 7 active on `008-polish-launch`)*

@@ -35,8 +35,9 @@ struct AccountGroupDetailView: View {
         let name = viewModel.groupName(accountGroupId)
         PageTitleActionsView(
             title: name, breadcrumbs: ["Accounts", name],
-            actions: [.writeStub("Import", systemImage: "square.and.arrow.down"),
-                      .writeStub("Add", systemImage: "plus")])
+            actions: [.write("Import", systemImage: "square.and.arrow.down", state: state) { state.showingImport = true },
+                      .write("Add", systemImage: "plus", state: state) { state.addAccount() },
+                      .write("Edit", systemImage: "pencil", state: state) { state.editAccountGroup(accountGroupId) }])
 
         // Account cards above the ledger (no sub-tabs).
         let cards = viewModel.groupSections.first { $0.id == accountGroupId }?.cards ?? []

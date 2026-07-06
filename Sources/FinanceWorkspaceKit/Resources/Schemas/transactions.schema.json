@@ -10,6 +10,7 @@
     "account_id": { "type": "string", "required": true, "references": "Accounts/accounts.csv#account_id" },
     "date": { "type": "date", "required": true },
     "amount": { "type": "decimal", "required": true },
+    "description": { "type": "string", "required": false },
     "type": { "type": "enum", "required": false, "values": ["standard", "trade", "transfer"] },
     "category_id": { "type": "string", "required": false },
     "savings_goal_id": { "type": "string", "required": false },

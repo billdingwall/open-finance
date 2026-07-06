@@ -3,8 +3,9 @@ import Foundation
 // Phase 6 (007) US2 (T022-T024) — external-CSV import. Auto-detects a column mapping to the
 // canonical transaction schema, stamps one user-chosen target account on every row (clarify Q1),
 // splits rows into monthly ledgers by date, and flags duplicates for per-row confirmation
-// (clarify Q2). Note: the transactions schema has no description column, so the duplicate key is
-// date + amount + account (see OOS-9); the bank memo is not retained on import in v1.
+// (clarify Q2). Phase 7 (008) US2 (T026/T027): the optional `description` column retains the bank
+// memo; the duplicate key becomes date + amount + description within the target account, falling
+// back to date + amount when either side has no description (backward-compatible — OOS-15).
 
 public enum SignConvention: String, Sendable, Equatable {
     case negativeIsDebit    // canonical: negative = money out
@@ -59,6 +60,7 @@ public struct ImportMapper: Sendable {
         "date": ["date", "posted", "posted date", "transaction date", "trans date"],
         "amount": ["amount", "value", "debit", "credit", "amt"],
         "type": ["type", "category type"],
+        "description": ["description", "memo", "payee", "note", "notes", "merchant", "details", "narrative"],
     ]
 
     /// Best-effort mapping from external headers to canonical columns (case-insensitive).
@@ -82,11 +84,16 @@ public struct ImportMapper: Sendable {
         guard mapping.missingRequired.isEmpty else {
             throw ImportError.requiredColumnUnmapped(mapping.missingRequired)
         }
-        let existingKeys = Set(existingTransactions.compactMap { rec -> String? in
+        // Existing rows in the target account, grouped date+amount → the set of descriptions seen
+        // (absent → ""). A row is a duplicate when date+amount matches AND either side lacks a
+        // description or the descriptions are equal (backward-compatible with pre-`description` data).
+        var existingByDateAmount: [String: Set<String>] = [:]
+        for rec in existingTransactions {
             guard rec.fields["account_id"]?.raw == mapping.targetAccountId,
-                  let date = rec.fields["date"]?.raw, let amount = rec.fields["amount"]?.raw else { return nil }
-            return date + "|" + amount
-        })
+                  let date = rec.fields["date"]?.raw, let amount = rec.fields["amount"]?.raw else { continue }
+            let desc = rec.fields["description"]?.raw ?? ""
+            existingByDateAmount[date + "|" + amount, default: []].insert(desc)
+        }
 
         var rowsByMonth: [String: [ImportRow]] = [:]
         var unparseable: [Int] = []
@@ -107,15 +114,21 @@ public struct ImportMapper: Sendable {
                 unparseable.append(sourceRow); continue
             }
             let signed = mapping.signConvention == .flipped ? -amount : amount
+            let description = value("description") ?? ""
             var values: [String: String] = [
                 "account_id": mapping.targetAccountId,
                 "date": dateRaw,
                 "amount": Self.plain(signed),
                 "type": value("type") ?? "standard",
             ]
+            if !description.isEmpty { values["description"] = description }
             values["transaction_id"] = "imp-" + UUID().uuidString.prefix(8).lowercased()
-            let key = dateRaw + "|" + values["amount"]!
-            let isDup = existingKeys.contains(key)
+            let base = dateRaw + "|" + values["amount"]!
+            let isDup: Bool = {
+                guard let seen = existingByDateAmount[base] else { return false }
+                // Same date+amount; a duplicate unless both sides carry differing descriptions.
+                return description.isEmpty || seen.contains("") || seen.contains(description)
+            }()
             rowsByMonth[month, default: []].append(ImportRow(values: values, isDuplicate: isDup, included: !isDup))
         }
         return ImportBatch(rowsByMonth: rowsByMonth, unparseable: unparseable)

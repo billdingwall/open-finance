@@ -13,8 +13,8 @@ struct AccountsView: View {
             VStack(alignment: .leading, spacing: DS.Metrics.panelGap) {
                 PageTitleActionsView(
                     title: "Accounts", breadcrumbs: ["Accounts"],
-                    actions: [.writeStub("Import", systemImage: "square.and.arrow.down"),
-                              .writeStub("Add", systemImage: "plus")])
+                    actions: [.write("Import", systemImage: "square.and.arrow.down", state: state) { state.showingImport = true },
+                              .write("Add", systemImage: "plus", state: state) { state.addAccount() }])
                 if let projections = state.projections {
                     let viewModel = AccountsViewModel(projections: projections)
                     AggregateHeaderView(header: viewModel.header)
@@ -22,7 +22,10 @@ struct AccountsView: View {
                         EmptyStateView(model: EmptyStateModel(
                             systemImage: "building.columns", title: "No accounts yet",
                             message: "Accounts appear once Accounts/accounts.csv has rows.",
-                            ctaTitle: "Add account"))
+                            ctaTitle: "Add account",
+                            ctaEnabled: state.writesEnabled,
+                            ctaAction: { state.addAccount() },
+                            ctaDisabledReason: state.writeGateReason))
                     } else {
                         ForEach(viewModel.groupSections) { section in
                             groupSection(section)

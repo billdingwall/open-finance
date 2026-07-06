@@ -2,8 +2,8 @@ import SwiftUI
 import FinanceWorkspaceKit
 
 // T041 — the per-account screen (FR-019): transactions ledger, monthly gross vs expenses/tax
-// chart, YTD net income, and the rules & estimates panel. Import/Add/Edit/Delete render
-// visible but DISABLED (edit in local actions, delete inside the edit flow — Phase 6).
+// chart, YTD net income, and the rules & estimates panel. Import/Add/Edit are live sync-gated
+// local actions (008 US1); delete is inside the edit flow.
 
 struct AccountDetailView: View {
     @Environment(AppState.self) private var state
@@ -34,9 +34,9 @@ struct AccountDetailView: View {
         let name = viewModel.accountName(accountId)
         PageTitleActionsView(
             title: name, breadcrumbs: ["Accounts", name],
-            actions: [.writeStub("Import", systemImage: "square.and.arrow.down"),
-                      .writeStub("Add", systemImage: "plus"),
-                      .writeStub("Edit", systemImage: "pencil")])
+            actions: [.write("Import", systemImage: "square.and.arrow.down", state: state) { state.showingImport = true },
+                      .write("Add", systemImage: "plus", state: state) { state.addAccount() },
+                      .write("Edit", systemImage: "pencil", state: state) { state.editAccount(accountId) }])
 
         headerFigures(detail)
 

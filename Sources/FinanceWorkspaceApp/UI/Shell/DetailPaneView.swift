@@ -71,7 +71,9 @@ struct DetailPaneView: View {
         case .repairPreview(let preview):
             RepairPreviewSurface(preview: preview)
         case .editForm(let entityRef):
-            Text("Editing \(entityRef) arrives with write flows (Phase 6).")
+            // Edits open in the modal form sheet (AppState.editForm); this pane surface is a
+            // fallback and is not the primary edit path.
+            Text("Editing \(entityRef)…")
                 .font(DS.Fonts.body).foregroundStyle(DS.Colors.muted)
         case nil:
             EmptyStateView(model: EmptyStateModel(

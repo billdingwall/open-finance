@@ -11,6 +11,8 @@ struct EmptyStateModel {
     var ctaTitle: String?
     var ctaEnabled = false
     var ctaAction: () -> Void = {}
+    /// Why the CTA is disabled (sync gate), shown as its tooltip when `ctaEnabled` is false.
+    var ctaDisabledReason: String?
 }
 
 struct EmptyStateView: View {
@@ -28,7 +30,7 @@ struct EmptyStateView: View {
                 Button(cta) { model.ctaAction() }
                     .buttonStyle(SecondaryButtonStyle())
                     .disabled(!model.ctaEnabled)
-                    .help(model.ctaEnabled ? cta : "\(cta) — available with write flows (Phase 6)")
+                    .help(model.ctaEnabled ? cta : (model.ctaDisabledReason ?? cta))
             }
         }
         .frame(maxWidth: .infinity, minHeight: 160)

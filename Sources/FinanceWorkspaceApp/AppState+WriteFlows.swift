@@ -20,6 +20,17 @@ extension AppState {
         return nil
     }
 
+    /// Why writes are unavailable right now (no workspace / sync gate), or nil when writing is
+    /// allowed. Drives the disabled state + tooltip of every top-level write affordance (008 FR-003).
+    var writeGateReason: String? {
+        guard workspaceURL != nil else { return "Open a workspace to make changes." }
+        let decision = WriteGate.evaluate(workspaceState: syncState, fileState: .available)
+        return decision.allowed ? nil : (decision.reason ?? "Writing is paused while the workspace syncs.")
+    }
+
+    /// Whether the visible write actions (Import / Add / Edit) are enabled right now (008 FR-001/003).
+    var writesEnabled: Bool { writeGateReason == nil }
+
     /// Stamp the plan with current file hashes (drift baseline) and open the write-preview sheet.
     func presentWrite(_ plan: WritePlan) {
         guard let workspaceURL else { return }
@@ -32,7 +43,8 @@ extension AppState {
         writeError = nil
     }
 
-    /// Apply the pending plan through the safe-write path, then re-index + re-validate (FR-008).
+    /// Apply the pending plan through the safe-write path, then re-index + re-validate (FR-008)
+    /// and prune backups beyond the retention policy (008 FR-025).
     func applyPendingWrite() async {
         guard let plan = pendingWrite, let workspaceURL else { return }
         do {
@@ -40,10 +52,19 @@ extension AppState {
             pendingWrite = nil
             writeError = nil
             await reindex()
+            pruneBackups()
         } catch {
             writeError = String(describing: error)
             Diagnostics.workspace.error("write failed: \(String(describing: error), privacy: .public)")
         }
+    }
+
+    /// Prune `.finance-meta/backups/` beyond the retention policy (008 FR-025) — called after each
+    /// successful write and once on launch. Best-effort: a prune failure never blocks the app.
+    func pruneBackups() {
+        guard let workspaceURL else { return }
+        let dir = workspaceURL.appendingPathComponent(".finance-meta/backups", isDirectory: true)
+        _ = try? BackupPruneService(backupsDir: dir).prune()
     }
 
     // MARK: - Structured add/edit/delete (US1)
@@ -71,6 +92,46 @@ extension AppState {
                                      idColumn: header.first ?? "id", fields: fields, rowRef: row,
                                      before: before, fileText: text)
     }
+
+    /// Open the edit form for the row in `relativePath` whose first (id) column equals `id`.
+    /// Lets a dedicated screen edit its own entity without carrying a `SourceRef` (008 FR-002).
+    func presentEditEntity(relativePath: String, id: String) {
+        guard let text = readWorkspaceFile(relativePath),
+              let row = Self.dataRowNumber(of: id, in: text) else { return }
+        presentEdit(SourceRef(filePath: relativePath, rowNumber: row, provenance: .userEdited))
+    }
+
+    // Per-entity add/edit entry points — the single place the file/id-column/prefix map lives, so
+    // the ⌘N command, the page-title actions, the sidebar, and empty-state CTAs all agree (FR-001).
+    func addAccount() {
+        presentAdd(relativePath: "Accounts/accounts.csv", title: "New account",
+                   idColumn: "account_id", idPrefix: "acct-")
+    }
+    func addAccountGroup() {
+        presentAdd(relativePath: "Accounts/account-groups.csv", title: "New account group",
+                   idColumn: "account_group_id", idPrefix: "grp-")
+    }
+    func addCategory() {
+        presentAdd(relativePath: "Budget/categories.csv", title: "New category",
+                   idColumn: "category_id", idPrefix: "cat-")
+    }
+    func addGoal() {
+        presentAdd(relativePath: "Savings/goals.csv", title: "New savings goal",
+                   idColumn: "goal_id", idPrefix: "goal-")
+    }
+    func addBudget() {
+        presentAdd(relativePath: "Budget/budgets.csv", title: "New budget",
+                   idColumn: "budget_id", idPrefix: "bgt-")
+    }
+    func addTaxAdjustment() {
+        presentAdd(relativePath: "Taxes/tax-adjustments.csv", title: "New tax adjustment",
+                   idColumn: "tax_adjustment_id", idPrefix: "adj-")
+    }
+
+    func editAccount(_ id: String) { presentEditEntity(relativePath: "Accounts/accounts.csv", id: id) }
+    func editAccountGroup(_ id: String) { presentEditEntity(relativePath: "Accounts/account-groups.csv", id: id) }
+    func editCategory(_ id: String) { presentEditEntity(relativePath: "Budget/categories.csv", id: id) }
+    func editGoal(_ id: String) { presentEditEntity(relativePath: "Savings/goals.csv", id: id) }
 
     /// Build a delete plan for the row a source reference points at, scanning for referencing rows
     /// and expanding the delete + reassignments into one atomic plan (FR-019–022, SC-005).
@@ -172,20 +233,11 @@ extension AppState {
     /// Add a new record of the active module's primary object type.
     func presentAddForActiveModule() {
         switch route.parentModule {
-        case .accounts:
-            presentAdd(relativePath: "Accounts/accounts.csv", title: "New account",
-                       idColumn: "account_id", idPrefix: "acct-")
-        case .budget:
-            presentAdd(relativePath: "Budget/categories.csv", title: "New category",
-                       idColumn: "category_id", idPrefix: "cat-")
-        case .savingsInvestments:
-            presentAdd(relativePath: "Savings/goals.csv", title: "New savings goal",
-                       idColumn: "goal_id", idPrefix: "goal-")
-        case .taxes:
-            presentAdd(relativePath: "Taxes/tax-adjustments.csv", title: "New tax adjustment",
-                       idColumn: "tax_adjustment_id", idPrefix: "adj-")
-        default:
-            break   // Overview has no primary add target.
+        case .accounts: addAccount()
+        case .budget: addCategory()
+        case .savingsInvestments: addGoal()
+        case .taxes: addTaxAdjustment()
+        default: break   // Overview has no primary add target.
         }
     }
 
@@ -231,12 +283,30 @@ extension AppState {
 
     /// Turn a confirmed import batch into an append plan and open the write preview.
     func applyImport(batch: ImportBatch, mapping: ColumnMapping) {
-        let plan = ImportMapper().writePlan(from: batch) { month in
-            let rel = "Accounts/transactions/\(month).csv"
-            if let text = readWorkspaceFile(rel), let header = CSVRowSerializer.header(of: text) { return header }
-            return ["transaction_id", "account_id", "date", "amount", "type"]   // header for a new month
-        }
+        let plan = ImportMapper().writePlan(from: batch) { self.monthlyLedgerHeader($0) }
         presentWrite(plan)
+    }
+
+    /// The canonical header for a monthly ledger file: the existing file's header, or — for a
+    /// brand-new month — a seed that includes `description` (008 US2) and the multi-entry
+    /// `group_id`/`group_role` columns so grouped writes link correctly.
+    func monthlyLedgerHeader(_ month: String) -> [String] {
+        let rel = "Accounts/transactions/\(month).csv"
+        if let text = readWorkspaceFile(rel), let header = CSVRowSerializer.header(of: text) { return header }
+        return ["transaction_id", "account_id", "date", "amount", "description", "type",
+                "category_id", "group_id", "group_role"]
+    }
+
+    // MARK: - Multi-entry transaction groups (008 US2 · FR-005)
+
+    /// Build an atomic multi-entry group plan (all legs → one monthly file) and open the write
+    /// preview. No-op when the group does not reconcile (the engine returns nil — never partial).
+    func presentGroupWrite(kind: MultiEntryKind, month: String, legs: [MultiEntryLeg]) {
+        let groupId = "grp-" + UUID().uuidString.prefix(8).lowercased()
+        guard let plan = MultiEntry.plan(kind: kind, month: month, groupId: groupId,
+                                         legs: legs, header: monthlyLedgerHeader(month)) else { return }
+        showingGroupEditor = false
+        Task { @MainActor in self.presentWrite(plan) }
     }
 
     // MARK: - Export (US6, FR-027)
@@ -301,5 +371,19 @@ extension AppState {
         let index = start + 1 + (rowRef - 1)   // + header
         guard index >= 0 && index < lines.count else { return nil }
         return lines[index]
+    }
+
+    /// The 1-based data-row index (skipping leading `#` comments + the header) whose first field
+    /// equals `id` — the inverse of `dataLine(in:rowRef:)`, used to edit an entity by its id.
+    static func dataRowNumber(of id: String, in fileText: String) -> Int? {
+        var lines = fileText.components(separatedBy: "\n")
+        if fileText.hasSuffix("\n") { lines.removeLast() }
+        var start = 0
+        while start < lines.count && lines[start].trimmingCharacters(in: .whitespaces).hasPrefix("#") { start += 1 }
+        let dataLines = lines.dropFirst(start + 1)   // skip the header row
+        for (offset, line) in dataLines.enumerated() where CSVLine.fields(line).first == id {
+            return offset + 1
+        }
+        return nil
     }
 }

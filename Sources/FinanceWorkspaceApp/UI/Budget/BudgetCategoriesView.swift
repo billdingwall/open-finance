@@ -1,8 +1,8 @@
 import SwiftUI
 import FinanceWorkspaceKit
 
-// T046 — categories & subcategories (FR-022): read-only management list; create/edit render
-// visible but disabled until Phase 6 (clarify Q3).
+// T046 — categories & subcategories (FR-022): management list with live, sync-gated
+// Add category / per-row Edit actions (008 US1).
 
 struct BudgetCategoriesView: View {
     @Environment(AppState.self) private var state
@@ -12,14 +12,17 @@ struct BudgetCategoriesView: View {
             VStack(alignment: .leading, spacing: DS.Metrics.panelGap) {
                 PageTitleActionsView(
                     title: "Categories", breadcrumbs: ["Budget", "Categories"],
-                    actions: [.writeStub("Add category", systemImage: "plus")])
+                    actions: [.write("Add category", systemImage: "plus", state: state) { state.addCategory() }])
                 if let projections = state.projections {
                     let viewModel = BudgetViewModel(projections: projections)
                     if viewModel.categoryTree.isEmpty {
                         EmptyStateView(model: EmptyStateModel(
                             systemImage: "tag", title: "No categories",
                             message: "Categories appear once Budget/categories.csv has rows.",
-                            ctaTitle: "Add category"))
+                            ctaTitle: "Add category",
+                            ctaEnabled: state.writesEnabled,
+                            ctaAction: { state.addCategory() },
+                            ctaDisabledReason: state.writeGateReason))
                     } else {
                         ForEach(viewModel.categoryTree) { node in
                             categoryPanel(node)
@@ -44,9 +47,9 @@ struct BudgetCategoriesView: View {
                 }
             }
         } actions: {
-            Button("Edit", systemImage: "pencil") {}
-                .buttonStyle(GhostButtonStyle()).disabled(true)
-                .help("Edit — available with write flows (Phase 6)")
+            Button("Edit", systemImage: "pencil") { state.editCategory(node.category.categoryId) }
+                .buttonStyle(GhostButtonStyle()).disabled(!state.writesEnabled)
+                .help(state.writesEnabled ? "Edit category" : (state.writeGateReason ?? "Edit category"))
         }
     }
 

@@ -62,6 +62,9 @@ struct AppShellView: View {
         .sheet(isPresented: $state.showingImport) {
             ImportView { state.showingImport = false }
         }
+        .sheet(isPresented: $state.showingGroupEditor) {
+            TransactionGroupEditor()
+        }
         .sheet(isPresented: Binding(
             get: { state.pendingWrite != nil },
             set: { if !$0 { state.cancelWrite() } })) {
