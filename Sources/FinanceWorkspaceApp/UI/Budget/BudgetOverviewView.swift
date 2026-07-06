@@ -40,7 +40,10 @@ struct BudgetOverviewView: View {
                         EmptyStateView(model: EmptyStateModel(
                             systemImage: "chart.pie", title: "No budget",
                             message: "Budgets appear once Budget/budgets.csv has rows.",
-                            ctaTitle: "Add budget"))
+                            ctaTitle: "Add budget",
+                            ctaEnabled: state.writesEnabled,
+                            ctaAction: { state.addBudget() },
+                            ctaDisabledReason: state.writeGateReason))
                     }
                 } else {
                     LoadingSkeletonView()

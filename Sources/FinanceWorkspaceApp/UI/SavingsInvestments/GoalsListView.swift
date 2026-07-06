@@ -5,6 +5,7 @@ import FinanceWorkspaceKit
 // grouping — locked decision; the engine already excludes archived). Card tap → goal detail.
 
 struct GoalsListView: View {
+    @Environment(AppState.self) private var state
     let viewModel: SavingsInvestmentsViewModel
 
     var body: some View {
@@ -12,7 +13,10 @@ struct GoalsListView: View {
             EmptyStateView(model: EmptyStateModel(
                 systemImage: "target", title: "No savings goals yet",
                 message: "Goals appear once Savings/goals.csv has rows.",
-                ctaTitle: "Add goal"))
+                ctaTitle: "Add goal",
+                ctaEnabled: state.writesEnabled,
+                ctaAction: { state.addGoal() },
+                ctaDisabledReason: state.writeGateReason))
         } else {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: DS.Metrics.kpiGridGap)],
                       spacing: DS.Metrics.kpiGridGap) {

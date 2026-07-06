@@ -33,7 +33,7 @@ struct GoalDetailView: View {
     private func content(viewModel: SavingsInvestmentsViewModel, goal: GoalProgressProjection) -> some View {
         PageTitleActionsView(
             title: goal.name, breadcrumbs: ["Savings & Investments", "Goals", goal.name],
-            actions: [.writeStub("Edit", systemImage: "pencil")])
+            actions: [.write("Edit", systemImage: "pencil", state: state) { state.editGoal(goalId) }])
 
         GoalCardView(goal: goal, compact: false)
 

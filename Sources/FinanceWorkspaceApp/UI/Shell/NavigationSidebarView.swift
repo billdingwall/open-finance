@@ -75,10 +75,10 @@ struct NavigationSidebarView: View {
                 HStack {
                     Text("Account groups")
                     Spacer()
-                    // Write affordance — visible but disabled until Phase 6 (clarify Q3).
-                    Button("New group", systemImage: "plus") {}
-                        .labelStyle(.iconOnly).buttonStyle(.plain).disabled(true)
-                        .help("New group (available with write flows in Phase 6)")
+                    // Live, sync-gated write affordance (008 US1).
+                    Button("New group", systemImage: "plus") { state.addAccountGroup() }
+                        .labelStyle(.iconOnly).buttonStyle(.plain).disabled(!state.writesEnabled)
+                        .help(state.writesEnabled ? "New group" : (state.writeGateReason ?? "New group"))
                 }
             }
         } header: {

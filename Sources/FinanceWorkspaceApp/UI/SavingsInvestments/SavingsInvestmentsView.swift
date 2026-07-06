@@ -33,7 +33,8 @@ struct SavingsInvestmentsView: View {
             PageTitleActionsView(
                 title: "Savings & Investments",
                 breadcrumbs: ["Savings & Investments", tabTitle],
-                actions: subview == .goals ? [.writeStub("Add goal", systemImage: "plus")] : [])
+                actions: subview == .goals
+                    ? [.write("Add goal", systemImage: "plus", state: state) { state.addGoal() }] : [])
             Picker("Section", selection: tabBinding) {
                 Text("Overview").tag(SISubview.overview)
                 Text("Goals").tag(SISubview.goals)
