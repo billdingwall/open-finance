@@ -66,7 +66,8 @@ struct CurrentTaxYearView: View {
                 Button("Close \(String(year))") { Task { await state.closeTaxYear(year) } }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Archives this year's tax-adjustments and estimated payments to Taxes/archive/. A timestamped backup is taken and the year becomes read-only.")
+                Text("Archives this year's tax-adjustments and estimated payments to Taxes/archive/. "
+                     + "A timestamped backup is taken and the year becomes read-only.")
             }
         }
     }

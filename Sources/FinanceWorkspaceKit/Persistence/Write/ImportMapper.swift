@@ -84,8 +84,8 @@ public struct ImportMapper: Sendable {
         }
         let existingKeys = Set(existingTransactions.compactMap { rec -> String? in
             guard rec.fields["account_id"]?.raw == mapping.targetAccountId,
-                  let d = rec.fields["date"]?.raw, let a = rec.fields["amount"]?.raw else { return nil }
-            return d + "|" + a
+                  let date = rec.fields["date"]?.raw, let amount = rec.fields["amount"]?.raw else { return nil }
+            return date + "|" + amount
         })
 
         var rowsByMonth: [String: [ImportRow]] = [:]
@@ -147,28 +147,43 @@ public struct ImportMapper: Sendable {
         let head = date.prefix(7)                       // YYYY-MM…
         return head.count == 7 && head.dropFirst(4).first == "-" ? String(head) : nil
     }
-    static func decimal(_ s: String) -> Decimal? {
-        Decimal(string: s.replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "$", with: ""))
+    static func decimal(_ raw: String) -> Decimal? {
+        Decimal(string: raw.replacingOccurrences(of: ",", with: "").replacingOccurrences(of: "$", with: ""))
     }
-    static func plain(_ d: Decimal) -> String { NSDecimalNumber(decimal: d).stringValue }
+    static func plain(_ value: Decimal) -> String { NSDecimalNumber(decimal: value).stringValue }
 }
 
 /// Quote-aware CSV line splitter (Kit-side twin of the App's `CSVLine`).
 enum CSVLineSplit {
     static func fields(_ line: String) -> [String] {
-        var out: [String] = []; var cur = ""; var inQ = false
-        var it = line.makeIterator(); var pending: Character?
-        func next() -> Character? { if let p = pending { pending = nil; return p }; return it.next() }
-        while let ch = next() {
-            if inQ {
-                if ch == "\"" {
-                    if let p = it.next() { if p == "\"" { cur.append("\"") } else { inQ = false; pending = p } }
-                    else { inQ = false }
-                } else { cur.append(ch) }
-            } else if ch == "\"" { inQ = true }
-            else if ch == "," { out.append(cur); cur = "" }
-            else { cur.append(ch) }
+        var result: [String] = []
+        var field = ""
+        var insideQuotes = false
+        let chars = Array(line)
+        var index = 0
+        while index < chars.count {
+            let char = chars[index]
+            if insideQuotes {
+                let isEscapedQuote = char == "\"" && index + 1 < chars.count && chars[index + 1] == "\""
+                if isEscapedQuote {
+                    field.append("\"")
+                    index += 1
+                } else if char == "\"" {
+                    insideQuotes = false
+                } else {
+                    field.append(char)
+                }
+            } else if char == "\"" {
+                insideQuotes = true
+            } else if char == "," {
+                result.append(field)
+                field = ""
+            } else {
+                field.append(char)
+            }
+            index += 1
         }
-        out.append(cur); return out
+        result.append(field)
+        return result
     }
 }

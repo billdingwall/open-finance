@@ -6,6 +6,19 @@ import Foundation
 
 public enum ExportError: Error, Sendable, Equatable { case destinationInsideWorkspace }
 
+/// One preformatted category row for the Markdown budget summary.
+public struct BudgetSummaryRow: Sendable, Equatable {
+    public let category: String
+    public let planned: String
+    public let actual: String
+    public let variance: String
+    public let trailingAvg: String
+    public init(category: String, planned: String, actual: String, variance: String, trailingAvg: String) {
+        self.category = category; self.planned = planned; self.actual = actual
+        self.variance = variance; self.trailingAvg = trailingAvg
+    }
+}
+
 public struct ExportService: Sendable {
     public init() {}
 
@@ -25,16 +38,13 @@ public struct ExportService: Sendable {
     }
 
     /// A Markdown budget summary: period header + a category table + a totals line (FR-028).
-    /// `rows` are (category, planned, actual, variance, trailingAverage) preformatted strings.
-    public func budgetSummaryMarkdown(period: String,
-                                      rows: [(category: String, planned: String, actual: String,
-                                              variance: String, trailingAvg: String)],
+    public func budgetSummaryMarkdown(period: String, rows: [BudgetSummaryRow],
                                       totalPlanned: String, totalActual: String) -> String {
         var out = "# Budget — \(period)\n\n"
         out += "| Category | Planned | Actual | Variance | 3-mo avg |\n"
         out += "|---|--:|--:|--:|--:|\n"
-        for r in rows {
-            out += "| \(r.category) | \(r.planned) | \(r.actual) | \(r.variance) | \(r.trailingAvg) |\n"
+        for row in rows {
+            out += "| \(row.category) | \(row.planned) | \(row.actual) | \(row.variance) | \(row.trailingAvg) |\n"
         }
         out += "| **Total** | **\(totalPlanned)** | **\(totalActual)** | | |\n"
         return out

@@ -23,7 +23,8 @@ struct WritePreviewView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 OverlineLabel(text: "Referencing rows reassigned")
                                 ForEach(Array(plan.references.enumerated()), id: \.offset) { _, group in
-                                    Text("\(group.rows.count) in \(group.collection).\(group.column) — \(group.nullable ? "reassigned or unlinked" : "reassigned")")
+                                    let action = group.nullable ? "reassigned or unlinked" : "reassigned"
+                                    Text("\(group.rows.count) in \(group.collection).\(group.column) — \(action)")
                                         .font(DS.Fonts.caption).foregroundStyle(DS.Colors.muted)
                                 }
                             }

@@ -24,7 +24,8 @@ import Foundation
     @Test func budgetMarkdownHasPeriodHeaderAndTable() {
         let md = ExportService().budgetSummaryMarkdown(
             period: "2026-06",
-            rows: [(category: "Groceries", planned: "600", actual: "640", variance: "-40", trailingAvg: "620")],
+            rows: [BudgetSummaryRow(category: "Groceries", planned: "600", actual: "640",
+                                    variance: "-40", trailingAvg: "620")],
             totalPlanned: "600", totalActual: "640")
         #expect(md.hasPrefix("# Budget — 2026-06"))
         #expect(md.contains("| Category | Planned | Actual | Variance | 3-mo avg |"))

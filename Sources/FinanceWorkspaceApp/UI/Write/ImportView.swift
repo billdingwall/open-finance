@@ -118,7 +118,8 @@ struct ImportView: View {
         guard panel.runModal() == .OK, let url = panel.url,
               let text = try? String(contentsOf: url, encoding: .utf8) else { return }
         csvText = text
-        sourceColumns = (text.components(separatedBy: "\n").first).map { CSVLine.fields($0).map { $0.trimmingCharacters(in: .whitespaces) } } ?? []
+        let headerLine = text.components(separatedBy: "\n").first ?? ""
+        sourceColumns = CSVLine.fields(headerLine).map { $0.trimmingCharacters(in: .whitespaces) }
         mapping = ImportMapper().autoDetect(sourceColumns: sourceColumns)
     }
 

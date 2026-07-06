@@ -93,28 +93,34 @@ extension String {
 enum CSVLine {
     /// Split one CSV line into fields, honoring double-quoted fields with escaped `""`.
     static func fields(_ line: String) -> [String] {
-        var out: [String] = []
-        var current = ""
-        var inQuotes = false
-        var iterator = line.makeIterator()
-        var pending: Character?
-        func next() -> Character? { if let p = pending { pending = nil; return p }; return iterator.next() }
-        while let ch = next() {
-            if inQuotes {
-                if ch == "\"" {
-                    if let peek = iterator.next() {
-                        if peek == "\"" { current.append("\"") } else { inQuotes = false; pending = peek }
-                    } else { inQuotes = false }
-                } else { current.append(ch) }
-            } else if ch == "\"" {
-                inQuotes = true
-            } else if ch == "," {
-                out.append(current); current = ""
+        var result: [String] = []
+        var field = ""
+        var insideQuotes = false
+        let chars = Array(line)
+        var index = 0
+        while index < chars.count {
+            let char = chars[index]
+            if insideQuotes {
+                let isEscapedQuote = char == "\"" && index + 1 < chars.count && chars[index + 1] == "\""
+                if isEscapedQuote {
+                    field.append("\"")
+                    index += 1
+                } else if char == "\"" {
+                    insideQuotes = false
+                } else {
+                    field.append(char)
+                }
+            } else if char == "\"" {
+                insideQuotes = true
+            } else if char == "," {
+                result.append(field)
+                field = ""
             } else {
-                current.append(ch)
+                field.append(char)
             }
+            index += 1
         }
-        out.append(current)
-        return out
+        result.append(field)
+        return result
     }
 }

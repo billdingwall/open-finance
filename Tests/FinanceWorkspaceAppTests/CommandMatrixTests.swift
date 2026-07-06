@@ -7,12 +7,20 @@ import Testing
 
 @Suite struct CommandMatrixTests {
 
-    // Export + Repair-apply land with US5/US6 — still disabled after US1.
-    @Test func exportAndRepairRemainDisabled() {
-        let everything = CommandMatrix(hasWorkspace: true, hasSourceSelection: true,
-                                       activeModuleHasAddTarget: true)
-        #expect(everything.isEnabled(.exportCurrentView) == false)
-        #expect(everything.isEnabled(.repairSelectedIssue) == false)
+    // Export gates on a workspace; Repair-apply gates on a repairable selection (US5/US6).
+    @Test func exportGatesOnWorkspaceAndRepairOnSelection() {
+        let noWorkspace = CommandMatrix(hasWorkspace: false, hasSourceSelection: true)
+        #expect(noWorkspace.isEnabled(.exportCurrentView) == false)
+        #expect(noWorkspace.isEnabled(.repairSelectedIssue) == false)
+
+        let openNoIssue = CommandMatrix(hasWorkspace: true, hasSourceSelection: true,
+                                        hasRepairableSelection: false)
+        #expect(openNoIssue.isEnabled(.exportCurrentView))                 // export needs only a workspace
+        #expect(openNoIssue.isEnabled(.repairSelectedIssue) == false)      // repair needs a repairable issue
+
+        let repairable = CommandMatrix(hasWorkspace: true, hasSourceSelection: true,
+                                       hasRepairableSelection: true)
+        #expect(repairable.isEnabled(.repairSelectedIssue))
     }
 
     // ⌘N New Record is context-sensitive: needs a workspace AND an active module with an add target.
