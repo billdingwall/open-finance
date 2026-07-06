@@ -3,7 +3,7 @@
 **Project**: Personal Finance Workspace for macOS
 **Scope**: v1 as defined in `docs/product-requirements.md` and `docs/technical-design.md`
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
-**Last updated**: 2026-06-30 (Phase 3 build complete on branch `004-domain-accounts-budget-overview`, pending CI + merge — see Phase 3 status banner & changelog)
+**Last updated**: 2026-07-06 (Phases 1–6 complete and merged to `main`, PRs #15–#21; Phase 6 write flows landed via PR #21. Phase 7 is the active phase; Phase 8 added for out-of-scope follow-ups — see status banners & changelog)
 
 ---
 
@@ -57,7 +57,15 @@ Phase 5: Presentation Layer — App Shell & Module Views
 Phase 6: Write Flows, Repair & Export
     ↓
 Phase 7: Polish & Launch Readiness
+    ↓ (v1 hardened; deferred residue picked up)
+Phase 8: Out-of-Scope Follow-ups (post-v1 backlog)
 ```
+
+> **Build status (2026-07-06):** **Phases 1–6 are complete and merged to `main`** (PRs #15–#21).
+> The app is a Swift Package with a generated XcodeGen app target (`App/project.yml`, CI-built
+> unsigned). **Phase 7 (Polish & Launch Readiness) is the active phase.** Phase 8 gathers the
+> follow-ups deliberately deferred during Phases 1–6 (canonical list:
+> `docs/out-of-scope-followups.md`).
 
 ---
 
@@ -327,8 +335,8 @@ All transaction, asset, liability, and tax files reference `account_id` from the
 registry `Accounts/accounts.csv` (and `account_group_id` from `Accounts/account-groups.csv`) —
 downstream engines validate these references.
 
-> **🟡 Status (2026-06-30): BUILD COMPLETE on branch `004-domain-accounts-budget-overview` —
-> pending CI + merge.** Delivered as spec `specs/004-domain-accounts-budget-overview` (39/39 tasks;
+> **✅ Status (2026-07-06): COMPLETE — merged to `main` via PR #18.** Delivered as spec
+> `specs/004-domain-accounts-budget-overview` (39/39 tasks;
 > **Milestone 3** reached). Shipped: the `ParsedRecord`→typed-entity record-mapping seam,
 > `AccountEngine` (aggregate / per-account / per-group projections, ledger-derived balances +
 > `Liability.principal_balance`, tax-year YTD net income with transfers excluded and `taxes_paid` from
@@ -419,7 +427,7 @@ downstream engines validate these references.
 - [ ] `AccountEngine` derives `Liability.principal_balance` from the ledger; account screens resolve assets and liabilities per account
 - [ ] `BudgetEngine` resolves each Budget's scope (account-groups/accounts) over its `budget-allocations.csv` lines
 
-### Milestone 3 — 🟡 reached on branch (pending CI + merge)
+### Milestone 3 — ✅ reached (merged, PR #18)
 > **Core domain engines functional.** Accounts module projects aggregate and per-account views
 > from real files. Budget module produces plan-vs-actual with 3-month trailing averages from
 > transaction files. Overview engine composes cross-domain KPI cards (with stubs for engines
@@ -429,8 +437,8 @@ downstream engines validate these references.
 
 ## Phase 4: Domain Layer II — Savings, Investments & Tax
 
-> **🟡 Status (2026-07-01): BUILD COMPLETE on branch `005-savings-investments-tax` — pending CI +
-> merge.** Delivered as spec `specs/005-savings-investments-tax` (52 tasks; **Milestone 4** reached).
+> **✅ Status (2026-07-06): COMPLETE — merged to `main` via PR #19.** Delivered as spec
+> `specs/005-savings-investments-tax` (52 tasks; **Milestone 4** reached).
 > Shipped: `SavingsGoalEngine`, `PortfolioEngine` (FIFO lots, valuation, sleeve drift, dividends),
 > `BenchmarkEngine` (8-window heat map, simple/CAGR, sector weights), `TaxEngine` (per-account taxable
 > income / taxes paid / effective rate, ST/LT realized gains), `TaxAdjustmentEngine` (std-vs-itemized,
@@ -545,7 +553,7 @@ income, and deductions inline), Prep Checklist, and Tax Archive.
 - [ ] `PortfolioEngine` gains the Portfolio container above sleeves; reads investment trades as `type = trade` rows from the unified ledger (former `Investments/transactions.csv` deprecated) — larger refactor of the investment ingestion path
 - [ ] `TaxAdjustmentEngine` (was `DeductionEngine`) manages tax-adjustments, tax-estimates, and the tax-document registry
 
-### Milestone 4
+### Milestone 4 — ✅ reached (merged, PR #19)
 > **All domain engines functional.** Every module can produce complete projections from fixture
 > data. Cross-domain links are live: budget contributions feed goals, portfolio gains feed tax
 > summaries, business entity expenses feed Schedule C deductions. Overview engine composites all five
@@ -554,6 +562,20 @@ income, and deductions inline), Prep Checklist, and Tax Archive.
 ---
 
 ## Phase 5: Presentation Layer — App Shell & All Module Views
+
+> **✅ Status (2026-07-06): COMPLETE — merged to `main` via PR #20.** Delivered as spec
+> `specs/006-presentation-layer` (**Milestone 5** reached). Shipped the full SwiftUI presentation
+> layer against live engine projections: `FinanceWorkspaceApp`/`AppState`/`AppRouter`, the
+> `NavigationSplitView` shell (248px sidebar, global issues+sync chips, per-view local actions),
+> the collapsible right inspector (⌥⌘I, six surfaces), the shared component library (KPI card,
+> data table, pie/sparkline/bar/heat-map on Swift Charts, period selector, empty state, loading
+> skeleton), and all five module view groups (Overview, Accounts, Budget, Savings & Investments,
+> Taxes) with full KPI → detail → source-file traceability. **The generated XcodeGen app target
+> landed here** (`App/project.yml`, T060/T061 — CI-built unsigned; signing/notarization deferred
+> to Phase 7). Phase 5 shipped **strictly read-only** — every write affordance rendered
+> visible-but-disabled and repair was preview-only until Phase 6. Verified automatically: boots
+> against fixture + empty workspaces, SC-005 read-only tar-compare proof, engine⇄view parity
+> tests. `swift test` + SwiftLint + unsigned app-target build gate in CI.
 
 **Goal**: Build the complete SwiftUI presentation layer. The app shell ships first; module
 views can be developed in parallel once the shell and navigation state are stable.
@@ -690,7 +712,7 @@ is connected. Module views are blocked on their respective domain engines from P
 - [x] Savings & Investments organized by Portfolio; add Portfolio views above the sleeve table
 - [x] Multi-entry transaction editor: a paycheck (gross → withholdings → net) or split mortgage payment (principal/interest) is entered as one grouped unit, not flat rows
 
-### Milestone 5
+### Milestone 5 — ✅ reached (merged, PR #20)
 > **Fully navigable app.** All v1 module views are built and connected to real domain engine
 > projections. The right detail pane works across all contexts. Traceability links are live
 > (KPI → detail → source inspector). The app is demoed end-to-end against a fixture workspace.
@@ -703,6 +725,31 @@ is connected. Module views are blocked on their respective domain engines from P
 ---
 
 ## Phase 6: Write Flows, Repair & Export
+
+> **✅ Status (2026-07-06): BUILD COMPLETE — merged to `main` via PR #21.** Delivered as spec
+> `specs/007-write-flows-repair-export` (**Milestone 6** reached for its shipped scope). The
+> read-only Phase-5 app is now **writable** through one Kit-level write engine
+> (`Sources/FinanceWorkspaceKit/Persistence/Write/`: `WritePlan`, `WriteService`,
+> `CSVRowSerializer`, `ReferenceScanner`, `ImportMapper`, `ExportService`, `MultiEntry`) that
+> composes the Phase-1 safe-write primitives (`BackupService`/`FileCoordinatorService`/`WriteGate`/
+> `ManifestStore`) — never reimplementing them. Shipped end-to-end and CI-tested (six
+> `WriteEngineTests` suites): **US1** add/edit/delete of all 12 row entities via preview → backup →
+> atomic apply → re-index (⌘N add, panel-bottom Edit/Delete, in-app Close-Tax-Year); **US2** CSV
+> import (⇧⌘I — column map + single target account + sign + month-split + duplicate flag); **US4**
+> delete-with-reference reassignment (never orphans — atomic delete + reassignment plan); **US5**
+> guided repair apply (⇧⌘R, issues table + detail pane → re-validate); **US6** Export Current View
+> (⌘E — CSV with provenance). The **US3 multi-entry write/reconciliation engine** shipped and is
+> unit-tested. `swift build` green; `swift test` + `swiftlint --strict` + unsigned app-target build
+> gate in CI.
+>
+> **UI residue deferred (tracked in `docs/out-of-scope-followups.md`):** the multi-entry
+> `TransactionGroupEditor` + ledger group edit/delete (OOS-16, engine done); the interactive
+> per-collection `ReassignmentPickerView` (OOS-17, delete defaults to first target today); the
+> Budget Markdown-summary export button (OOS-18, `budgetSummaryMarkdown` exists + tested). Plus
+> the D10 per-entity typed forms (OOS-13), dedicated-screen account edit placement (OOS-14), and an
+> optional `description` column on `transactions` (OOS-15). A handful of App-target view-model /
+> integration tests (T010/T021/T032/T036) are also deferred. **All are folded into Phase 7** under
+> *Complete Phase 6 write flows*.
 
 **Goal**: Make the app writable. Users can add accounts, import transactions, manage budget
 categories and goals, track deductions, and trigger guided repairs. All writes are atomic,
@@ -788,15 +835,39 @@ Every user-addable object supports **add / edit / delete** (review functionality
 #### Round 6 — multi-entry writes
 - [ ] Multi-entry transaction groups are written/edited/deleted atomically (all rows sharing a `group_id` move together; the group must pass its balance/reconciliation check before write)
 
-### Milestone 6
-> **App is writable.** Users can add accounts, import transactions, manage goals and tax-adjustments,
-> and trigger guided repairs. All writes are atomic, backed up, and confirmed by preview.
-> Export works for CSV tables and Markdown summaries. Import CSV flow handles real bank/brokerage
-> export formats.
+### Milestone 6 — ✅ reached (2026-07-06, PR #21)
+> **App is writable.** Users can add/edit/delete the 12 row entities, import transactions, manage
+> goals and tax-adjustments, delete-with-reassignment, and trigger guided repairs — all writes
+> atomic, backed up, sync-gated, and confirmed by preview. Export works for CSV tables (Markdown
+> summary engine shipped; its in-view button is deferred). Import CSV handles real bank/brokerage
+> formats with month-split + dedup.
+>
+> **Folded into Phase 7** (unfinished write-flow work — `docs/out-of-scope-followups.md`):
+> in-app multi-entry paycheck/transfer authoring (OOS-16), the interactive reassignment picker
+> (OOS-17), the Budget Markdown export button (OOS-18), D10 per-entity typed forms (OOS-13),
+> dedicated-screen account-edit placement (OOS-14), and the optional `transactions.description`
+> column (OOS-15).
 
 ---
 
 ## Phase 7: Polish & Launch Readiness
+
+> **🔵 Status (2026-07-06): ACTIVE — branch `008-polish-launch`.** Not yet specced; the task list
+> below is the pre-spec backlog. Some hardening groundwork already exists from Phases 1–6 and is
+> annotated inline (✅ done / 🟡 partial) so this phase can focus on the true gaps. The two biggest
+> net-new items are **code signing + notarization of the app target** (the entitled XcodeGen target
+> exists and builds unsigned in CI — `docs/out-of-scope-followups.md` OOS-1) and **real iCloud sync
+> testing on a signed build**. This phase adds **no new features** — it hardens what phases 1–6
+> shipped **plus** the unfinished Phase-6 write-flow work (OOS-13…OOS-18 + deferred write tests),
+> folded in here under *Complete Phase 6 write flows* so the writable app is feature-complete before
+> launch. Phase 8 now holds only the engine/read-model + repair-infra residue and pure-V2 items.
+>
+> **⚠️ Known gap to close first (Phase-6 completion):** the **top-level Import / Add / Edit buttons
+> are still disabled in the running app.** Phase 6 shipped the write engine, the ⌘N add command, the
+> detail-pane Edit/Delete, and the preview/import/edit-form views — but the module page-title actions
+> were never switched from their Phase-5 `LocalAction.writeStub(...)` placeholders (hardcoded
+> `isEnabled: false`) to live handlers, so writes are only reachable by keyboard/inspector. See the
+> **Write-affordance enablement** task group below — this is the first thing Phase 7 must fix.
 
 **Goal**: Production-quality reliability, performance, accessibility, and macOS native behavior.
 No new features — this phase hardens everything built in phases 1–6.
@@ -805,9 +876,11 @@ No new features — this phase hardens everything built in phases 1–6.
 
 - [ ] Write the complete validation fixture suite: one valid and one invalid file per file type,
   covering all repairable and manual-only issue types
+  - 🟡 Partial — per-engine unit fixtures exist (`Tests/FinanceWorkspaceKitTests/`); the systematic
+    one-valid/one-invalid-per-file-type matrix is the remaining work
 - [ ] Define performance acceptance criteria: initial indexing time for a realistic dataset
   (12 months × unified transactions × 3 entities), UI frame rate during re-index,
-  time-to-first-projection on cold launch
+  time-to-first-projection on cold launch (SC-002 hard thresholds + Apple-Silicon baseline)
 - [ ] Write the first-launch onboarding acceptance test: empty iCloud container → bootstrap →
   all required files created → workspace validates cleanly
 - [ ] Document any known limitations or workarounds for iCloud availability edge cases to include
@@ -826,6 +899,53 @@ No new features — this phase hardens everything built in phases 1–6.
   guided "add your first account" prompt
 
 ### Development Tasks
+
+#### Write-affordance enablement (completes Phase 6 — do first)
+> Phase 6 built the write flows but left the primary buttons wired to Phase-5 disabled
+> placeholders. Until this lands, users cannot Import/Add/Edit from the visible toolbar — only via
+> ⌘N and the inspector. This is the top Phase-7 priority.
+- [ ] **Enable the top-level Import / Add / Edit local actions** — replace the module page-title
+  `LocalAction.writeStub(...)` placeholders (hardcoded `isEnabled: false`) with live handlers that
+  present the Phase-6 `ImportView` / `EntityEditForms` / `WritePreviewView`, in
+  `AccountsView`, `AccountGroupDetailView`, `AccountDetailView` (Import/Add/Edit),
+  `BudgetCategoriesView` (Add category), `SavingsInvestmentsView` (Add goal), and
+  `GoalDetailView` (Edit)
+- [ ] **Add the missing "Edit account group" action** — `AccountGroupDetailView` today offers only
+  Import/Add, with **no way to edit the group itself** (the affordance is absent, not merely
+  disabled). Add an Edit local action on the group screen that opens the existing `EntityEditForms`
+  "account group" form → `WritePreviewView`; expose the same entry from the account-group card /
+  sidebar group context. (The engine + edit form already support the account-group entity.)
+- [ ] Enable the sidebar **"New group"** action (`NavigationSidebarView`, currently `.disabled(true)`)
+  and the **empty-state CTAs** (`EmptyStateView` — "add your first account", etc.) to launch the
+  matching add form
+- [ ] Remove the stale "available with write flows (Phase 6)" help text / `.writeStub` factory once
+  every affordance is live; keep only the runtime `WriteGate` disable (with its sync-reason tooltip)
+  as the legitimate disabled state (FR-005)
+- [ ] Verify parity with the ⌘N command + inspector Edit/Delete so every entity has one consistent
+  write entry point; add a smoke test asserting no module ships a permanently-disabled write button
+
+#### Complete Phase 6 write flows (unfinished spec `007` work — folded in from Phase 8)
+> The Phase-6 build shipped the write **engine** and most UI but consciously deferred these surfaces
+> (was OOS-13…OOS-18 in `docs/out-of-scope-followups.md`, previously routed to Phase 8). Finishing
+> them here makes the writable app feature-complete before launch hardening.
+- [ ] **OOS-16** — Multi-entry transaction editor UI (`TransactionGroupEditor` + ledger group
+  edit/delete). The reconciliation + atomic group-write/delete **engine** shipped and is unit-tested;
+  only the SwiftUI authoring surface is missing. Unblocks in-app paycheck/transfer/split entry.
+- [ ] **OOS-17** — Interactive per-collection reassignment picker (`ReassignmentPickerView`).
+  Delete-with-references never orphans today (defaults to the first available target); this adds
+  user choice of reassignment target.
+- [ ] **OOS-18** — Budget Markdown-summary export button. `ExportService.budgetSummaryMarkdown`
+  exists and is tested; only the in-view action is unwired.
+- [ ] **OOS-13** — Per-entity typed edit forms (plan research D10): grouped pickers for
+  group/category parents, sign-aware amount fields, enum pickers — replacing the current single
+  schema/header-driven `EntityEditForm`.
+- [ ] **OOS-14** — Dedicated-screen account edit placement (FR-010): edit in the screen's local
+  actions, delete inside the edit flow on `AccountDetailView`. *(Overlaps the Write-affordance
+  enablement group above — the account-group Edit action is the same gap; track them together.)*
+- [ ] **OOS-15** — Add an optional `description`/memo column to the `transactions` schema
+  (non-breaking) so imported bank memos are retained and dedup keys on date+amount+description.
+- [ ] Deferred App-target write test suites (Phase-6 T010/T021/T032/T036): WritePreview / Import /
+  Reassignment view-models + RepairApply integration — land alongside the Hardening pass below.
 
 #### Performance
 - [ ] Profile initial indexing on a realistic fixture workspace; optimize hash computation and
@@ -848,47 +968,126 @@ No new features — this phase hardens everything built in phases 1–6.
 #### Native Behavior
 - [ ] Full keyboard navigation: `Tab` / `Shift+Tab` across sidebar → main panel → detail pane;
   arrow keys within tables; `Return` to open detail; `Escape` to close detail pane
+  - 🟡 Partial — sidebar/table/inspector keyboard nav shipped in Phase 5; audit for full coverage
 - [ ] Implement all macOS menu commands: New Workspace, Open Workspace, Reindex Workspace,
   Validate Workspace, Repair Selected Issue, Open Source File, Reveal in Finder, Export Current
   View, Toggle Inspector, Open Backup Folder
+  - 🟡 Partial — the §17 `CommandMatrix` (incl. Export ⌘E, Repair ⇧⌘R, New Record ⌘N) shipped in
+    Phases 5–6; verify the full command set + wire any remaining (Open Backup Folder)
 - [ ] `NSUserActivity` / Handoff: encode navigation state so window restoration after relaunch
   returns to the same view and selection
+  - 🟡 Partial — the codec + scene modifiers shipped and are unit-tested in Phase 5; **OS-level
+    restoration is only exercisable in the signed app target** — verify end-to-end here
+    (OOS-9)
 - [ ] Register UTType declarations for `.csv` and `.md` for drag-and-drop import
+
+#### Packaging & Signing
+- [ ] Code-sign + notarize the XcodeGen app target (`App/project.yml`) with the
+  `iCloud.<bundle-id>` ubiquity-container entitlement; the target builds **unsigned** in CI today —
+  signing/notarization are the outstanding developer-machine actions (OOS-1)
+- [ ] Real iCloud sync testing on a signed build: edit on one device → observe sync state and the
+  update on another; exercise `NSFileVersion` conflict resolution
 
 #### Hardening
 - [ ] Comprehensive unit tests for all domain engines against fixture data
+  - ✅ Done — `Tests/FinanceWorkspaceKitTests/Unit/*` covers every domain engine; write-engine
+    suites live in `WriteEngineTests/`. Remaining: the deferred **App-target** view-model /
+    integration suites (Phase-6 T010/T021/T032/T036 — WritePreview/Import/Reassignment/RepairApply)
 - [ ] Integration tests for the full read flow: bootstrap → index → parse → validate → project
 - [ ] Integration test for each write flow: intent → preview → backup → apply → re-index →
   re-validate
+  - 🟡 Partial — engine-level write path covered by `WriteServiceTests`; the App-target
+    preview→apply view-model integration tests are the deferred piece
 - [ ] Integration test for each auto-repair flow
 - [ ] Test against realistic personal finance dataset: 12 months transactions, 3 investment
   accounts, 2 business themes/entities, full deduction set
+- [ ] XCUITest automation for the module views (deferred from Phase 5 research D8)
 
 #### Developer Script
-- [ ] `fixture-generate.swift` — generate a realistic fixture workspace for QA and development
-  (seeded with synthetic but plausible data for all file types)
+- [x] `fixture-generate.swift` — generate a realistic fixture workspace for QA and development
+  (seeded with synthetic but plausible data for all file types) — shipped in Phase 1, extended
+  through Phases 3–4 to emit every file type
 - [ ] `backup-prune.swift` — prune old backups from `.finance-meta/backups/` beyond retention
-  limit
+  limit (depends on the Phase-6 backup retention policy `[DECIDE]`)
 
 ### Milestone 7 — Launch Readiness
-> **v1 complete.** The app is stable, performant, accessible, and handles all iCloud edge cases
-> gracefully. All domain engines pass their integration test suites against realistic fixture data.
-> All write and repair flows are tested end-to-end. The app is ready for internal beta or
-> TestFlight distribution.
+> **v1 complete.** The app is stable, performant, accessible, signed/notarized, and handles all
+> iCloud edge cases gracefully. All domain engines pass their integration test suites against
+> realistic fixture data. All write and repair flows are tested end-to-end. The app is ready for
+> internal beta or TestFlight distribution.
+
+---
+
+## Phase 8: Out-of-Scope Follow-ups (post-v1 backlog)
+
+**Goal**: Pick up the work that was **in a shipped spec's field of view but consciously deferred
+during implementation** — the residue of Phases 1–6. This is a backlog phase, not a milestone-gated
+build: items are promoted individually into their own Spec Kit specs (or folded into a future
+refinement round) as the PM prioritizes them.
+
+> **Canonical list:** [`docs/out-of-scope-followups.md`](out-of-scope-followups.md) is the source of
+> truth (per-item source spec/task, why-deferred, status). The groupings below are the roadmap view.
+> Items that are **pure V2** (see the *Out of Scope for v1* table at the top) are **not** in this
+> phase — Phase 8 is v1-adjacent residue only.
+
+### Write-flow UI residue (spec `007`, Phase 6) — **moved to Phase 7**
+
+> The unfinished spec-`007` write-flow work (OOS-13…OOS-18 + the deferred App-target write test
+> suites) is now folded into **Phase 7** under *Complete Phase 6 write flows*, so the writable app
+> is feature-complete before launch hardening. See Phase 7 Development Tasks. These rows remain in
+> `docs/out-of-scope-followups.md` for provenance, now tagged for Phase 7.
+
+### Engine & read-model gaps (specs `004`/`005`/`006`)
+
+- [ ] **OOS-4** — Investment/reinvested-gain retained equity: extend the personal-inflow vs
+  retained-equity split in `PortfolioEngine`/`TaxEngine` now that trades are modeled (Phase 3
+  `AccountEngine` computed only the business portion).
+- [ ] **OOS-5** — Populate sleeve-funding links: `LinkingEngine.sleeveLinks`
+  (`receiving_asset_id` → `assets.sleeve_id`) yields links once investment trades exist in the ledger.
+- [ ] **OOS-7** — Itemized tax-archive read model: `TaxArchiveView` renders closed years as
+  raw file previews because the parser skips `Taxes/archive/`; a typed archive projection needs a
+  parser/engine extension.
+- [ ] **OOS-8** — Account estimates surface: the `AccountEstimate` entity has no
+  `WorkspaceContext` accessor / projection, so the per-account "Rules & estimates" panel shows rules
+  only. Pairs with the Phase-6 rules/estimates edit flow.
+- [ ] Per-account tax allocation refinement: `TaxEngine` effective rate uses ledger withholding legs;
+  `estimated-payments.csv` (workspace-level) feeds the estimate, not per-account rates. Acceptable
+  for v1; revisit if per-account precision is wanted.
+
+### Repair & write-infra residue (spec `003`, Phase 2)
+
+- [ ] **OOS-2** — Deferred `RepairService` repair classes: optional-column injection (needs an
+  "expected columns" notion), blank-field normalization, and `WriteGate` sync-gating of repair
+  writes (FR-016a). The write/sync-gate path built in Phase 6 informs these.
+
+### Deferred to V2 (tracked, not in Phase 8)
+
+These surfaced during the build but are genuinely V2 — they stay in the *Out of Scope for v1* table
+and are listed here only so the trail is unbroken:
+
+- **Sector-vs-benchmark comparison** — `benchmarks/sp500.csv` carries only `date,close`; benchmark
+  sector data is a future schema round (`BenchmarkEngine` reports portfolio sector weights only).
+- **Live price ingestion** — prices/benchmark come from static CSVs; live ingestion stays V2.
+
+### Milestone 8 — Backlog burndown (no fixed gate)
+> Phase 8 has no single completion gate. Each promoted item ships as its own increment; the phase
+> is "done" when the PM has triaged every open row in `docs/out-of-scope-followups.md` to
+> shipped / rescheduled / won't-do.
 
 ---
 
 ## Summary Table
 
-| Phase | Focus | Key Deliverable | Prerequisite |
-|---|---|---|---|
-| 1 | Foundation & Architecture | Workspace resolves, files indexed, models defined | — |
-| 2 | Parsing & Validation | All file types parsed, validation engine live | Phase 1 |
-| 3 | Domain I — Accounts, Budget, Overview | Core projections, master account registry | Phase 2 |
-| 4 | Domain II — S&I, Tax | All domain engines functional | Phase 3 (AccountEngine) |
-| 5 | Presentation — Shell & All Views | Full UI connected to domain projections | Phase 3 + 4 |
-| 6 | Write Flows, Repair & Export | App is writable, repair is guided | Phase 5 |
-| 7 | Polish & Launch Readiness | Performance, accessibility, test coverage | Phase 6 |
+| Phase | Focus | Key Deliverable | Prerequisite | Status |
+|---|---|---|---|---|
+| 1 | Foundation & Architecture | Workspace resolves, files indexed, models defined | — | ✅ merged (PR #15) |
+| 2 | Parsing & Validation | All file types parsed, validation engine live | Phase 1 | ✅ merged (PR #16) |
+| 3 | Domain I — Accounts, Budget, Overview | Core projections, master account registry | Phase 2 | ✅ merged (PR #18) |
+| 4 | Domain II — S&I, Tax | All domain engines functional | Phase 3 (AccountEngine) | ✅ merged (PR #19) |
+| 5 | Presentation — Shell & All Views | Full UI connected to domain projections | Phase 3 + 4 | ✅ merged (PR #20) |
+| 6 | Write Flows, Repair & Export | App is writable, repair is guided | Phase 5 | ✅ merged (PR #21) |
+| 7 | Polish & Launch Readiness | Finish Phase-6 write flows + performance, accessibility, signing, test coverage | Phase 6 | 🔵 active (`008-polish-launch`) |
+| 8 | Out-of-Scope Follow-ups | Engine/read-model + repair-infra residue backlog | Phases 2/4/5 (residue) | ⚪ backlog |
 
 ---
 
@@ -916,6 +1115,43 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Build-status sync — 2026-07-06 (Phases 4–6 merged; Phase 7 active; Phase 8 added)
+Not a refinement round — a doc-to-repo alignment recorded after Phases 4–6 land on `main`.
+
+- **Phases 4, 5, and 6 marked COMPLETE and merged** (PRs #19/#20/#21). Phase 4 (`005`) and Phase 5
+  (`006`) status banners flipped from "🟡 pending CI + merge" to "✅ merged"; a **new Phase 6 (`007`)
+  status banner** records the writable-app delivery (one Kit-level write engine composing the
+  Phase-1 safe-write primitives; US1/US2/US4/US5/US6 shipped + CI-tested; US3 multi-entry engine
+  shipped). Milestone 6 marked reached.
+- **Phase 6 UI residue captured**: multi-entry editor (OOS-16), reassignment picker (OOS-17), Budget
+  Markdown export button (OOS-18), D10 typed forms (OOS-13), account-edit placement (OOS-14),
+  optional `transactions.description` column (OOS-15) — initially routed to Phase 8, then **moved to
+  Phase 7** (see below). The `007` series was renumbered OOS-13…OOS-18 in
+  `docs/out-of-scope-followups.md` to end the collision with the `006` series OOS-7/8/9.
+- **Phase 7 (Polish & Launch Readiness) rewritten for current state**: added a 🔵 ACTIVE banner
+  (branch `008-polish-launch`), annotated tasks already satisfied by Phases 1–6 (✅ domain-engine
+  unit tests, ✅ `fixture-generate`; 🟡 keyboard nav, command matrix, `NSUserActivity` codec), and
+  added an explicit **Packaging & Signing** subsection (code-sign + notarize the app target — OOS-1;
+  real iCloud sync on a signed build) plus an XCUITest item.
+- **New Phase 8 — Out-of-Scope Follow-ups**: a post-v1 backlog phase mirroring
+  `docs/out-of-scope-followups.md` (write-flow UI residue, engine/read-model gaps, repair/write-infra
+  residue), with pure-V2 items (sector-vs-benchmark data, live price ingestion) explicitly kept out.
+- **Unfinished Phase-6 write-flow work moved from Phase 8 into Phase 7** (new *Complete Phase 6
+  write flows* subsection): OOS-13…OOS-18 (multi-entry editor, reassignment picker, Budget-MD export
+  button, typed forms, account-edit placement, `transactions.description` column) + the deferred
+  App-target write test suites. Phase 8 now holds only the engine/read-model + repair-infra residue
+  and pure-V2 items; the Phase 6/7/8 banners, Milestone 6, and summary table were resynced.
+- **Phase 7 gained a "Write-affordance enablement" task group (do-first)** after finding that the
+  running app still shows the **top-level Import/Add/Edit buttons disabled** — Phase 6 shipped the
+  write engine + ⌘N + inspector Edit/Delete + preview/form views but never converted the module
+  page-title `LocalAction.writeStub(...)` placeholders (hardcoded `isEnabled: false`) to live
+  handlers. Captured in the Phase 7 status banner + a concrete per-view task list. (Overlaps and
+  subsumes OOS-14, the dedicated-screen account-edit placement.) The same task group adds the
+  **missing "Edit account group" action** — `AccountGroupDetailView` has no group-edit affordance at
+  all (absent, not just disabled), though the engine + `EntityEditForms` already support it.
+- **Dependency overview, summary table, and status column** updated; the top-of-doc "Last updated"
+  line now reflects Phases 1–6 complete.
 
 ### Build-status sync — 2026-06-30 (Phase 3 build complete on branch)
 Not a refinement round — a doc-to-repo alignment recorded as the Phase 3 implementation lands on

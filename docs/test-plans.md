@@ -29,8 +29,8 @@ re-index). Exercise against a **throwaway** workspace (`swift run bootstrap-work
 - **Close Tax Year**: Taxes → "Close Tax Year…" archives the year (read-only thereafter).
 
 **Not yet testable (deferred, see `docs/out-of-scope-followups.md`):** authoring multi-entry
-paycheck/transfer groups in-app (OOS-10 — engine done, editor UI pending); choosing a specific
-reassignment target via a picker (OOS-11); the Markdown budget-summary export button (OOS-12).
+paycheck/transfer groups in-app (OOS-16 — engine done, editor UI pending); choosing a specific
+reassignment target via a picker (OOS-17); the Markdown budget-summary export button (OOS-18).
 `swift test` (write-engine + view-model suites) and SwiftLint run in macOS CI.
 
 ### Where "expected behavior" is specified
