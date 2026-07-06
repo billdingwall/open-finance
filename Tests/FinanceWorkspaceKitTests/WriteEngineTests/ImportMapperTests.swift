@@ -51,6 +51,36 @@ import Foundation
         #expect(mayDup?.included == false)      // duplicates default excluded (clarify Q2)
     }
 
+    @Test func autoDetectMapsDescriptionSynonyms() {
+        #expect(ImportMapper().autoDetect(sourceColumns: ["Date", "Amount", "Memo"]).map["description"] == "Memo")
+        #expect(ImportMapper().autoDetect(sourceColumns: ["Date", "Amount", "Description"]).map["description"] == "Description")
+    }
+
+    @Test func descriptionRetainedOnMappedRows() throws {
+        var m = ImportMapper().autoDetect(sourceColumns: ["Date", "Amount", "Description"])
+        m.targetAccountId = "acct-7"
+        let batch = try ImportMapper().buildBatch(csv: csv, mapping: m, existingTransactions: [])
+        #expect(batch.rowsByMonth["2026-05"]?.first?.values["description"] == "Coffee")
+    }
+
+    @Test func differingDescriptionSameDateAmountIsNotDuplicate() throws {
+        // Existing row has description "Coffee"; importing "Tea" at the same date+amount is NOT a dup.
+        var m = ImportMapper().autoDetect(sourceColumns: ["Date", "Amount", "Description"])
+        m.targetAccountId = "acct-7"
+        let tea = """
+        Date,Amount,Description
+        2026-05-03,-42.50,Tea
+        """
+        let existing = [ParsedRecord(fields: [
+            "account_id": FieldValue(raw: "acct-7", typed: .string("acct-7"), isValid: true),
+            "date": FieldValue(raw: "2026-05-03", typed: .string("2026-05-03"), isValid: true),
+            "amount": FieldValue(raw: "-42.5", typed: .string("-42.5"), isValid: true),
+            "description": FieldValue(raw: "Coffee", typed: .string("Coffee"), isValid: true),
+        ], sourceFile: "Accounts/transactions/2026-05.csv", sourceRow: 1)]
+        let batch = try ImportMapper().buildBatch(csv: tea, mapping: m, existingTransactions: existing)
+        #expect(batch.rowsByMonth["2026-05"]?.first?.isDuplicate == false)
+    }
+
     @Test func flippedSignConventionInverts() throws {
         var m = ImportMapper().autoDetect(sourceColumns: ["Date", "Amount", "Description"])
         m.targetAccountId = "acct-7"; m.signConvention = .flipped

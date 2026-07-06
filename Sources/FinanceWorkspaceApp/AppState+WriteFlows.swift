@@ -286,7 +286,8 @@ extension AppState {
         let plan = ImportMapper().writePlan(from: batch) { month in
             let rel = "Accounts/transactions/\(month).csv"
             if let text = readWorkspaceFile(rel), let header = CSVRowSerializer.header(of: text) { return header }
-            return ["transaction_id", "account_id", "date", "amount", "type"]   // header for a new month
+            // Seed header for a brand-new monthly file — includes the optional description (008 US2).
+            return ["transaction_id", "account_id", "date", "amount", "description", "type"]
         }
         presentWrite(plan)
     }

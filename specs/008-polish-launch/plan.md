@@ -146,9 +146,8 @@ Sources/
   FinanceWorkspaceKit/
     Platform/                        # consumed: BackupService, FileCoordinatorService, WriteGate,
                                      #   ManifestStore, ICloudContainerService (NSFileVersion conflicts)
-    Parsing/
-      Resources/Schemas/transactions.schema.json  # ← edited: + optional `description` column (US2/D5)
-      CSVSchemaRegistry.swift / CSVNormalizer.swift # ← consumed/edited: register the optional column
+    Parsing/CSVSchemaRegistry.swift / CSVNormalizer.swift  # ← edited: register the optional column
+    Resources/Schemas/transactions.schema.json   # ← edited: + optional `description` column (US2/D5)
     Persistence/Write/               # consumed: WriteService/WritePlan/MultiEntry/ReferenceScanner/
                                      #   ImportMapper (dedup key +description)/ExportService (budget MD)
       BackupPruneService.swift       # ← NEW: retention policy (last 10 + 30d), prune after write + launch (US6/D12)

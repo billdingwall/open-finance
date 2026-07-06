@@ -134,14 +134,16 @@ via typed controls; import a memo CSV and see it retained + used for dedup.
 
 ### `transactions.description` column (D5 · OOS-15)
 
-- [ ] T025 [P] [US2] Tests — absent-safe read of files without `description`; dedup keys on
-  date + amount + description within the account in
+- [X] T025 [P] [US2] Tests — description retained + synonym auto-detect + differing-description
+  disambiguation + absent-safe backward-compat in
   `Tests/FinanceWorkspaceKitTests/WriteEngineTests/ImportMapperTests.swift`
-- [ ] T026 [US2] Add the **optional** `description` column to
-  `Sources/FinanceWorkspaceKit/Parsing/Resources/Schemas/transactions.schema.json` and register it in
-  `CSVSchemaRegistry` (no `schema_version` bump, no migration)
-- [ ] T027 [US2] Map a source memo/payee column → `description` and change the duplicate key in
-  `Sources/FinanceWorkspaceKit/Persistence/Write/ImportMapper.swift`
+- [X] T026 [US2] Add the **optional** `description` column to
+  `Sources/FinanceWorkspaceKit/Resources/Schemas/transactions.schema.json` (schema loaded via
+  `Bundle.module`; no `schema_version` bump, no migration — validate-workspace confirmed clean)
+- [X] T027 [US2] Map memo/payee synonyms → `description`, retain it on rows, and make the duplicate
+  key date+amount+description (fall back to date+amount when either side lacks a description) in
+  `Sources/FinanceWorkspaceKit/Persistence/Write/ImportMapper.swift`; seed header updated in
+  `AppState+WriteFlows.swift`
 - [ ] T028 [P] [US2] `ImportViewModelTests` — required-unmapped blocks advance, duplicates
   default-excluded, target account required in `Tests/FinanceWorkspaceAppTests/ImportViewModelTests.swift`
 

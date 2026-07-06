@@ -16,7 +16,7 @@ value type or an in-memory config/behavior entity. No new file types, no migrati
 - **Consumers**: `ImportMapper` maps a source memo column into it; duplicate detection keys on
   **date + amount + description** within the target account (falls back to date + amount + account
   when description is absent).
-- **Registered in**: `Sources/FinanceWorkspaceKit/Parsing/Resources/Schemas/transactions.schema.json`
+- **Registered in**: `Sources/FinanceWorkspaceKit/Resources/Schemas/transactions.schema.json`
   + `CSVSchemaRegistry`.
 
 ## Reused write entities (Phase 6 — no change)
