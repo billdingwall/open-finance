@@ -42,6 +42,12 @@
   **reversed to "require iCloud + retry"** to keep the roadmap's "local folder → V2" out-of-scope
   line intact and the DEBUG local-folder provider dev-only. FR-022 + US5 scenario 6 + the edge case
   reflect the final decision; no roadmap change needed.
+- **Clarified 2026-07-06, session 3**: multi-entry group legs share one month / single ledger file,
+  ledger edit-delete acts on the whole group, and backup pruning runs after each write + on launch —
+  encoded in FR-005, FR-025, and the multi-entry edge case.
+- **Scope precision (post-US1 build)**: SC-001 and US1 scenario 5 were tightened from "zero
+  placeholders anywhere" to "no placeholder on any **write** affordance," cross-referencing US5 for
+  the stale repair-apply copy that US1 deliberately does not touch.
 - Named source files/types (e.g. `LocalAction.writeStub`, `AccountGroupDetailView`, engine names)
   appear only in Overview/Edge/Assumptions as grounding context for reviewers; the Requirements and
   Success Criteria remain implementation-agnostic and testable by behavior.

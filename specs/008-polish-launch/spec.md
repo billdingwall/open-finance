@@ -25,6 +25,9 @@ completing Phase-6 write flows; the one data-model change is a single additive, 
 - Q: At first launch, if iCloud is unavailable, what should the shipped app do (FR-022)? → A: Require iCloud — block workspace creation with clear guidance to enable iCloud and a retry; **no** user-facing local-folder store (keeps the DEBUG local-folder provider dev-only and the "local folder → V2" out-of-scope line intact). *(Reversed an initial "offer local fallback" answer, 2026-07-06.)*
 - Q: How is a sync conflict resolved in the UI (FR-012)? → A: Surface the conflicting file versions and let the user pick which to keep (manual resolution, no auto-merge — matches the locked `NSFileVersion` decision).
 - Q: How much of a multi-entry transaction group can be edited after creation (FR-005)? → A: Full structural edit — add / remove / modify legs, with live re-reconciliation required before apply.
+- Q: Can a multi-entry group's legs span multiple months (FR-005)? → A: No — all legs of a group share one month and are written to a single monthly ledger file (keeps the write atomic in one FileChange).
+- Q: From the ledger, can a single leg be edited/deleted, or only the whole group (FR-005)? → A: Whole group only — the ledger's edit/delete acts on the entire group; individual legs change inside the group editor (preserves the reconciliation invariant).
+- Q: When does backup pruning run (FR-025)? → A: Automatically after each successful write and once on launch.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -59,7 +62,8 @@ or flow and completes a safe write with a preview and backup.
    the matching add flow opens.
 5. **Given** a workspace whose sync state blocks writing, **When** the user views any write action,
    **Then** it is disabled with a tooltip explaining the sync reason — the **only** legitimate
-   disabled state (no "available in a future phase" placeholders remain anywhere).
+   disabled state (no "available in a future phase" placeholder remains on any write affordance; the
+   repair-apply affordance's stale copy is addressed under US5).
 
 ---
 
@@ -222,8 +226,9 @@ retention policy.
 - **Delete of an entity referenced across multiple collections**: the reassignment picker must cover
   every referencing collection; applying with any collection unresolved is blocked unless that
   collection permits unlink/remove.
-- **Multi-entry group spanning a month boundary or failing reconciliation**: apply is blocked until
-  the group balances; a partially-written group must never be left on disk.
+- **Multi-entry group failing reconciliation**: apply is blocked until the group balances; a
+  partially-written group must never be left on disk. Legs are constrained to one month (single
+  ledger file), so a group cannot straddle a month boundary.
 - **Adding the optional description column to files that predate it**: reading older transaction files
   without the column must not error; the column is optional and absent-safe.
 - **Backup pruning racing an in-progress write**: pruning must never remove a backup that a current
@@ -257,7 +262,9 @@ retention policy.
   paycheck, transfer, split) as one unit. Editing MUST allow **full structural change** — adding,
   removing, or modifying individual legs — with a live reconciliation indicator that re-checks after
   any change; apply MUST be blocked until the group reconciles, and all legs MUST be written or
-  removed atomically.
+  removed atomically. All legs of a group MUST share one month and be written to a **single monthly
+  ledger file** (one atomic file change). From the ledger, edit and delete operate on the **whole
+  group**, not an individual leg — per-leg changes happen inside the group editor.
 - **FR-006**: When deleting a referenced entity, users MUST be able to choose a reassignment target
   per referencing collection (replace; or leave-unlinked/remove only where the reference permits); the
   delete plus all reassignments MUST apply as one atomic plan that never orphans a row.
@@ -322,8 +329,9 @@ retention policy.
   preview → backup → apply → re-index → re-validate), each auto-repair flow, and a UI smoke pass of
   every module view.
 - **FR-025**: The app MUST enforce a backup retention policy — keep the most recent 10 backups per
-  source file and prune any older than 30 days (whichever is more conservative) — and provide a
-  pruning routine that applies it without removing a backup an in-progress write needs.
+  source file and prune any older than 30 days (whichever is more conservative) — running the prune
+  automatically **after each successful write and once on launch**, without removing a backup an
+  in-progress write needs.
 
 ### Non-Functional Constraints
 
@@ -355,8 +363,10 @@ retention policy.
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of visible write actions across all modules are operable (or disabled only with a
-  sync reason); zero permanently-disabled or "future phase" placeholders remain.
+- **SC-001**: 100% of visible write actions (Import / Add / Edit, sidebar New group, empty-state
+  CTAs) across all modules are operable (or disabled only with a sync reason); no permanently-disabled
+  or "future phase" placeholder remains on any write affordance. *(The repair-apply affordance's stale
+  copy is out of US1 scope — tracked under US5.)*
 - **SC-002**: A user can complete each core write task — add account/group, import CSV, edit an
   entity, author a paycheck group, delete-with-reassignment, export a budget summary — end-to-end from
   the visible UI, each producing a backup and leaving no orphaned rows.

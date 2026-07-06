@@ -112,16 +112,21 @@ Features are built with Spec Kit, in order:
 Branches: `NNN-feature-name` (via `/speckit-git-feature`).
 
 <!-- SPECKIT START -->
-**Active feature**: `007-write-flows-repair-export` (Phase 6 — Write Flows, Repair & Export),
-**planning complete 2026-07-05** (spec + 2 clarify sessions + plan/research/data-model/contracts/
-quickstart). Plan: `specs/007-write-flows-repair-export/plan.md`. Makes the read-only Phase-5 app
-writable via one Kit-level write engine (`FinanceWorkspaceKit/Persistence/Write/`:
-`WritePlan`/`WriteService`/`CSVRowSerializer`/`ReferenceScanner`/`ImportMapper`/`ExportService`)
-composing the Phase-1 safe-write primitives — never reimplementing them. Covers add/edit/delete of 12
-entity types, CSV import (single target account, month-split, date+amount+description duplicate
-flag), atomic multi-entry groups, delete-with-reassign, repair apply, export (CSV+Markdown), and the
-in-app Close-Tax-Year action. No schema change. **Previous**: `006-presentation-layer` (Phase 5,
-build complete). **Next**: `/speckit-tasks` → `/speckit-implement`.
+**Active feature**: `008-polish-launch` (Phase 7 — Polish & Launch Readiness), **planning complete
+2026-07-06** (spec + 3 clarify sessions + plan/research/data-model/contracts/quickstart). Plan:
+`specs/008-polish-launch/plan.md`. Hardens the merged v1 app for launch, adding no new product
+surface beyond finishing Phase-6 write flows. **US1 (write-affordance enablement) already delivered**
+on this branch — the visible Import/Add/Edit + sidebar "New group" + empty-state CTAs are live and
+sync-gated, and the previously-missing Edit-account-group action was added. Remaining: **US2** finish
+the deferred write flows (multi-entry `TransactionGroupEditor` — all legs one month/one file,
+whole-group ledger ops; `ReassignmentPickerView`; Budget Markdown export button; typed entity forms;
+the one additive optional `transactions.description` column); **US3** Developer ID signing +
+notarization + `NSFileVersion` pick-a-version conflict UI; **US4** perf (hash-keyed projection cache,
+≤2s/≤5s) + reliability; **US5** accessibility (VoiceOver/WCAG AA) + native (keyboard, `NSUserActivity`
+in the signed app, drag-drop, require-iCloud onboarding); **US6** fixture matrix + integration +
+XCUITest + `BackupPruneService` (last-10 + 30d, after write + on launch). No migration (optional
+column only). **Previous**: `007-write-flows-repair-export` (Phase 6, build complete + merged PR #21).
+**Next**: `/speckit-tasks` → `/speckit-implement`.
 <!-- SPECKIT END -->
 
 ### On spec completion — maintain two living docs
