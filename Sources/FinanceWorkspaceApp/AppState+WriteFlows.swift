@@ -43,7 +43,8 @@ extension AppState {
         writeError = nil
     }
 
-    /// Apply the pending plan through the safe-write path, then re-index + re-validate (FR-008).
+    /// Apply the pending plan through the safe-write path, then re-index + re-validate (FR-008)
+    /// and prune backups beyond the retention policy (008 FR-025).
     func applyPendingWrite() async {
         guard let plan = pendingWrite, let workspaceURL else { return }
         do {
@@ -51,10 +52,19 @@ extension AppState {
             pendingWrite = nil
             writeError = nil
             await reindex()
+            pruneBackups()
         } catch {
             writeError = String(describing: error)
             Diagnostics.workspace.error("write failed: \(String(describing: error), privacy: .public)")
         }
+    }
+
+    /// Prune `.finance-meta/backups/` beyond the retention policy (008 FR-025) — called after each
+    /// successful write and once on launch. Best-effort: a prune failure never blocks the app.
+    func pruneBackups() {
+        guard let workspaceURL else { return }
+        let dir = workspaceURL.appendingPathComponent(".finance-meta/backups", isDirectory: true)
+        _ = try? BackupPruneService(backupsDir: dir).prune()
     }
 
     // MARK: - Structured add/edit/delete (US1)

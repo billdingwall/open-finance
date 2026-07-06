@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 import FinanceWorkspaceKit
 
 // T045/T046 — the Budget module (FR-021/022). BudgetModuleView routes the three subviews;
@@ -55,8 +57,37 @@ struct BudgetOverviewView: View {
 
     private func header(_ viewModel: BudgetViewModel, period: Binding<String?>) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            PageTitleActionsView(title: "Budget", breadcrumbs: ["Budget", "Overview"])
+            PageTitleActionsView(
+                title: "Budget", breadcrumbs: ["Budget", "Overview"],
+                actions: [LocalAction(id: "Export summary", title: "Export summary",
+                                      systemImage: "square.and.arrow.up") {
+                    exportBudgetMarkdown(viewModel)
+                }])
             PeriodSelectorView(period: period, currentPeriod: viewModel.currentPeriod)
+        }
+    }
+
+    /// Export the current Budget month as a Markdown summary (008 US2 · FR-007 · OOS-18) to a
+    /// user-chosen destination outside the workspace, via the existing `ExportService`.
+    private func exportBudgetMarkdown(_ viewModel: BudgetViewModel) {
+        guard let projection = viewModel.overview(period: state.selections.budgetPeriod) else { return }
+        let rows = projection.rows.map { row in
+            BudgetSummaryRow(category: row.categoryName,
+                             planned: Format.money(row.planned), actual: Format.money(row.actual),
+                             variance: Format.money(row.variance),
+                             trailingAvg: row.trailingAverage.value.map(Format.money) ?? "—")
+        }
+        let totalPlanned = projection.rows.reduce(Decimal.zero) { $0 + $1.planned }
+        let totalActual = projection.rows.reduce(Decimal.zero) { $0 + $1.actual }
+        let markdown = ExportService().budgetSummaryMarkdown(
+            period: projection.period, rows: rows,
+            totalPlanned: Format.money(totalPlanned), totalActual: Format.money(totalActual))
+
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "budget-\(projection.period).md"
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        if panel.runModal() == .OK, let url = panel.url {
+            state.writeExport(markdown, to: url)
         }
     }
 

@@ -120,6 +120,7 @@ final class AppState {
             return
         }
         await reindex()
+        pruneBackups()          // 008 FR-025 — prune backups beyond retention once on launch
     }
 
     /// Rebuild the snapshot (menu ⌘R / launch). The previous snapshot stays visible until the

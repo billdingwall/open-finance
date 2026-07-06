@@ -46,6 +46,10 @@ let package = Package(
             dependencies: ["FinanceWorkspaceKit"]
         ),
         .executableTarget(
+            name: "backup-prune",
+            dependencies: ["FinanceWorkspaceKit"]
+        ),
+        .executableTarget(
             name: "migrate-r6",
             dependencies: ["FinanceWorkspaceKit"]
         ),
