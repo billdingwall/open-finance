@@ -46,50 +46,59 @@ public enum CSVRowSerializer {
                                   relativePath: String = "") throws -> String {
         guard !diffs.isEmpty else { return fileText }
 
-        // Preserve the original line terminator behavior: split on "\n", remember a trailing newline.
         let hadTrailingNewline = fileText.hasSuffix("\n")
-        var lines = fileText.components(separatedBy: "\n")
-        if hadTrailingNewline { lines.removeLast() }   // drop the empty element after the last "\n"
+        let (preamble, initialData) = partition(fileText)
+        var dataRows = initialData
 
-        // Partition: leading comment rows, one header row, then data rows.
-        var headerEndIndex = 0
-        while headerEndIndex < lines.count && lines[headerEndIndex].trimmingCharacters(in: .whitespaces).hasPrefix("#") {
-            headerEndIndex += 1
+        // Modify/delete highest-index-first so earlier indices stay valid; then append adds in order.
+        for diff in editsHighestFirst(diffs) {
+            try applyEdit(diff, to: &dataRows, relativePath: relativePath)
         }
-        // headerEndIndex now points at the header row (if present).
-        let prefixCount = headerEndIndex + 1                       // comments + header
-        let hasHeader = headerEndIndex < lines.count
-        var dataRows = hasHeader ? Array(lines[prefixCount...]) : []
-        let preamble = hasHeader ? Array(lines[..<prefixCount]) : lines
-
-        // Apply modify/delete against 1-based data-row indices, highest-first so indices stay valid.
-        let edits = diffs.filter { if case .add = $0.kind { return false } else { return true } }
-            .sorted { ($0.rowRef ?? 0) > ($1.rowRef ?? 0) }
-        for diff in edits {
-            guard let ref = diff.rowRef else { continue }
-            let idx = ref - 1
-            guard idx >= 0 && idx < dataRows.count else {
-                throw WriteError.rowRefOutOfRange(path: relativePath, rowRef: ref)
-            }
-            switch diff.kind {
-            case .modify(let before, let after):
-                guard dataRows[idx] == before else { throw WriteError.rowMismatch(path: relativePath, rowRef: ref) }
-                dataRows[idx] = after
-            case .delete(let before):
-                guard dataRows[idx] == before else { throw WriteError.rowMismatch(path: relativePath, rowRef: ref) }
-                dataRows.remove(at: idx)
-            case .add:
-                break
-            }
-        }
-
-        // Append adds in original order.
         for diff in diffs {
             if case .add(let after) = diff.kind { dataRows.append(after) }
         }
 
-        var out = (preamble + dataRows).joined(separator: "\n")
-        if hadTrailingNewline { out += "\n" }
-        return out
+        let joined = (preamble + dataRows).joined(separator: "\n")
+        return hadTrailingNewline ? joined + "\n" : joined
+    }
+
+    /// Split file text into (leading comments + header) and the data rows.
+    private static func partition(_ fileText: String) -> (preamble: [String], dataRows: [String]) {
+        var lines = fileText.components(separatedBy: "\n")
+        if fileText.hasSuffix("\n") { lines.removeLast() }
+        var headerEndIndex = 0
+        while headerEndIndex < lines.count,
+              lines[headerEndIndex].trimmingCharacters(in: .whitespaces).hasPrefix("#") {
+            headerEndIndex += 1
+        }
+        guard headerEndIndex < lines.count else { return (lines, []) }   // no header row present
+        let prefixCount = headerEndIndex + 1                             // comments + header
+        return (Array(lines[..<prefixCount]), Array(lines[prefixCount...]))
+    }
+
+    /// The modify/delete diffs, ordered by descending row index.
+    private static func editsHighestFirst(_ diffs: [WriteRowDiff]) -> [WriteRowDiff] {
+        diffs.filter { if case .add = $0.kind { return false } else { return true } }
+            .sorted { ($0.rowRef ?? 0) > ($1.rowRef ?? 0) }
+    }
+
+    /// Apply one modify/delete diff to `dataRows` in place, asserting the `before` still matches.
+    private static func applyEdit(_ diff: WriteRowDiff, to dataRows: inout [String],
+                                  relativePath: String) throws {
+        guard let ref = diff.rowRef else { return }
+        let idx = ref - 1
+        guard idx >= 0 && idx < dataRows.count else {
+            throw WriteError.rowRefOutOfRange(path: relativePath, rowRef: ref)
+        }
+        switch diff.kind {
+        case .modify(let before, let after):
+            guard dataRows[idx] == before else { throw WriteError.rowMismatch(path: relativePath, rowRef: ref) }
+            dataRows[idx] = after
+        case .delete(let before):
+            guard dataRows[idx] == before else { throw WriteError.rowMismatch(path: relativePath, rowRef: ref) }
+            dataRows.remove(at: idx)
+        case .add:
+            break
+        }
     }
 }

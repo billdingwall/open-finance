@@ -56,9 +56,9 @@ public struct ImportMapper: Sendable {
     // MARK: Auto-detect
 
     private static let synonyms: [String: [String]] = [
-        "date":   ["date", "posted", "posted date", "transaction date", "trans date"],
+        "date": ["date", "posted", "posted date", "transaction date", "trans date"],
         "amount": ["amount", "value", "debit", "credit", "amt"],
-        "type":   ["type", "category type"],
+        "type": ["type", "category type"],
     ]
 
     /// Best-effort mapping from external headers to canonical columns (case-insensitive).
