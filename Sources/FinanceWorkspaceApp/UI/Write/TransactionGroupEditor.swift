@@ -150,8 +150,9 @@ struct TransactionGroupEditor: View {
     // MARK: - Helpers
 
     private static func currentMonth() -> String {
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM"; f.locale = Locale(identifier: "en_US_POSIX")
-        return f.string(from: Date())
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"; formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: Date())
     }
     private static func isMonth(_ value: String) -> Bool {
         value.count == 7 && value.dropFirst(4).first == "-" && Int(value.prefix(4)) != nil

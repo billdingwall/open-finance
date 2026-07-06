@@ -16,11 +16,11 @@ import Foundation
     }
 
     private static let stampFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyyMMdd-HHmmss-SSS"
-        f.timeZone = TimeZone(identifier: "UTC")
-        return f
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd-HHmmss-SSS"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        return formatter
     }()
 
     /// Write an empty backup file named like `BackupService` produces: `<base>.<stamp>.bak`.
