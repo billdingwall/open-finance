@@ -18,6 +18,9 @@ App/FinanceWorkspace.entitlements
 # Local dev app bundle (rebuild: scripts/build-app.sh)
 /Finance Workspace.app/
 
+# Release packaging output (rebuild: Scripts/package-release.sh)
+/dist/
+
 # Dev workspace (local-folder provider root)
 Finance-Dev/
 

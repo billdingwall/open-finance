@@ -12,7 +12,15 @@ struct FinanceWorkspaceApp: App {
 
     var body: some Scene {
         WindowGroup("Finance Dashboard") {
-            AppShellView()
+            Group {
+                if state.showingOnboarding {
+                    // First launch: the wizard replaces the shell until Steps 1–3 complete
+                    // (DESIGN.md onboarding-wizard — non-dismissable; require-iCloud, 008 US5).
+                    OnboardingView()
+                } else {
+                    AppShellView()
+                }
+            }
                 .environment(state)
                 .task { await state.openWorkspace() }
                 .userActivity(RouteActivityCodec.activityType) { activity in

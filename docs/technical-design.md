@@ -471,6 +471,18 @@ These decisions are settled and should not be reopened for v1:
   bare `OpenFinance` value resolves to `nil` at runtime). One identifier across dev
   and distribution.
 
+  *Amended 2026-07-06 (additive — the container decision stands for the entitled build):*
+  storage resolution is now a **distribution-tier ladder** in `AppConfig.makeProvider()` —
+  the entitled ubiquity container when this build carries the entitlement (the signed,
+  sandboxed Xcode target); otherwise **`CloudDocsProvider`**, a dedicated app folder in the
+  user's own iCloud Drive (`~/Library/Mobile Documents/com~apple~CloudDocs/OpenFinance/Finance`),
+  which syncs without any entitlement and powers the direct-download (non-MAS, unsandboxed)
+  distribution from `Scripts/package-release.sh`; DEBUG keeps the local-folder provider.
+  `CloudDocsProvider` conforms to the same `CloudStorageProvider` protocol, reuses
+  `SyncStateMapper` (CloudDocs files are ubiquitous items; evicted files are detected via
+  `.«name».icloud` placeholders), and pulls forward a scoped variant of the V2 "iCloud Drive
+  folder" mode (§5 advanced mode) — app-designated folder, not yet user-selected.
+
 - **Workspace bootstrap seed accounts** ✓ — On first launch, bootstrap seeds six starter accounts in `Accounts/accounts.csv`: personal bank account, personal credit card, business bank account, business credit card, savings account, and investment account.
 
 ### Locked — 2026-06-10 (Phase 2)

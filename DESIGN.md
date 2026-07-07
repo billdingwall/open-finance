@@ -90,6 +90,8 @@ components:
   chart:              "chart-wrap (tall 230 / short 140) · single-accent series · tabular axis labels · heat-map pos/neg cell scale"
   modal-form:         "centered over scrim · stacked modal-field (label + control) · used for add/edit flows"
   empty-state:        "glyph + title + one-line message + optional CTA · one per data-less surface"
+  step-indicator:     "N dots/segments on the onboarding wizard header · done = accent fill · current = accent ring · upcoming = border on surface-sunken · caption 'Step n of N' in muted"
+  onboarding-wizard:  "modal-form variant: one centered lg-radius card (max 520px) over the window bg · step-indicator header · one step visible at a time · Back ghost / Continue primary footer · iCloud state uses status-chip semantics"
 ---
 
 # Open Finance — Design System
@@ -234,6 +236,8 @@ class; keep names aligned so the token-sync and design-adherence skills can cros
 | **Chart** | `chart-wrap` (tall 230 / short 140); single-accent series; tabular axis labels; **heat-map** uses `pos`/`neg` cell scale with an S&P 500 comparison row | `.chart-wrap` / `.heat-map-table` | Swift Charts (`PieChartView`, `SparklineView`, `HeatMapTableView`) |
 | **Modal form** | Centered over scrim; stacked `modal-field` (label + control); add/edit flows; preview before write | `.modal` | sheet + `Form` |
 | **Empty state** | Glyph + title + one-line message + optional CTA; one per data-less surface | `.empty-inspector` | `EmptyStateView` |
+| **Step indicator** | Dots/segments above the wizard title: done = `accent` fill, current = `accent` ring, upcoming = `border` on `surface-sunken`; "Step n of N" caption in `muted` | *(app-only)* | `StepIndicatorView` |
+| **Onboarding wizard** | `modal-form` variant: one centered card (radius `lg`, max 520px, `--shadow` — it floats) over `window-bg`; step-indicator header; single step visible; footer = Back (ghost) + Continue (primary); iCloud setup state rendered with `status-chip` semantics (`ok`/`warn`/`err`); **cannot be dismissed until complete** | *(app-only)* | `OnboardingView` |
 
 **Traceability is a design requirement, not just engineering** (constitution #5): every KPI links to
 a detail view, and every detail row links to its source file + row. Design KPI cards and table rows
@@ -279,6 +283,14 @@ When any one changes, reconcile the others in the same change. The `design-token
 
 ## Changelog
 
+- **2026-07-06 — v1.2** — First-launch onboarding contracts added: **step-indicator** (done =
+  accent fill / current = accent ring / upcoming = border on `surface-sunken`; muted "Step n of N"
+  caption) and **onboarding-wizard** (a `modal-form` variant — one centered `lg`-radius card,
+  max 520px, real shadow as a floating surface, over `window-bg`; ghost Back / primary Continue;
+  iCloud availability states expressed with the existing `status-chip` `ok`/`warn`/`err`
+  semantics; non-dismissable until the flow completes). No new tokens — both components compose
+  the existing color/type/radius/elevation scales, so `prototype/styles.css` and Figma need no
+  token sync (a prototype mock of the wizard can be added when the prototype next updates).
 - **2026-07-04 — v1.1** — Phase 5 SwiftUI token layer shipped
   (`Sources/FinanceWorkspaceApp/DesignSystem/` — Tokens/Typography/Components, mirroring the
   front matter 1:1; brand accent expressed as a dynamic light/dark color from the token hexes,

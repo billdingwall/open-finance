@@ -9,6 +9,31 @@ import FinanceWorkspaceKit
 enum AppConfig {
     // Reverse-DNS, iCloud.-prefixed ubiquity container identifier (must match the entitlement).
     static let iCloudContainerIdentifier = "iCloud.app.openfinance.FinanceWorkspace"
+    // Set once the first-launch onboarding wizard has completed (or an existing workspace was found).
+    static let onboardingCompleteKey = "openfinance.onboardingComplete"
+
+    /// Storage-provider resolution ladder:
+    ///   1. `OPENFINANCE_PROVIDER` env override (`icloud` | `clouddocs` | `local`) — dev/testing.
+    ///   2. DEBUG → local folder (`~/Finance-Dev`), as always.
+    ///   3. RELEASE → the entitled ubiquity container when this build carries the entitlement
+    ///      (signed Xcode target); otherwise the user's iCloud Drive folder (`CloudDocsProvider`)
+    ///      — the direct-download SwiftPM bundle has no entitlement, so the container URL is nil.
+    static func makeProvider() -> any CloudStorageProvider {
+        switch ProcessInfo.processInfo.environment["OPENFINANCE_PROVIDER"] {
+        case "icloud":    return ICloudContainerService(containerIdentifier: iCloudContainerIdentifier)
+        case "clouddocs": return CloudDocsProvider()
+        case "local":     return LocalFolderProvider()
+        default: break
+        }
+        #if DEBUG
+        return LocalFolderProvider()
+        #else
+        if FileManager.default.url(forUbiquityContainerIdentifier: iCloudContainerIdentifier) != nil {
+            return ICloudContainerService(containerIdentifier: iCloudContainerIdentifier)
+        }
+        return CloudDocsProvider()
+        #endif
+    }
 }
 
 // MARK: - Detail pane state (FR-006)
@@ -89,23 +114,26 @@ final class AppState {
     var showingImport = false
     // The multi-entry transaction group editor sheet (008 US2).
     var showingGroupEditor = false
+    // First-launch onboarding wizard (non-dismissable until complete — DESIGN.md onboarding-wizard).
+    var showingOnboarding = false
 
     let provider: any CloudStorageProvider
-    private let manager: WorkspaceManager
+    let manager: WorkspaceManager
 
     var router: AppRouter { AppRouter(state: self) }
 
     init() {
-        #if DEBUG
-        provider = LocalFolderProvider()
-        #else
-        provider = ICloudContainerService(containerIdentifier: AppConfig.iCloudContainerIdentifier)
-        #endif
+        provider = AppConfig.makeProvider()
         manager = WorkspaceManager(provider: provider)
     }
 
     /// Resolve + provision-on-first-run, then build the first projections snapshot.
+    ///
+    /// True first launch (no completed onboarding AND no existing workspace) hands off to the
+    /// onboarding wizard instead of silently provisioning — Step 1 creates the workspace so the
+    /// user sees where their files live and can recover from iCloud being unavailable.
     func openWorkspace() async {
+        if await routeFirstLaunchToOnboarding() { return }
         do {
             let state = try await manager.openWorkspace()
             workspaceURL = state.workspace?.rootURL
