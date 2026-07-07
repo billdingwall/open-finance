@@ -3,9 +3,12 @@
 Items that were **in a Spec Kit spec's field of view but deliberately skipped or deferred during
 implementation** — captured here so nothing falls through the cracks between phases.
 
-> **Last updated**: 2026-07-06 (Phase 6 `007-write-flows-repair-export` follow-ups split into their
-> own section and renumbered OOS-13…OOS-18 to remove the ID collision with the 006 series; all
-> routed to roadmap Phase 8). Earlier: 2026-07-04 (Phase 5 follow-ups added; OOS-1/3/6 → Resolved).
+> **Last updated**: 2026-07-06 (spec 002–008 review + source audit on branch
+> `009-out-of-scope-followups`: OOS-19 added from spec `003`'s partial tasks; OOS-20…OOS-24 added
+> from the code audit — see the *Code audit* section). Earlier same day: Phase 6
+> `007-write-flows-repair-export` follow-ups split into their own section and renumbered
+> OOS-13…OOS-18 to remove the ID collision with the 006 series. Earlier: 2026-07-04 (Phase 5
+> follow-ups added; OOS-1/3/6 → Resolved).
 
 This is distinct from [`docs/project-management.md`](project-management.md), which tracks the
 *planned* `[FIX]`/`[DECIDE]` backlog for upcoming phases. This doc tracks the *unplanned residue* of
@@ -60,6 +63,22 @@ work already done: the "we shipped the spec, but consciously left X for later" i
 - **Suggested next step / target phase**: revisit alongside **Phase 6** (Write Flows, Repair &
   Export), where the write/sync-gate path is built out; the "expected columns" notion may inform the
   optional-column repair.
+- **Status**: Open.
+
+#### OOS-19 — Pending validation rule predicates (catalog metadata only)
+- **Source**: T023/T024/T025 (each marked `[~]` partial). *(Added 2026-07-06 during the spec
+  002–008 review; IDs OOS-10…12 were retired in the earlier renumbering, so the series continues
+  at 19.)*
+- **Skipped because**: six rules were registered in `RuleCatalog` with tier/severity/repair class
+  but no predicate was ever wired, so they can never fire: `VAL-FILE-004` (duplicate monthly
+  transaction file), `VAL-CROSS-009` (missing benchmark data), `VAL-DOMAIN-001` (budget period
+  without budget rows), `VAL-DOMAIN-002` (goal contribution without goal — largely covered by
+  `VAL-CROSS-008`; may close as won't-do), `VAL-DOMAIN-007` (tax payment outside tax year), and
+  `VAL-DOMAIN-008` (business transaction with unknown account-group). The `DomainRules.swift`
+  header comment is also stale — it claims DOMAIN-003/004 are pending, but both are implemented in
+  that file.
+- **Suggested next step / target phase**: **Phase 8** — small self-contained predicates in
+  `Sources/FinanceWorkspaceKit/Validation/Rules/`; fix the stale header comment alongside.
 - **Status**: Open.
 
 #### OOS-3 — Phase 2 validation/repair UI design
@@ -180,6 +199,44 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   active module's primary file as CSV-with-provenance (FR-027); `ExportService.budgetSummaryMarkdown`
   exists and is tested but has no in-view button yet (FR-028). Generic per-table "current view" CSV
   (visible rows of any table) is also simplified to the module's primary file. **Status: Scheduled — Phase 7 (`008-polish-launch`, *Complete Phase 6 write flows*).**
+
+---
+
+## Code audit — 2026-07-06 (branch `009-out-of-scope-followups`)
+
+Findings from a source audit of `Sources/` + `Tests/` against the shipped specs, routed to roadmap
+**Phase 8**. Also noted (trivial, no OOS id): a stale doc comment on `AppState.previewRepair`
+(`AppState.swift`) still says repair apply "is deferred to Phase 6" — it shipped in Phase 6.
+
+- **OOS-20 — Transfer authoring missing from `TransactionGroupEditor`** *(Source: 008 US2 T018
+  deviation, recorded in the view's header comment)*: the shipped editor authors
+  gross → withholdings → net **paycheck** groups only. `MultiEntryLeg.Role` has no credit/debit
+  case, so a balanced transfer group would emit a schema-invalid `group_role`. Needs a small
+  additive engine change (credit/debit roles) plus a transfer mode in the editor.
+  **Status: Open.**
+- **OOS-21 — Generic per-table "current view" export not wired** *(Source: 007 T043 / FR-027
+  simplification — carried as a sentence inside OOS-18, not picked up by spec 008)*: ⌘E exports
+  the active module's **primary file** as CSV-with-provenance; exporting the *visible rows of any
+  table* (post-filter/sort) is the deferred refinement. `ExportService.csv(rows:columns:)` already
+  accepts arbitrary rows — the gap is view-side plumbing only. **Status: Open.**
+- **OOS-22 — Per-file sync states never reach the write gate** *(Source: code audit;
+  `AppState+WriteFlows.swift` `applyPendingWrite`)*: the app calls
+  `WriteService.apply(…, fileStates: [:])` and `WriteService` defaults unknown files to
+  `.available`, so `WriteGate`'s per-file refusals (syncing / stale local copy / conflict) can
+  never fire — only the workspace-level state gates writes today. Wire the `NSMetadataQuery`
+  per-file states through `AppState` into apply. Pairs with OOS-2 (repair-write gating) and the
+  Phase-7 signed-build sync tests, which would otherwise pass trivially. **Status: Open.**
+- **OOS-23 — Tax tables hardcoded for 2025/2026 with a silent latest-year fallback** *(Source:
+  code audit; `WorkspaceLayout.standardDeduction` / `taxBrackets`)*: any other tax year silently
+  uses the newest table with no warning. Ties to the still-open Phase-4 `[DECIDE]` in
+  [`docs/project-management.md`](project-management.md) (hardcode per year vs user-editable
+  setting); needs an annual update procedure and ideally a "no tax table for year N" validation
+  warning. **Status: Open.**
+- **OOS-24 — Interest income detected by category-name heuristic** *(Source: code audit;
+  `TaxEngine.project`)*: interest categories are matched by `name.contains("interest")` — renamed
+  or non-English categories silently drop interest income from the tax projection. Replace with a
+  typed category flag (a future schema round) or lock the naming convention in as a documented
+  validation rule. **Status: Open.**
 
 ---
 

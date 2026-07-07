@@ -1054,11 +1054,47 @@ refinement round) as the PM prioritizes them.
   `estimated-payments.csv` (workspace-level) feeds the estimate, not per-account rates. Acceptable
   for v1; revisit if per-account precision is wanted.
 
-### Repair & write-infra residue (spec `003`, Phase 2)
+### Validation, repair & write-infra residue (specs `003`/`007`)
 
 - [ ] **OOS-2** — Deferred `RepairService` repair classes: optional-column injection (needs an
   "expected columns" notion), blank-field normalization, and `WriteGate` sync-gating of repair
   writes (FR-016a). The write/sync-gate path built in Phase 6 informs these.
+- [ ] **OOS-19** — Pending validation rule predicates (spec `003` T023/T024/T025, marked `[~]`):
+  `VAL-FILE-004` (duplicate monthly file), `VAL-CROSS-009` (missing benchmark data), and
+  `VAL-DOMAIN-001/002/007/008` (budget period without rows; goal contribution without goal —
+  largely covered by CROSS-008; tax payment outside year; business txn with unknown account-group)
+  are registered in `RuleCatalog` but have **no predicate wired** — they can never fire. Fix the
+  stale `DomainRules.swift` header comment alongside.
+- [ ] **OOS-22** — Per-file sync states never reach the write gate: `applyPendingWrite` passes
+  `fileStates: [:]` and `WriteService` defaults unknown files to `.available`, so `WriteGate`'s
+  per-file refusals (syncing / stale / conflict) are inert in the app — only the workspace-level
+  state gates writes. Wire the `NSMetadataQuery` per-file states through `AppState` into apply;
+  pairs with OOS-2 and the Phase-7 signed-build sync tests.
+
+### Code-audit findings — 2026-07-06 (source audit, branch `009-out-of-scope-followups`)
+
+- [ ] **OOS-20** — Transfer authoring missing from `TransactionGroupEditor`: the shipped editor
+  authors gross → withholdings → net **paycheck** groups only; `MultiEntryLeg.Role` has no
+  credit/debit case, so balanced transfers can't be authored in-app. Small additive engine change
+  (credit/debit roles) + a transfer mode in the editor.
+- [ ] **OOS-21** — Generic per-table "current view" export: ⌘E exports the active module's primary
+  file; exporting the *visible rows of any table* (post-filter/sort) is the deferred FR-027
+  refinement. `ExportService.csv(rows:columns:)` already accepts arbitrary rows — view-side
+  plumbing only.
+- [ ] **OOS-23** — Tax tables (`WorkspaceLayout.standardDeduction`/`taxBrackets`) are hardcoded for
+  2025/2026 with a **silent latest-year fallback** for any other year. Resolve the open Phase-4
+  `[DECIDE]` in `docs/project-management.md` (hardcode per year vs user-editable setting), add an
+  annual update procedure + a "no tax table for year N" validation warning.
+- [ ] **OOS-24** — `TaxEngine` detects interest income by category-name heuristic
+  (`name.contains("interest")`); renamed or non-English categories silently drop interest from the
+  tax projection. Typed category flag (future schema round) or a documented naming convention +
+  validation rule.
+
+### QA residue (spec `006`, Phase 5)
+
+- [ ] **Flow 9 manual demo pass** — the Milestone-5 interactive walkthrough (`docs/test-plans.md`
+  Flow 9: keyboard nav, dark mode, traceability) is still **[Manual pass pending]**; the automated
+  proofs passed. PM action — may be absorbed by the Phase-7 XCUITest + quickstart runs.
 
 ### Deferred to V2 (tracked, not in Phase 8)
 
@@ -1115,6 +1151,23 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Backlog sync — 2026-07-06 (spec 002–008 review + code audit; branch `009-out-of-scope-followups`)
+Not a refinement round — a Phase-8 backlog expansion after reviewing the task state of specs
+002–008 and auditing the app source. Canonical per-item detail: `docs/out-of-scope-followups.md`.
+
+- **Spec review**: all residue from specs `002`, `007`, and `008` was already tracked (Phase 7 /
+  OOS-1, OOS-13…18); specs `004`–`006` residue was already in Phase 8 (OOS-4/5/7/8). The one gap:
+  spec `003`'s three partially-delivered rule tasks left **six registered-but-inert validation
+  rules** (catalog metadata, no predicate) → new **OOS-19**.
+- **Code-audit findings** (new): transfer authoring missing from `TransactionGroupEditor`
+  (**OOS-20**), generic current-view export not wired (**OOS-21**), per-file sync states never
+  reach `WriteGate` in the app write path (**OOS-22**), hardcoded 2025/2026 tax tables with a
+  silent latest-year fallback (**OOS-23**, ties to the open Phase-4 `[DECIDE]`), and the
+  interest-income category-name heuristic in `TaxEngine` (**OOS-24**).
+- Phase 8 gained a *Code-audit findings* grouping and a *QA residue* row (the spec-`006` Flow 9
+  manual demo pass, previously tracked only in `docs/test-plans.md` / the OOS doc); the spec-`003`
+  grouping widened to *Validation, repair & write-infra residue* to hold OOS-19/OOS-22.
 
 ### Build-status sync — 2026-07-06 (Phases 4–6 merged; Phase 7 active; Phase 8 added)
 Not a refinement round — a doc-to-repo alignment recorded after Phases 4–6 land on `main`.
