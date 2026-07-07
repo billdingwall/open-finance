@@ -1096,6 +1096,28 @@ refinement round) as the PM prioritizes them.
   Flow 9: keyboard nav, dark mode, traceability) is still **[Manual pass pending]**; the automated
   proofs passed. PM action — may be absorbed by the Phase-7 XCUITest + quickstart runs.
 
+### PM-requested enhancements (post-v1)
+
+- [ ] **Manual re-ordering of accounts and account groups in the sidebar** *(added 2026-07-07)* —
+  let the user drag-reorder the account groups and the accounts within each group in the sidebar's
+  "Account groups" section (`NavigationSidebarView`), instead of the current fixed ordering.
+  Persistence should follow plain-files-first (constitution #1): an **optional `sort_order` column**
+  on `accounts.csv` / `account-groups.csv` (additive, non-breaking per the §21 migration policy) so
+  the order syncs with the workspace and stays user-editable in Finder — not a device-local pref.
+  Reorder writes go through the safe-write path; absent values fall back to the current default
+  order. Touches: schema round (2 optional columns), `AccountEngine` projection ordering,
+  sidebar drag-and-drop (`.onMove`/`.draggable`), and the group/account card grids that mirror
+  sidebar order.
+- [ ] **Delete action inside the edit modal for accounts, account groups, and categories**
+  *(added 2026-07-07)* — the `EntityEditForm` sheet currently offers save/cancel only; deletion is
+  reachable only from the detail-pane bottom buttons. Add a Delete action to the edit modal for
+  these three entities so edit → delete is one flow (destructive placement per the locked
+  edit/delete convention: "delete inside the edit flow"). Must route through the existing
+  delete-with-reference-check path (`requestDelete` → `ReferenceScanner` → atomic
+  delete + reassignment plan → write preview) — never a bare row delete. Overlaps **OOS-14**
+  (FR-010 dedicated-screen account edit placement, scheduled Phase 7) and benefits from
+  **OOS-17**'s interactive reassignment picker — track together when speccing.
+
 ### Deferred to V2 (tracked, not in Phase 8)
 
 These surfaced during the build but are genuinely V2 — they stay in the *Out of Scope for v1* table
@@ -1151,6 +1173,16 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Backlog addition — 2026-07-07 (PM request)
+- **Phase 8 gained a *PM-requested enhancements* grouping** with its first row: manual
+  drag-re-ordering of accounts and account groups in the sidebar "Account groups" section,
+  persisted as an optional `sort_order` column on `accounts.csv`/`account-groups.csv`
+  (plain-files-first; additive/non-breaking) rather than a device-local preference.
+- **Second row: Delete inside the edit modal** for accounts, account groups, and categories —
+  `EntityEditForm` gains a Delete action (destructive, "delete inside the edit flow" per the
+  locked convention) routed through the existing delete-with-reference-check/reassignment path;
+  overlaps OOS-14, pairs with OOS-17.
 
 ### Backlog sync — 2026-07-06 (spec 002–008 review + code audit; branch `009-out-of-scope-followups`)
 Not a refinement round — a Phase-8 backlog expansion after reviewing the task state of specs
