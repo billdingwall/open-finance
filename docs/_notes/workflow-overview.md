@@ -4,7 +4,7 @@
 > from the backlog — PM promotes a `docs/product-backlog.md` item into the roadmap's
 > **Growth → Readying** table (with a PRD/TDD amendment when needed), then the Spec Kit chain runs
 > on its own `NNN-` branch; on merge the roadmap's *Delivered* table and the backlog row are
-> updated, and any residue flows through `docs/out-of-scope-followups.md` back into the backlog.
+> updated, and any residue is added straight to `docs/product-backlog.md`.
 > The *refinement-round* doc workflow below is unchanged and remains how PRD/TDD amendments land.
 
 > Updated: 2026-06-11. Reflects the repository after the workflow cleanup on branch `repo-workflows-update`. The pre-cleanup proposal this replaces is archived as `workflow-overview-v1.md`.

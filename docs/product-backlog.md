@@ -25,8 +25,9 @@ the 2026-07-07 review of the old tracker's open items, and PM requests.
 5. **Growth process (since 2026-07-09)**: this backlog is the sole source of forward work. The PM
    promotes items into the **Growth → Readying** table in
    [`docs/product-roadmap.md`](product-roadmap.md); each ships spec-first on its own `NNN-` branch;
-   on merge the roadmap row moves to *Delivered* and the backlog row closes. Implementation residue
-   flows through `docs/out-of-scope-followups.md` straight back into this backlog.
+   on merge the roadmap row moves to *Delivered* and the backlog row closes. Anything consciously
+   skipped during a spec's implementation is added **directly to this backlog** (Source column =
+   source spec + task) — there is no separate follow-ups doc.
 
 **ID scheme**: `UV-` user value · `SP-` security & performance · `VD-` visual design ·
 `UC-` under consideration. Prior `OOS-n` provenance is kept in the Source column.

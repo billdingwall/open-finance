@@ -9,7 +9,7 @@ reference** — architecture and product specs live under `docs/` (see Key docum
 **Project phase: 🌱 GROWTH** (entered 2026-07-09). The MVP (v1, roadmap Phases 1–8) is
 code-complete; forward work flows **`docs/product-backlog.md` → the roadmap's Growth/Readying
 table → spec-driven delivery** (one `NNN-` branch per promoted item). Implementation residue goes
-to `docs/out-of-scope-followups.md` and straight back into the backlog.
+straight into the backlog.
 
 **Live project and spec state is tracked in Claude's persistent project memory** (auto-loaded each
 session; the repo-root `MEMORY.md` was retired 2026-07-03). Canonical records stay in the repo:
@@ -132,11 +132,12 @@ SP-9 in the backlog. Earlier: `007-write-flows-repair-export` (Phase 6, merged P
 **Next**: promote a backlog item → `/speckit-specify`.
 <!-- SPECKIT END -->
 
-### On spec completion — maintain two living docs
+### On spec completion — maintain the living docs
 
 Before closing out any implemented spec:
-- **`docs/out-of-scope-followups.md`** — add items in the spec's scope that were skipped/deferred
-  during implementation (attributed to source spec + task).
+- **`docs/product-backlog.md`** — add any items in the spec's scope that were skipped/deferred
+  during implementation **directly to the backlog** (Source column = source spec + task for
+  provenance). There is no separate follow-ups doc — residue is backlog work like anything else.
 - **`docs/test-plans.md`** — update the app testability status and user-flow list for what the spec
   now makes testable (or still blocks).
 
@@ -164,7 +165,6 @@ Project docs are living, updated per refinement round (detail: `docs/_notes/work
 | `docs/architecture/` | Canonical specs: entities, workspace layout, all CSV/MD specs, validation rules, pipelines. |
 | `docs/product-roadmap.md` | **Growth pipeline** (Readying/Delivered tables + promotion process) above the **MVP delivery record** (Phases 1–8, historical). |
 | `docs/product-backlog.md` | Prioritized product backlog (user value → security & performance ∥ visual design; under-consideration at bottom). Replaced `docs/project-management.md` 2026-07-07. |
-| `docs/out-of-scope-followups.md` | Items skipped/deferred during spec implementation. |
 | `docs/test-plans.md` | App testability status + manual user flows. |
 | `.specify/memory/constitution.md` | The 7 non-negotiable principles. |
 | `prototype/` | Static prototype — design/flow reference for the SwiftUI build. |

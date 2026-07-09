@@ -26,9 +26,9 @@ The MVP shipped the complete v1 product (see the delivery record below). From he
    `/speckit-specify` → `/speckit-clarify` → `/speckit-plan` → `/speckit-tasks` →
    `/speckit-implement` — with the design-adherence gate on any UI work.
 4. **Close the loop**: on merge, the item moves to **Delivered** below and its backlog row closes.
-   Anything consciously skipped during implementation is recorded in
-   [`docs/out-of-scope-followups.md`](out-of-scope-followups.md) and triaged **straight back into
-   the backlog** (there is no residue phase anymore).
+   Anything consciously skipped during implementation is added **straight to
+   [`docs/product-backlog.md`](product-backlog.md)** (Source column = source spec + task) — there
+   is no residue phase and no separate follow-ups doc.
 
 ### Readying (promoted from the backlog — next up for spec-driven delivery)
 
@@ -51,7 +51,7 @@ The MVP shipped the complete v1 product (see the delivery record below). From he
 > decisions. Nothing below is open work: on 2026-07-09 every unchecked task was swept against the
 > delivery and the backlog (one genuine gap surfaced → backlog **SP-10**), and the task lists were
 > then condensed to these prose records. **Task-level detail lives in git history and in
-> `specs/NNN-*/tasks.md`**; per-item residue provenance is in `docs/out-of-scope-followups.md`.
+> `specs/NNN-*/tasks.md`**; per-item residue provenance is the Source column of the backlog rows.
 
 
 ## Out of Scope for v1
@@ -324,9 +324,9 @@ delete-inside-edit → **UV-2**.
 
 The residue phase existed to collect what Phases 1–6 consciously deferred. Every row was verified
 against the code (`docs/_notes/phase8-alignment-review.md` — 13/15 aligned, 2 reworded) and
-triaged into [`docs/product-backlog.md`](product-backlog.md) with a backlog ID; the OOS-numbered
-provenance lives in [`docs/out-of-scope-followups.md`](out-of-scope-followups.md). In the Growth
-phase new residue flows **straight to the backlog** — no successor phase.
+triaged into [`docs/product-backlog.md`](product-backlog.md) with a backlog ID (the OOS-numbered
+provenance is preserved in git history + the backlog Source column). In the Growth phase new
+residue flows **straight to the backlog** — no successor phase, no separate follow-ups doc.
 
 ### Milestone 8 — ✅ reached (triage complete)
 
@@ -371,6 +371,16 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Follow-ups doc retired — 2026-07-09
+- **`docs/out-of-scope-followups.md` deleted.** In the Growth phase, implementation residue goes
+  **straight to `docs/product-backlog.md`** (Source column = source spec + task), so maintaining a
+  separate follow-ups doc was redundant. Its open items already carry backlog IDs; the resolved-item
+  provenance is preserved in git history, the per-phase MVP delivery records above, and
+  `docs/_notes/phase8-alignment-review.md`. Living-doc references were redirected to the backlog
+  (`CLAUDE.md` spec-completion step + key docs, `README.md`, the backlog/roadmap process text,
+  `docs/_notes/workflow-overview.md`, `docs/test-plans.md`); dated changelog entries below that
+  mention the doc are left as historical record.
 
 ### V2 exclusions absorbed into the backlog — 2026-07-09
 - Every *Out of Scope for v1* row now has an **Under-consideration** backlog entry (**UC-4…UC-20**;
