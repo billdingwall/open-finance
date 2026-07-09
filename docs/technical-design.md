@@ -538,13 +538,11 @@ These decisions are settled and should not be reopened for v1:
 ### Open decisions (pre-build)
 
 All Phase 1 architectural decisions were locked as of 2026-06-10 (foundation items
-hardened in Round 8). Remaining open decisions are tracked in
-`docs/project-management.md` by phase. Key open items that gate upcoming build phases:
-
-- `docs/project-management.md` Phase 2 `[DECIDE]`: full per-file enum enumeration and
-  the complete validation rule catalog *(R8 locked the format/structure; enumeration
-  remains)*
-- `docs/project-management.md` Phase 6 `[DECIDE]`: V1 write scope, backup retention policy, export column inclusion *(delete-on-reference behavior locked Round 7: reassign)*
+hardened in Round 8), and the phase `[DECIDE]`s that once gated the build (per-file enum
+enumeration, the validation catalog, V1 write scope, backup retention, export columns,
+delete-on-reference = reassign) were all **resolved during the MVP build** (Phases 2–7).
+Forward decisions and remaining work now live in the prioritized backlog,
+[`docs/product-backlog.md`](product-backlog.md) — see the Growth process in `docs/product-roadmap.md`.
 
 ## 22. Recommended implementation stance
 
