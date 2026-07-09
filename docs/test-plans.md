@@ -28,7 +28,7 @@ re-index). Exercise against a **throwaway** workspace (`swift run bootstrap-work
 - **Export** (⌘E): the active module's primary file → CSV with `source_file`/`source_row` columns.
 - **Close Tax Year**: Taxes → "Close Tax Year…" archives the year (read-only thereafter).
 
-**Not yet testable (deferred, see `docs/out-of-scope-followups.md`):** authoring multi-entry
+**Not yet testable (deferred, see `docs/product-backlog.md`):** authoring multi-entry
 paycheck/transfer groups in-app (OOS-16 — engine done, editor UI pending); choosing a specific
 reassignment target via a picker (OOS-17); the Markdown budget-summary export button (OOS-18).
 `swift test` (write-engine + view-model suites) and SwiftLint run in macOS CI.
@@ -275,14 +275,51 @@ automation can't judge):
 7. **Dark mode** (System Settings → Appearance) across every view; **re-index** (⌘R) keeps the
    UI responsive with no mixed stale/fresh data.
 
-### Blocked flows (revisit at Phase 6–7)
+### Flow 10 — Two-device iCloud sync & conflict resolution · principle 4 **[Manual — needs a signed build on two Macs]** (008 US3 T033)
 
-- **[Blocked]** Create/edit/delete records through the app and confirm safe writes to disk
-  (Phase 6 — affordances render disabled today).
-- **[Blocked]** Repair **apply** through the app (Phase 6; preview works today).
-- **[Blocked]** Export current view (Phase 6).
-- **[Blocked]** Real iCloud sync: edit on one device, observe sync state and the update on
-  another; conflict resolution (needs a signed entitled build — Phase 7).
+Requires the Developer-ID-signed, entitled build (`docs/_notes/running-and-testing.md §7`)
+installed on two Macs (A and B) signed into the same iCloud account, or the CloudDocs
+direct-download build with iCloud Drive enabled on both.
+
+1. **Provision on A**: first launch → onboarding creates the workspace → confirm the folder
+   exists in iCloud (container Documents/Finance, or iCloud Drive › OpenFinance › Finance).
+2. **Cold sync to B**: launch on B → the same workspace resolves; accounts/groups created on A
+   appear (allow fileproviderd a minute; the sync chip must not claim "Synced" while files are
+   still materialising).
+3. **Edit propagation**: add a category on A through the app (preview → apply) → within ~2 min
+   the row appears on B after a re-index (⌘R). Confirm the backup landed only on A
+   (`.finance-meta/backups/` is workspace-shared — note what syncs and when).
+4. **Force a conflict**: take both Macs offline (Wi-Fi off). Edit the SAME file on both (e.g.
+   rename the same category differently on A and B). Reconnect both.
+5. **Detect**: the header sync chip flips to **"Conflict — click to resolve"** on at least one
+   device; clicking opens the pick-a-version surface listing the file with the other device's
+   name + timestamp.
+6. **Resolve each way** (repeat the force step between): **Keep mine** → local bytes survive;
+   **Keep iCloud** → the other version's bytes replace the file; **Keep both** → a
+   "(conflicted copy N)" sibling appears beside the original. After each: the app re-indexes,
+   `NSFileVersion.unresolvedConflictVersionsOfItem` is empty (chip leaves the conflict state),
+   and **no full version was lost** (verify the surviving bytes / the conflicted-copy file).
+7. **Write-gate check**: while a file shows a conflict, its write affordances must be disabled
+   with the "resolve the file conflict" reason (WriteGate) — writes never race a conflict.
+
+Record results here (date, macOS versions, container vs CloudDocs path) when the pass runs.
+
+### Formerly blocked flows — status as of 2026-07-07 (008 build)
+
+- **[Testable]** Create/edit/delete records through the app — write affordances are live and
+  sync-gated (008 US1), typed forms + reassignment picker + whole-group ledger ops shipped
+  (US2). Automated: `WritePreviewViewModelTests`, `ReassignmentViewModelTests`,
+  `ReadWriteRepairIntegrationTests`, `WriteAffordanceSmokeTests` (CI).
+- **[Testable]** Repair **apply** through the app (⇧⌘R / issues table). Automated:
+  `RepairApplyTests` + the integration repair flow.
+- **[Testable]** Export current view (⌘E CSV-with-provenance; Budget Markdown summary button).
+- **[Testable]** CSV import incl. drag-a-CSV-onto-the-window (008 US5) — `ImportViewModelTests`.
+- **[Blocked — signed build]** Real iCloud sync + conflict resolution on two devices: the
+  in-app conflict surface (sync chip → pick-a-version) and Flow 10's protocol are ready;
+  execution needs the Developer-ID-signed build on two Macs. Same blocker covers the
+  `NSUserActivity` OS-restoration check (008 T042).
+- **[Manual]** Performance budget on real hardware (the `PerformanceHarness` suite asserts
+  ≤2s/≤5s in CI on the 12-month fixture); VoiceOver/keyboard walkthrough rides Flow 9.
 
 ---
 

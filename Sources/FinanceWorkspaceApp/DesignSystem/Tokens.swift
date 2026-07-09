@@ -37,7 +37,10 @@ enum DS {
         static let err = dynamic(light: "#b91c1c", dark: "#ff453a")
         static let errSoft = dynamic(light: "#fee2e2", dark: "#3a1715")
         static let info = dynamic(light: "#1e40af", dark: "#0a84ff")
-        static let infoSoft = dynamic(light: "#dbeafe", dark: "#0e2747")
+        static let infoSoft = dynamic(light: "#dbeafe", dark: "#081a30")
+        /// Text on accent fills (DESIGN.md v1.3): dark uses near-black — white on the
+        /// dark accent is only 3.2:1 (WCAG AA fail); this pair is 6.4:1 / 5.2:1.
+        static let onAccent = dynamic(light: "#ffffff", dark: "#1c1d20")
         /// Money in / gain.
         static let pos = dynamic(light: "#15803d", dark: "#30d158")
         /// Money out / loss.

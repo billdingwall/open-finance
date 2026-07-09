@@ -5,8 +5,9 @@ import Foundation
 
 /// Which storage backend resolved the workspace.
 public enum WorkspaceProviderKind: String, Codable, Sendable, CaseIterable {
-    case iCloud
-    case localFolder
+    case iCloud          // app-owned ubiquity container (needs entitlement + provisioned signing)
+    case cloudDocs       // user's iCloud Drive folder (com~apple~CloudDocs) — no entitlement needed
+    case localFolder     // plain local folder (DEBUG dev default: ~/Finance-Dev)
 }
 
 /// Workspace-level availability (distinct from per-file sync state).

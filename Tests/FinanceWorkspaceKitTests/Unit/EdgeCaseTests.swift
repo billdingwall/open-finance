@@ -68,6 +68,78 @@ import Foundation
     }
 }
 
+// 008 US4 T038 — sparse-data resilience (FR-017): missing months, empty/header-only files, and
+// partially-filled optional columns never crash the pipeline; engines produce sensible
+// empty/partial projections. (The last-known-valid-during-reindex half of T038 is App-state
+// behavior — see Tests/FinanceWorkspaceAppTests/ReliabilityTests.swift.)
+
+@Suite struct SparseDataResilienceTests {
+
+    private func runAllEngines(_ context: WorkspaceContext, workspaceURL: URL) {
+        let settings = (try? SettingsStore().read(workspaceURL: workspaceURL)) ?? .defaults()
+        let asOf = Date()
+        let accounts = AccountEngine().overview(context, asOf: asOf, settings: settings)
+        _ = SavingsGoalEngine().projectGoals(context, asOf: asOf)
+        let holdings = PortfolioEngine().holdings(context, asOf: asOf, scope: .aggregate)
+        _ = BenchmarkEngine().heatMap(context, asOf: asOf)
+        _ = TaxEngine().project(context, taxYear: settings.taxYear)
+        _ = TaxAdjustmentEngine().deductionSummary(context, settings: settings)
+        let estimate = TaxAdjustmentEngine().taxEstimate(context, settings: settings)
+        _ = TaxPrepEngine().prepSummary(context, settings: settings)
+        _ = OverviewEngine().dashboard(context, asOf: asOf, settings: settings,
+                                       accounts: accounts, aggregateHoldings: holdings,
+                                       taxEstimate: estimate)
+    }
+
+    @Test func emptyWorkspaceProjectsWithoutCrashing() throws {
+        let fixture = FixtureWorkspace()               // folders only, zero files
+        defer { fixture.cleanup() }
+        let context = try fixture.parse()
+        runAllEngines(context, workspaceURL: fixture.root)   // reaching here == no crash
+        #expect(context.accounts.isEmpty)
+    }
+
+    @Test func headerOnlyFilesProjectAsEmpty() throws {
+        let fixture = FixtureWorkspace()
+        defer { fixture.cleanup() }
+        fixture.write("Accounts/accounts.csv", FixtureWorkspace.acctHeader, [])
+        fixture.write("Accounts/account-groups.csv", FixtureWorkspace.groupHeader, [])
+        fixture.write("Budget/categories.csv", FixtureWorkspace.categoryHeader, [])
+        fixture.write("Savings/goals.csv", FixtureWorkspace.goalHeader, [])
+        fixture.write("Investments/assets.csv", FixtureWorkspace.assetHeader, [])
+        let context = try fixture.parse()
+        runAllEngines(context, workspaceURL: fixture.root)
+        #expect(context.accounts.isEmpty && context.savingsGoals.isEmpty)
+    }
+
+    @Test func missingMonthsAreSkippedNotZeroed() throws {
+        let fixture = FixtureWorkspace.full(month: "2026-01")
+        defer { fixture.cleanup() }
+        // A second ledger three months later — Feb/Mar simply don't exist.
+        fixture.write("Accounts/transactions/2026-04.csv", FixtureWorkspace.fullTxHeader,
+                      ["GAP1,A1,2026-04-02,-50,Groceries,standard,CAT1,,,,,,,,,"])
+        let context = try fixture.parse()
+        runAllEngines(context, workspaceURL: fixture.root)
+        #expect(context.transactions.contains { $0.transactionId == "GAP1" })
+    }
+
+    @Test func partialOptionalColumnsAndBadValuesYieldPartialRecords() throws {
+        let fixture = FixtureWorkspace.full()
+        defer { fixture.cleanup() }
+        // A ledger written WITHOUT the optional description/trade columns (pre-008 shape),
+        // plus one row with an unparseable amount — parsing flags it, nothing crashes.
+        fixture.write("Accounts/transactions/2026-07.csv", FixtureWorkspace.txHeader, [
+            FixtureWorkspace.tx("OLD1", "A1", "2026-07-01", "-25", category: "CAT1"),
+            FixtureWorkspace.tx("BAD1", "A1", "2026-07-02", "not-a-number", category: "CAT1"),
+        ])
+        let context = try fixture.parse()
+        runAllEngines(context, workspaceURL: fixture.root)
+        #expect(context.transactions.contains { $0.transactionId == "OLD1" })
+        // The bad row never becomes a typed transaction with a garbage amount.
+        #expect(!context.transactions.contains { $0.transactionId == "BAD1" && $0.amount != 0 })
+    }
+}
+
 @Suite struct FrontMatterEdgeTests {
 
     @Test func emptyFrontMatterBlock() {

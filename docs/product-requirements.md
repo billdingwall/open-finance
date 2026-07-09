@@ -1,5 +1,9 @@
 # Personal Finance Workspace for macOS PRD
 
+> **Project phase: 🌱 GROWTH (2026-07-09).** The v1 scope this PRD defines is code-complete
+> (roadmap MVP record). Growth work is promoted from `docs/product-backlog.md`; items that extend
+> this PRD land as amendments (refinement rounds) at promotion time.
+
 ## Overview
 
 This product is a native macOS finance application that uses a dedicated iCloud Drive folder as its system of record and presents budgeting, portfolio, small business accounting, and tax workflows through a desktop-native interface. Apple’s iCloud document storage model is built around app-accessible ubiquity containers, and SwiftUI supports document-based app patterns that fit file-centric workflows on macOS.[cite:21][cite:22]

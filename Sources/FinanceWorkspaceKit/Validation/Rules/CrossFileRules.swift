@@ -38,7 +38,9 @@ enum CrossFileRules {
               parentType: "portfolios", parentColumn: "portfolio_id", ruleID: "VAL-CROSS-006", optional: false),
         .init(childType: "sleeve-targets", fkColumn: "sleeve_id",
               parentType: "sleeves", parentColumn: "sleeve_id", ruleID: "VAL-CROSS-007", optional: false),
-        .init(childType: "progress", fkColumn: "goal_id",
+        // Subtype key is "savings-progress" (the "progress" key used before 2026-07-09 matched no
+        // records, so this rule never fired — caught by the 008 fixture matrix).
+        .init(childType: "savings-progress", fkColumn: "goal_id",
               parentType: "goals", parentColumn: "goal_id", ruleID: "VAL-CROSS-008", optional: false),
         .init(childType: "budget-allocations", fkColumn: "category_id",
               parentType: "categories", parentColumn: "category_id", ruleID: "VAL-CROSS-001", optional: false),

@@ -1,15 +1,17 @@
 import SwiftUI
 import FinanceWorkspaceKit
 
-// Phase 6 (007) T014 — structured add/edit forms for the row-based entities (account group, account,
-// category, budget, allocation, goal, asset, liability, portfolio, sleeve, tax-adjustment, rule).
+// Phase 6 (007) T014 + Phase 7 (008) US2 T024 — structured add/edit forms for the row-based
+// entities (account group, account, category, budget, allocation, goal, asset, liability,
+// portfolio, sleeve, tax-adjustment, rule).
 //
-// Design note (deviation from research D10): rather than 12 bespoke SwiftUI forms, this is one
-// header-driven `Form` that renders a labelled field per canonical column of the target file. The
-// canonical column order comes from the file's own header (the JSON schema columns are unordered).
-// This keeps every entity editable through the same safe-write path for v1; per-entity typed
-// controls (pickers, sign-aware amounts) are a follow-up refinement. DESIGN.md "modal-form ·
-// stacked modal-field (label + control) · add/edit flows".
+// One header-driven `Form` renders a control per canonical column of the target file — but the
+// control is now TYPED (research D10, OOS-13): the bundled `CSVSchemaRegistry` column definition
+// resolves each column to an enum picker (schema `values`), a parent-reference picker over the
+// live workspace ids (schema `references`, e.g. `account_group_id` → account groups), a
+// sign-aware amount field (decimal `amount`: debit/credit toggle + magnitude), a boolean toggle,
+// or a plain/date text field. Unknown columns fall back to free text, so a schema round never
+// breaks the form. DESIGN.md "modal-form · stacked modal-field (label + control) · add/edit flows".
 
 /// Everything an edit form needs to render and to build its `WritePlan`.
 struct EntityEditContext: Identifiable, Equatable {
@@ -30,6 +32,7 @@ struct EntityEditForm: View {
     @Environment(AppState.self) private var state
     let context: EntityEditContext
     @State private var fields: [String: String] = [:]
+    @State private var schema: CSVSchema?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -43,11 +46,7 @@ struct EntityEditForm: View {
             Form {
                 ForEach(context.columns, id: \.self) { column in
                     LabeledContent(label(column)) {
-                        TextField(column, text: binding(for: column))
-                            .textFieldStyle(.roundedBorder)
-                            .font(DS.Fonts.body)
-                            // The primary key is system-owned: shown read-only so the row stays identifiable.
-                            .disabled(column == context.idColumn)
+                        control(for: column)
                     }
                 }
             }
@@ -68,16 +67,154 @@ struct EntityEditForm: View {
             .padding(12)
         }
         .frame(width: 480, height: 520)
-        .onAppear { if fields.isEmpty { fields = context.fields } }
+        .onAppear {
+            if fields.isEmpty { fields = context.fields }
+            schema = try? CSVSchemaRegistry().schema(forRelativePath: context.relativePath)
+        }
+    }
+
+    // MARK: - Typed controls (008 US2 T024 / D10)
+
+    /// Resolve the column's schema definition to the right control. Free text is the fallback,
+    /// so columns unknown to the registry (or a missing schema) never block editing.
+    @ViewBuilder private func control(for column: String) -> some View {
+        let definition = schema?.columns[column]
+        if column == context.idColumn {
+            // The primary key is system-owned: read-only so the row stays identifiable.
+            TextField(column, text: binding(for: column))
+                .textFieldStyle(.roundedBorder).font(DS.Fonts.body)
+                .disabled(true)
+        } else if let values = definition?.values, definition?.type == .enumerated {
+            enumPicker(column, values: values, required: definition?.required == true)
+        } else if let reference = definition?.references {
+            referencePicker(column, reference: reference, required: definition?.required == true)
+        } else if definition?.type == .decimal {
+            if column == "amount" {
+                SignAwareAmountField(value: binding(for: column))
+            } else {
+                TextField(column, text: binding(for: column))
+                    .textFieldStyle(.roundedBorder).font(DS.Fonts.bodyNumeric)
+                    .multilineTextAlignment(.trailing)
+            }
+        } else if definition?.type == .boolean {
+            Toggle("", isOn: booleanBinding(for: column)).labelsHidden().toggleStyle(.switch)
+        } else if definition?.type == .date {
+            TextField("YYYY-MM-DD", text: binding(for: column))
+                .textFieldStyle(.roundedBorder).font(DS.Fonts.bodyNumeric)
+        } else {
+            TextField(column, text: binding(for: column))
+                .textFieldStyle(.roundedBorder).font(DS.Fonts.body)
+        }
+    }
+
+    /// Enum column → menu picker over the schema's permitted values ("—" when optional).
+    private func enumPicker(_ column: String, values: [String], required: Bool) -> some View {
+        Picker("", selection: binding(for: column)) {
+            if !required { Text("—").tag("") }
+            ForEach(values, id: \.self) {
+                Text($0.replacingOccurrences(of: "_", with: " ")).tag($0)
+            }
+        }
+        .labelsHidden().pickerStyle(.menu)
+        .accessibilityLabel(label(column))
+    }
+
+    /// Reference column (schema `references: "<file>#<column>"`) → picker over the live ids of
+    /// the parent collection, labelled with display names where the workspace knows them.
+    private func referencePicker(_ column: String, reference: String, required: Bool) -> some View {
+        let options = referenceOptions(reference)
+        return Picker("", selection: binding(for: column)) {
+            if !required { Text("—").tag("") }
+            // Keep an unknown current value selectable rather than silently clearing it.
+            if let current = fields[column], !current.isEmpty, !options.contains(where: { $0.id == current }) {
+                Text(current).tag(current)
+            }
+            ForEach(options, id: \.id) { option in
+                Text(option.name.isEmpty ? option.id : "\(option.name) (\(option.id))").tag(option.id)
+            }
+        }
+        .labelsHidden().pickerStyle(.menu)
+        .accessibilityLabel(label(column))
+    }
+
+    /// Live parent ids (+ display names for the common parents) from the current projections.
+    private func referenceOptions(_ reference: String) -> [(id: String, name: String)] {
+        guard let context = state.projections?.context else { return [] }
+        let parts = reference.split(separator: "#")
+        guard parts.count == 2 else { return [] }
+        guard let parentSchema = try? CSVSchemaRegistry().schema(forRelativePath: String(parts[0])) else { return [] }
+        let ids = context.identifierSet(fileTypeKey: parentSchema.fileTypeKey, column: String(parts[1]))
+        let names = displayNames(fileTypeKey: parentSchema.fileTypeKey, context: context)
+        return ids.sorted().map { (id: $0, name: names[$0] ?? "") }
+    }
+
+    private func displayNames(fileTypeKey: String, context: WorkspaceContext) -> [String: String] {
+        switch fileTypeKey {
+        case "registry":
+            return Dictionary(uniqueKeysWithValues: context.accounts.map { ($0.accountId, $0.displayName) })
+        case "account-groups":
+            return Dictionary(uniqueKeysWithValues: context.accountGroups.map { ($0.accountGroupId, $0.name) })
+        case "categories":
+            return Dictionary(uniqueKeysWithValues: context.categories.map { ($0.categoryId, $0.name) })
+        case "goals":
+            return Dictionary(uniqueKeysWithValues: context.savingsGoals.map { ($0.goalId, $0.name) })
+        default:
+            return [:]
+        }
     }
 
     private func binding(for column: String) -> Binding<String> {
         Binding(get: { fields[column] ?? "" }, set: { fields[column] = $0 })
     }
 
+    private func booleanBinding(for column: String) -> Binding<Bool> {
+        Binding(get: { (fields[column] ?? "").lowercased() == "true" },
+                set: { fields[column] = $0 ? "true" : "false" })
+    }
+
     /// "source_account_id" → "Source account id" for a friendlier label.
     private func label(_ column: String) -> String {
         column.replacingOccurrences(of: "_", with: " ").capitalizedFirst
+    }
+}
+
+/// Sign-aware amount entry (008 T024): magnitude + an explicit money-in/money-out choice, writing
+/// back the signed canonical value (negative = debit, the locked sign convention). Green/red is
+/// reserved for money meaning — exactly this case (DESIGN.md).
+struct SignAwareAmountField: View {
+    @Binding var value: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Picker("", selection: signBinding) {
+                Text("Out −").tag(-1)
+                Text("In +").tag(1)
+            }
+            .labelsHidden().pickerStyle(.segmented).frame(width: 110)
+            TextField("0.00", text: magnitudeBinding)
+                .textFieldStyle(.roundedBorder)
+                .font(DS.Fonts.bodyNumeric)
+                .multilineTextAlignment(.trailing)
+                .foregroundStyle(sign < 0 ? DS.Colors.neg : DS.Colors.pos)
+        }
+    }
+
+    private var sign: Int { value.hasPrefix("-") ? -1 : 1 }
+
+    private var signBinding: Binding<Int> {
+        Binding(get: { sign },
+                set: { newSign in
+                    let magnitude = value.hasPrefix("-") ? String(value.dropFirst()) : value
+                    value = magnitude.isEmpty ? magnitude : (newSign < 0 ? "-" + magnitude : magnitude)
+                })
+    }
+
+    private var magnitudeBinding: Binding<String> {
+        Binding(get: { value.hasPrefix("-") ? String(value.dropFirst()) : value },
+                set: { newMagnitude in
+                    let cleaned = newMagnitude.replacingOccurrences(of: "-", with: "")
+                    value = cleaned.isEmpty ? "" : (sign < 0 ? "-" + cleaned : cleaned)
+                })
     }
 }
 

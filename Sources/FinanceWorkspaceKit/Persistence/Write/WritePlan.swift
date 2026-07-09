@@ -36,11 +36,17 @@ public struct FileChange: Sendable, Equatable {
     public let relativePath: String       // e.g. "Accounts/transactions/2026-06.csv"
     public let expectedHash: String?      // hash captured at preview (drift check); nil = new file
     public let rowDiffs: [WriteRowDiff]
+    /// Canonical header for a file this change may CREATE (e.g. a new monthly ledger): the
+    /// writer seeds `# schema_version` + this header before appending rows, so a brand-new file
+    /// is never headerless (2026-07-09 fix — caught by the 008 integration tests).
+    public let seedHeader: [String]?
 
-    public init(relativePath: String, expectedHash: String?, rowDiffs: [WriteRowDiff]) {
+    public init(relativePath: String, expectedHash: String?, rowDiffs: [WriteRowDiff],
+                seedHeader: [String]? = nil) {
         self.relativePath = relativePath
         self.expectedHash = expectedHash
         self.rowDiffs = rowDiffs
+        self.seedHeader = seedHeader
     }
 }
 
@@ -128,7 +134,8 @@ public enum WritePlanBuilder {
         let line = CSVRowSerializer.row(fields: fields, header: header)
         return WritePlan(intent: .add, changes: [
             FileChange(relativePath: relativePath, expectedHash: nil,
-                       rowDiffs: [WriteRowDiff(rowRef: nil, kind: .add(after: line))]),
+                       rowDiffs: [WriteRowDiff(rowRef: nil, kind: .add(after: line))],
+                       seedHeader: header),
         ])
     }
 

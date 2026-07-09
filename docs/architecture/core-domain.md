@@ -39,7 +39,7 @@
 - TaxArchiveYear
 - NoteDocument
 
-> **Note on entity naming:** `docs/technical-design.md §10` (pre-Round 7) still lists `PersonalTransaction`, `BusinessTransaction`, `PersonalCategory`, `PersonalBudget`, and `BusinessEntity` as discrete entries — these are pre-R6 legacy names. The canonical names are `Transaction`, `Category`, `Budget`, and the account-group object. `[FIX-M6]` and `[FIX-C6]` in `docs/project-management.md` track the update; fix the §10 entity list before Phase 3.
+> **Note on entity naming:** `docs/technical-design.md §10` (pre-Round 7) still lists `PersonalTransaction`, `BusinessTransaction`, `PersonalCategory`, `PersonalBudget`, and `BusinessEntity` as discrete entries — these are pre-R6 legacy names. The canonical names are `Transaction`, `Category`, `Budget`, and the account-group object. This PRD/TDD naming reconciliation is tracked as **UC-2** in [`docs/product-backlog.md`](../product-backlog.md) (the §10 list is authored-history; the canonical names above govern).
 
 ### Notes
 

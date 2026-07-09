@@ -128,8 +128,7 @@ open-finance/
 | `docs/product-requirements.md` | What & why — goals, user stories, requirements, IA. |
 | `docs/technical-design.md` → `docs/architecture/` | How & where — architecture, workspace layout, CSV/MD specs, validation, pipelines. |
 | `docs/product-roadmap.md` | Phased plan and milestone gates. |
-| `docs/project-management.md` | Planned `[FIX]`/`[DECIDE]` backlog. |
-| `docs/out-of-scope-followups.md` | Items deferred during spec implementation. |
+| `docs/product-backlog.md` | Prioritized product backlog (user value / security & performance / visual design / under-consideration). |
 | `docs/test-plans.md` | App testability status + manual user flows. |
 | `CLAUDE.md` | How AI agents (and contributors) work in this repo. |
 

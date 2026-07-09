@@ -32,6 +32,19 @@ targets:
         NSUserActivityTypes:
           - app.openfinance.navigation
         NSHumanReadableCopyright: ""
+        # US5 T043 — declare the workspace document types so .csv/.md drag-drop and
+        # open-with resolve to the app (viewer role; the in-window drop routes CSVs to import).
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: CSV document
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.comma-separated-values-text
+          - CFBundleTypeName: Markdown document
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - net.daringfireball.markdown
     # XcodeGen GENERATES the entitlements file from these properties (T060 — resolves
     # deferred T004/OOS-1). The container id must match AppConfig.iCloudContainerIdentifier.
     entitlements:
@@ -51,6 +64,35 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         SWIFT_VERSION: "6.0"
         CODE_SIGN_ENTITLEMENTS: App/FinanceWorkspace.entitlements
+      # US3 T029 — Developer ID distribution (direct download, notarized; 008 clarify: no MAS).
+      # Debug stays ad-hoc so local dev never needs a certificate; Release signs with the
+      # Developer ID identity + secure timestamp (hardened runtime comes from the base setting).
+      # CI is unaffected — it builds with CODE_SIGNING_ALLOWED=NO. A release build supplies the
+      # team explicitly, then notarizes + staples (docs/_notes/running-and-testing.md §Release):
+      #   xcodegen generate --spec App/project.yml
+      #   xcodebuild -project App/FinanceWorkspace.xcodeproj -scheme FinanceWorkspace \
+      #     -configuration Release DEVELOPMENT_TEAM=<TEAMID> build
+      configs:
+        Debug:
+          CODE_SIGN_IDENTITY: "-"
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          OTHER_CODE_SIGN_FLAGS: "--timestamp"
+  # US6 T005/T051 — XCUITest module-view smoke (runs on the macOS CI runner via
+  # `xcodebuild test`; excluded from the plain `xcodebuild build` CI step).
+  FinanceWorkspaceUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: ../Tests/FinanceWorkspaceUITests
+    dependencies:
+      - target: FinanceWorkspace
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.openfinance.FinanceWorkspaceUITests
+        TEST_TARGET_NAME: FinanceWorkspace
+        SWIFT_VERSION: "6.0"
 # A shared scheme so `xcodebuild -scheme FinanceWorkspace` resolves in CI (the default
 # per-target schemes XcodeGen would otherwise generate are NOT shared / not written to disk).
 schemes:
@@ -60,5 +102,9 @@ schemes:
         FinanceWorkspace: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - FinanceWorkspaceUITests
     archive:
       config: Release

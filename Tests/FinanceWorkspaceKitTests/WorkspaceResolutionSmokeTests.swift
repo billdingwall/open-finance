@@ -29,4 +29,28 @@ import Foundation
             Issue.record("Unexpected error type: \(error)")
         }
     }
+
+    @Test func cloudDocsProviderResolvesOrFailsGracefully() async {
+        let provider = CloudDocsProvider()
+        #expect(provider.providerKind == .cloudDocs)
+        #expect(CloudDocsProvider.cloudDocsRoot.path.hasSuffix("Library/Mobile Documents/com~apple~CloudDocs"))
+        do {
+            let url = try await provider.resolveWorkspaceURL()
+            // …/com~apple~CloudDocs/OpenFinance/Finance
+            #expect(url.lastPathComponent == "Finance")
+            #expect(url.deletingLastPathComponent().lastPathComponent == "OpenFinance")
+        } catch let error as WorkspaceResolutionError {
+            // Expected when signed out / iCloud Drive disabled (CI) — typed, non-crashing.
+            #expect(error == .notSignedIn || error == .containerUnavailable)
+        } catch {
+            Issue.record("Unexpected error type: \(error)")
+        }
+    }
+
+    @Test func cloudDocsPlaceholderURLMapsEvictedFiles() {
+        let file = URL(fileURLWithPath: "/tmp/ws/Accounts/accounts.csv")
+        let placeholder = CloudDocsProvider.placeholderURL(for: file)
+        #expect(placeholder.lastPathComponent == ".accounts.csv.icloud")
+        #expect(placeholder.deletingLastPathComponent().path == file.deletingLastPathComponent().path)
+    }
 }

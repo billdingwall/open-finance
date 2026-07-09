@@ -82,7 +82,7 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(DS.Fonts.body)
-            .foregroundStyle(.white)
+            .foregroundStyle(DS.Colors.onAccent)   // WCAG AA on the accent fill in both modes (v1.3)
             .padding(.horizontal, 12)
             .padding(.vertical, 5)
             .background(DS.Colors.accent.opacity(configuration.isPressed ? 0.85 : 1),

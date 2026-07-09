@@ -6,14 +6,20 @@ reference** — architecture and product specs live under `docs/` (see Key docum
 
 ## Project status
 
+**Project phase: 🌱 GROWTH** (entered 2026-07-09). The MVP (v1, roadmap Phases 1–8) is
+code-complete; forward work flows **`docs/product-backlog.md` → the roadmap's Growth/Readying
+table → spec-driven delivery** (one `NNN-` branch per promoted item). Implementation residue goes
+straight into the backlog.
+
 **Live project and spec state is tracked in Claude's persistent project memory** (auto-loaded each
 session; the repo-root `MEMORY.md` was retired 2026-07-03). Canonical records stay in the repo:
-phase plan in `docs/product-roadmap.md`, feature artifacts in `specs/NNN-*/`, history in git.
-The active feature is named in the Spec Kit block below.
+the Growth pipeline + MVP delivery record in `docs/product-roadmap.md`, the prioritized backlog in
+`docs/product-backlog.md`, feature artifacts in `specs/NNN-*/`, history in git. The active feature
+is named in the Spec Kit block below.
 
 The app is a **Swift Package** (`Package.swift`), not a hand-authored `.xcodeproj` — the build
-environment is Command-Line-Tools-only. The Xcode app target + iCloud entitlement land with
-Phase 5 (`006`, US8, CI-gated).
+environment is Command-Line-Tools-only. The XcodeGen app target (`App/project.yml`) carries the
+iCloud entitlement and builds unsigned in CI; the first signed release is backlog SP-8.
 
 ## Build & test
 
@@ -111,29 +117,27 @@ Features are built with Spec Kit, in order:
 
 Branches: `NNN-feature-name` (via `/speckit-git-feature`).
 
+**Growth-phase entry point**: a new feature starts by **promoting a backlog item** — move its row
+into the roadmap's *Growth → Readying* table (amending PRD/TDD first if the item is
+under-consideration), then run the Spec Kit chain on a fresh `NNN-` branch. On merge, update the
+roadmap's *Delivered* table and close the backlog row.
+
 <!-- SPECKIT START -->
-**Active feature**: `008-polish-launch` (Phase 7 — Polish & Launch Readiness), **planning complete
-2026-07-06** (spec + 3 clarify sessions + plan/research/data-model/contracts/quickstart). Plan:
-`specs/008-polish-launch/plan.md`. Hardens the merged v1 app for launch, adding no new product
-surface beyond finishing Phase-6 write flows. **US1 (write-affordance enablement) already delivered**
-on this branch — the visible Import/Add/Edit + sidebar "New group" + empty-state CTAs are live and
-sync-gated, and the previously-missing Edit-account-group action was added. Remaining: **US2** finish
-the deferred write flows (multi-entry `TransactionGroupEditor` — all legs one month/one file,
-whole-group ledger ops; `ReassignmentPickerView`; Budget Markdown export button; typed entity forms;
-the one additive optional `transactions.description` column); **US3** Developer ID signing +
-notarization + `NSFileVersion` pick-a-version conflict UI; **US4** perf (hash-keyed projection cache,
-≤2s/≤5s) + reliability; **US5** accessibility (VoiceOver/WCAG AA) + native (keyboard, `NSUserActivity`
-in the signed app, drag-drop, require-iCloud onboarding); **US6** fixture matrix + integration +
-XCUITest + `BackupPruneService` (last-10 + 30d, after write + on launch). No migration (optional
-column only). **Previous**: `007-write-flows-repair-export` (Phase 6, build complete + merged PR #21).
-**Next**: `/speckit-tasks` → `/speckit-implement`.
+**Active feature**: none — awaiting the first Growth promotion from `docs/product-backlog.md`
+(PM's standing priority: **UV-1** sidebar re-ordering, **UV-2** delete in edit modals; **SP-8**
+first signed release is certificate-gated). **Previous**: `008-polish-launch` (Phase 7 — Polish &
+Launch Readiness) **complete 2026-07-09** — 53/56 tasks across PR #22 (US1 + write-flow
+completion) and PR #23 (US2–US6, onboarding/CloudDocs, 206 tests green in CI); residues SP-7/SP-8/
+SP-9 in the backlog. Earlier: `007-write-flows-repair-export` (Phase 6, merged PR #21).
+**Next**: promote a backlog item → `/speckit-specify`.
 <!-- SPECKIT END -->
 
-### On spec completion — maintain two living docs
+### On spec completion — maintain the living docs
 
 Before closing out any implemented spec:
-- **`docs/out-of-scope-followups.md`** — add items in the spec's scope that were skipped/deferred
-  during implementation (attributed to source spec + task).
+- **`docs/product-backlog.md`** — add any items in the spec's scope that were skipped/deferred
+  during implementation **directly to the backlog** (Source column = source spec + task for
+  provenance). There is no separate follow-ups doc — residue is backlog work like anything else.
 - **`docs/test-plans.md`** — update the app testability status and user-flow list for what the spec
   now makes testable (or still blocks).
 
@@ -145,7 +149,7 @@ Project docs are living, updated per refinement round (detail: `docs/_notes/work
 2. Synthesize into `docs/_refinement/r{n}-update-{doc}.md` per affected doc.
 3. Apply to `docs/product-requirements.md` (+ Changelog).
 4. Cascade to `docs/technical-design.md` and `docs/product-roadmap.md` (+ Changelogs); update the
-   relevant `docs/architecture/` file directly for spec details; update `docs/project-management.md`.
+   relevant `docs/architecture/` file directly for spec details; update `docs/product-backlog.md`.
 5. If principles changed, amend `.specify/memory/constitution.md` (version bump).
 6. Update `docs/_design/` and `prototype/`, then start the next round.
 7. Commit all affected docs together.
@@ -159,9 +163,8 @@ Project docs are living, updated per refinement round (detail: `docs/_notes/work
 | `docs/product-requirements.md` | What & why — modules, scenarios, data model, IA. |
 | `docs/technical-design.md` | Architecture overview + locked decisions (§21); links to `docs/architecture/`. |
 | `docs/architecture/` | Canonical specs: entities, workspace layout, all CSV/MD specs, validation rules, pipelines. |
-| `docs/product-roadmap.md` | Phased plan + milestone gates. |
-| `docs/project-management.md` | Planned `[FIX]`/`[DECIDE]` backlog by phase. |
-| `docs/out-of-scope-followups.md` | Items skipped/deferred during spec implementation. |
+| `docs/product-roadmap.md` | **Growth pipeline** (Readying/Delivered tables + promotion process) above the **MVP delivery record** (Phases 1–8, historical). |
+| `docs/product-backlog.md` | Prioritized product backlog (user value → security & performance ∥ visual design; under-consideration at bottom). Replaced `docs/project-management.md` 2026-07-07. |
 | `docs/test-plans.md` | App testability status + manual user flows. |
 | `.specify/memory/constitution.md` | The 7 non-negotiable principles. |
 | `prototype/` | Static prototype — design/flow reference for the SwiftUI build. |

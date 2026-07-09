@@ -12,7 +12,15 @@ struct FinanceWorkspaceApp: App {
 
     var body: some Scene {
         WindowGroup("Finance Dashboard") {
-            AppShellView()
+            Group {
+                if state.showingOnboarding {
+                    // First launch: the wizard replaces the shell until Steps 1–3 complete
+                    // (DESIGN.md onboarding-wizard — non-dismissable; require-iCloud, 008 US5).
+                    OnboardingView()
+                } else {
+                    AppShellView()
+                }
+            }
                 .environment(state)
                 .task { await state.openWorkspace() }
                 .userActivity(RouteActivityCodec.activityType) { activity in
@@ -65,10 +73,27 @@ struct AppShellView: View {
         .sheet(isPresented: $state.showingGroupEditor) {
             TransactionGroupEditor()
         }
+        .sheet(item: $state.pendingReassignment) { model in
+            ReassignmentPickerView(model: model)
+        }
+        .sheet(isPresented: $state.showingConflicts) {
+            ConflictResolutionView()
+        }
         .sheet(isPresented: Binding(
             get: { state.pendingWrite != nil },
             set: { if !$0 { state.cancelWrite() } })) {
             WritePreviewView()
+        }
+        // Escape closes the detail pane (008 US5 T041 — roadmap keyboard-nav contract).
+        .onExitCommand { state.detailPane.isPresented = false }
+        // Drag a CSV anywhere onto the window to start the import flow (008 US5 T043).
+        // .md files are parsed workspace content, not importable documents, in v1.
+        .dropDestination(for: URL.self) { urls, _ in
+            let droppedCSV = urls.first { $0.pathExtension.lowercased() == "csv" }
+            guard state.writesEnabled, let url = droppedCSV else { return false }
+            state.droppedImportURL = url
+            state.showingImport = true
+            return true
         }
         .frame(minWidth: DS.Metrics.minWindowWidth, minHeight: DS.Metrics.minWindowHeight)
     }

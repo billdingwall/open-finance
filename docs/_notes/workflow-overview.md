@@ -1,5 +1,12 @@
 # Repository Workflow Overview
 
+> **Growth-phase addendum (2026-07-09):** the MVP is complete, so the *feature* workflow now starts
+> from the backlog — PM promotes a `docs/product-backlog.md` item into the roadmap's
+> **Growth → Readying** table (with a PRD/TDD amendment when needed), then the Spec Kit chain runs
+> on its own `NNN-` branch; on merge the roadmap's *Delivered* table and the backlog row are
+> updated, and any residue is added straight to `docs/product-backlog.md`.
+> The *refinement-round* doc workflow below is unchanged and remains how PRD/TDD amendments land.
+
 > Updated: 2026-06-11. Reflects the repository after the workflow cleanup on branch `repo-workflows-update`. The pre-cleanup proposal this replaces is archived as `workflow-overview-v1.md`.
 
 ---
@@ -23,7 +30,7 @@ open-finance/
 │   ├── product-requirements.md    # What & why — modules, user scenarios, data model, IA
 │   ├── technical-design.md        # How & where — architecture, CSV specs, service design
 │   ├── product-roadmap.md         # When — phased plan with milestone gates
-│   ├── project-management.md      # Tasks — remaining work before the Phase 1 build
+│   ├── product-backlog.md         # Prioritized backlog — the source of all forward (Growth) work
 │   ├── _refinement/               # Review rounds and doc update plans
 │   │   ├── r{n}-review.md         # Raw feedback (or user-direction note) per round
 │   │   └── r{n}-update-{doc}.md   # Formatted update plan per target doc per round
@@ -44,7 +51,7 @@ open-finance/
 | `docs/product-requirements.md` | What & why: primary product direction — modules, user scenarios, data model, IA. Changelog at bottom. |
 | `docs/technical-design.md` | How & where: architecture decisions, UX decisions, interface design, all 24 CSV specs, service responsibilities, validation rules. Locked-decision record in §21. |
 | `docs/product-roadmap.md` | When: phased plan with Product/Design/Dev tasks and milestone gates. |
-| `docs/project-management.md` | Tasks: consolidated decisions and doc fixes remaining before the Phase 1 build. |
+| `docs/product-backlog.md` | Prioritized product backlog (user value / security & performance / visual design / under-consideration); the sole source of forward work in the Growth phase. Replaced `project-management.md`. |
 | `docs/_refinement/r{n}-review.md` | Raw feedback from the team (or a short user-direction note) with links to design assets and notes. |
 | `docs/_refinement/r{n}-update-{doc}.md` | Formatted doc update plan synthesized from a round (e.g. `r4-update-product-requirements.md`, `r4-update-technical-design.md`). |
 | `docs/_design/*` | Design mocks, icons, images, design system. |
@@ -234,5 +241,5 @@ A feature branch contains only the Spec Kit artifacts for that feature. The proj
   changelogs and refinement files line up. Round 4 (2026-06-12, second prototype review:
   screen consolidation) — applied to the PRD, technical design, roadmap, and prototype on
   2026-06-12.
-- **Architectural decisions**: all Phase 1 decisions locked 2026-06-10; record in `docs/technical-design.md §21`. Remaining pre-build items tracked in `docs/project-management.md`.
+- **Architectural decisions**: all Phase 1 decisions locked 2026-06-10; record in `docs/technical-design.md §21`. Forward work is tracked in `docs/product-backlog.md`.
 - **Features completed**: `001-prototype-prd-alignment` (prototype brought into alignment with the post-Round-1 PRD).

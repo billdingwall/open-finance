@@ -32,7 +32,8 @@ public struct WriteService: Sendable {
         stamped.changes = plan.changes.map { change in
             FileChange(relativePath: change.relativePath,
                        expectedHash: Self.hash(of: workspaceURL.appendingPathComponent(change.relativePath)),
-                       rowDiffs: change.rowDiffs)
+                       rowDiffs: change.rowDiffs,
+                       seedHeader: change.seedHeader)
         }
         return stamped
     }
@@ -81,7 +82,12 @@ public struct WriteService: Sendable {
         // G2 — atomic coordinated write of each file's new content.
         for change in plan.changes {
             let url = workspaceURL.appendingPathComponent(change.relativePath)
-            let existing = (try? coordinator.coordinatedRead(url) { try String(contentsOf: $0, encoding: .utf8) }) ?? ""
+            var existing = (try? coordinator.coordinatedRead(url) { try String(contentsOf: $0, encoding: .utf8) }) ?? ""
+            if existing.isEmpty, let header = change.seedHeader, !header.isEmpty {
+                // Brand-new managed file: seed the schema comment + canonical header so the
+                // created file is valid on its own (never headerless).
+                existing = "# schema_version: 1\n" + header.joined(separator: ",") + "\n"
+            }
             let updated = try CSVRowSerializer.applyDiffs(change.rowDiffs, to: existing,
                                                           relativePath: change.relativePath)
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),

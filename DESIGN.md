@@ -29,6 +29,7 @@ colors:
   accent-soft:      { light: "#e8eefc", dark: "#293052", css: "--accent-soft",   swiftui: "—" }
   accent-border:    { light: "#b9c8f2", dark: "#3c477a", css: "--accent-border", swiftui: "—" }
   accent-ink:       { light: "#1e3aab", dark: "#b4c2f8", css: "--accent-ink",    swiftui: "—" }
+  on-accent:        { light: "#ffffff", dark: "#1c1d20", css: "--on-accent",     swiftui: "—  # text on accent fills; dark uses near-black for WCAG AA (white on #7088f2 is only 3.2:1)" }
   ok:               { light: "#15803d", dark: "#30d158", css: "--ok",            swiftui: "Color(NSColor.systemGreen)" }
   ok-soft:          { light: "#dcfce7", dark: "#10331f", css: "--ok-soft",       swiftui: "—" }
   warn:             { light: "#b45309", dark: "#ff9f0a", css: "--warn",          swiftui: "Color(NSColor.systemOrange)" }
@@ -36,7 +37,7 @@ colors:
   err:              { light: "#b91c1c", dark: "#ff453a", css: "--err",           swiftui: "Color(NSColor.systemRed)" }
   err-soft:         { light: "#fee2e2", dark: "#3a1715", css: "--err-soft",      swiftui: "—" }
   info:             { light: "#1e40af", dark: "#0a84ff", css: "--info",          swiftui: "Color(NSColor.systemBlue)" }
-  info-soft:        { light: "#dbeafe", dark: "#0e2747", css: "--info-soft",     swiftui: "—" }
+  info-soft:        { light: "#dbeafe", dark: "#081a30", css: "--info-soft",     swiftui: "—  # dark deepened 2026-07-07: info on the old #0e2747 was 4.1:1 (AA fail)" }
   pos:              { light: "#15803d", dark: "#30d158", css: "--pos",           swiftui: "Color(NSColor.systemGreen)  // money in / gain" }
   neg:              { light: "#b91c1c", dark: "#ff453a", css: "--neg",           swiftui: "Color(NSColor.systemRed)    // money out / loss" }
 
@@ -90,6 +91,8 @@ components:
   chart:              "chart-wrap (tall 230 / short 140) · single-accent series · tabular axis labels · heat-map pos/neg cell scale"
   modal-form:         "centered over scrim · stacked modal-field (label + control) · used for add/edit flows"
   empty-state:        "glyph + title + one-line message + optional CTA · one per data-less surface"
+  step-indicator:     "N dots/segments on the onboarding wizard header · done = accent fill · current = accent ring · upcoming = border on surface-sunken · caption 'Step n of N' in muted"
+  onboarding-wizard:  "modal-form variant: one centered lg-radius card (max 520px) over the window bg · step-indicator header · one step visible at a time · Back ghost / Continue primary footer · iCloud state uses status-chip semantics"
 ---
 
 # Open Finance — Design System
@@ -234,6 +237,8 @@ class; keep names aligned so the token-sync and design-adherence skills can cros
 | **Chart** | `chart-wrap` (tall 230 / short 140); single-accent series; tabular axis labels; **heat-map** uses `pos`/`neg` cell scale with an S&P 500 comparison row | `.chart-wrap` / `.heat-map-table` | Swift Charts (`PieChartView`, `SparklineView`, `HeatMapTableView`) |
 | **Modal form** | Centered over scrim; stacked `modal-field` (label + control); add/edit flows; preview before write | `.modal` | sheet + `Form` |
 | **Empty state** | Glyph + title + one-line message + optional CTA; one per data-less surface | `.empty-inspector` | `EmptyStateView` |
+| **Step indicator** | Dots/segments above the wizard title: done = `accent` fill, current = `accent` ring, upcoming = `border` on `surface-sunken`; "Step n of N" caption in `muted` | *(app-only)* | `StepIndicatorView` |
+| **Onboarding wizard** | `modal-form` variant: one centered card (radius `lg`, max 520px, `--shadow` — it floats) over `window-bg`; step-indicator header; single step visible; footer = Back (ghost) + Continue (primary); iCloud setup state rendered with `status-chip` semantics (`ok`/`warn`/`err`); **cannot be dismissed until complete** | *(app-only)* | `OnboardingView` |
 
 **Traceability is a design requirement, not just engineering** (constitution #5): every KPI links to
 a detail view, and every detail row links to its source file + row. Design KPI cards and table rows
@@ -279,6 +284,24 @@ When any one changes, reconcile the others in the same change. The `design-token
 
 ## Changelog
 
+- **2026-07-07 — v1.3** — WCAG AA contrast audit (008 US5 T040) across every token pair the app
+  uses, light + dark. **Fixed**: dark `info-soft` deepened `#0e2747` → `#081a30` (info text was
+  4.11:1); new **`on-accent`** token (light white / dark `#1c1d20`) for text on accent fills —
+  white on the dark accent was 3.23:1, so dark primary buttons now use near-black text (5.21:1);
+  **`muted-2` is decorative/placeholder-only** — it fails AA on every surface in light mode
+  (≤2.6:1), so all meaningful text at that step moved up to `muted` (the existing "never on
+  surface-sunken" rule generalizes). **Documented marginals** (≥3:1, large/bold or borderline;
+  revisit at the launch design pass): light `muted` on `window-bg` 4.30:1, dark `accent` as text
+  on `surface` 4.38:1. Prototype note: `styles.css` carries light values only, so only the
+  `on-accent` variable needs adding when the prototype next syncs (its dark mode is unimplemented).
+- **2026-07-06 — v1.2** — First-launch onboarding contracts added: **step-indicator** (done =
+  accent fill / current = accent ring / upcoming = border on `surface-sunken`; muted "Step n of N"
+  caption) and **onboarding-wizard** (a `modal-form` variant — one centered `lg`-radius card,
+  max 520px, real shadow as a floating surface, over `window-bg`; ghost Back / primary Continue;
+  iCloud availability states expressed with the existing `status-chip` `ok`/`warn`/`err`
+  semantics; non-dismissable until the flow completes). No new tokens — both components compose
+  the existing color/type/radius/elevation scales, so `prototype/styles.css` and Figma need no
+  token sync (a prototype mock of the wizard can be added when the prototype next updates).
 - **2026-07-04 — v1.1** — Phase 5 SwiftUI token layer shipped
   (`Sources/FinanceWorkspaceApp/DesignSystem/` — Tokens/Typography/Components, mirroring the
   front matter 1:1; brand accent expressed as a dynamic light/dark color from the token hexes,

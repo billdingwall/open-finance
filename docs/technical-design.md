@@ -4,6 +4,10 @@
 # Personal Finance Workspace for macOS
 ## Technical Design Document
 
+> **Project phase: 🌱 GROWTH (2026-07-09).** The v1 architecture this document locks is built and
+> shipped (roadmap MVP record). Growth items promoted from `docs/product-backlog.md` amend this
+> document (and §21) at promotion time when they touch the architecture.
+
 > **Round 7 note:** Sections 6–8 (workspace structure and file specs) and 10–16 (data model,
 > architecture, service responsibilities, flows, validation, UI requirements) have been extracted
 > to `docs/architecture/` to keep this file reviewable. This document remains the authoritative
@@ -471,6 +475,18 @@ These decisions are settled and should not be reopened for v1:
   bare `OpenFinance` value resolves to `nil` at runtime). One identifier across dev
   and distribution.
 
+  *Amended 2026-07-06 (additive — the container decision stands for the entitled build):*
+  storage resolution is now a **distribution-tier ladder** in `AppConfig.makeProvider()` —
+  the entitled ubiquity container when this build carries the entitlement (the signed,
+  sandboxed Xcode target); otherwise **`CloudDocsProvider`**, a dedicated app folder in the
+  user's own iCloud Drive (`~/Library/Mobile Documents/com~apple~CloudDocs/OpenFinance/Finance`),
+  which syncs without any entitlement and powers the direct-download (non-MAS, unsandboxed)
+  distribution from `Scripts/package-release.sh`; DEBUG keeps the local-folder provider.
+  `CloudDocsProvider` conforms to the same `CloudStorageProvider` protocol, reuses
+  `SyncStateMapper` (CloudDocs files are ubiquitous items; evicted files are detected via
+  `.«name».icloud` placeholders), and pulls forward a scoped variant of the V2 "iCloud Drive
+  folder" mode (§5 advanced mode) — app-designated folder, not yet user-selected.
+
 - **Workspace bootstrap seed accounts** ✓ — On first launch, bootstrap seeds six starter accounts in `Accounts/accounts.csv`: personal bank account, personal credit card, business bank account, business credit card, savings account, and investment account.
 
 ### Locked — 2026-06-10 (Phase 2)
@@ -522,13 +538,11 @@ These decisions are settled and should not be reopened for v1:
 ### Open decisions (pre-build)
 
 All Phase 1 architectural decisions were locked as of 2026-06-10 (foundation items
-hardened in Round 8). Remaining open decisions are tracked in
-`docs/project-management.md` by phase. Key open items that gate upcoming build phases:
-
-- `docs/project-management.md` Phase 2 `[DECIDE]`: full per-file enum enumeration and
-  the complete validation rule catalog *(R8 locked the format/structure; enumeration
-  remains)*
-- `docs/project-management.md` Phase 6 `[DECIDE]`: V1 write scope, backup retention policy, export column inclusion *(delete-on-reference behavior locked Round 7: reassign)*
+hardened in Round 8), and the phase `[DECIDE]`s that once gated the build (per-file enum
+enumeration, the validation catalog, V1 write scope, backup retention, export columns,
+delete-on-reference = reassign) were all **resolved during the MVP build** (Phases 2–7).
+Forward decisions and remaining work now live in the prioritized backlog,
+[`docs/product-backlog.md`](product-backlog.md) — see the Growth process in `docs/product-roadmap.md`.
 
 ## 22. Recommended implementation stance
 

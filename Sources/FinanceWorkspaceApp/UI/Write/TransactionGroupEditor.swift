@@ -1,10 +1,13 @@
 import SwiftUI
 import FinanceWorkspaceKit
 
-// Phase 7 (008) US2 T018 — the multi-entry transaction group editor (FR-005 · OOS-16). Authors a
-// paycheck as one atomic group (gross → withholdings → net), all legs in ONE monthly file, with a
-// live reconciliation indicator; Apply is blocked until net == gross − Σ withholding. The write
-// runs through the existing safe-write preview → backup → atomic apply path (MultiEntry.plan).
+// Phase 7 (008) US2 T018/T019 — the multi-entry transaction group editor (FR-005 · OOS-16).
+// Authors a paycheck as one atomic group (gross → withholdings → net), all legs in ONE monthly
+// file, with a live reconciliation indicator; Apply is blocked until net == gross − Σ withholding.
+// When `state.groupEditorLegs` is set the editor opens in whole-group EDIT mode: the legs prefill
+// the form and Save re-authors the group in place (same group_id, one atomic delete+add
+// FileChange — T019). The write runs through the existing safe-write preview → backup → atomic
+// apply path (MultiEntry.plan / AppState.presentGroupRewrite).
 //
 // Transfers (balanced debit/credit) are a follow-up: the shipped MultiEntryLeg.Role enum has no
 // credit/debit case, so a transfer would emit a schema-invalid group_role — deferred to a small
@@ -25,10 +28,12 @@ struct TransactionGroupEditor: View {
         var amount: String
     }
 
+    private var isEditing: Bool { state.groupEditorLegs != nil }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                OverlineLabel(text: "New paycheck group")
+                OverlineLabel(text: isEditing ? "Edit paycheck group" : "New paycheck group")
                 Spacer()
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
@@ -73,10 +78,13 @@ struct TransactionGroupEditor: View {
             Divider().overlay(DS.Colors.borderSoft)
             HStack {
                 Spacer()
-                Button("Cancel") { state.showingGroupEditor = false }
+                Button("Cancel") {
+                    state.groupEditorLegs = nil
+                    state.showingGroupEditor = false
+                }
                     .buttonStyle(SecondaryButtonStyle())
                     .keyboardShortcut(.cancelAction)
-                Button("Add group…") { apply() }
+                Button(isEditing ? "Save group…" : "Add group…") { apply() }
                     .buttonStyle(PrimaryButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canApply)
@@ -84,6 +92,28 @@ struct TransactionGroupEditor: View {
             .padding(12)
         }
         .frame(width: 500, height: 620)
+        .onAppear { prefillFromEditingLegs() }
+    }
+
+    /// EDIT mode — seed the form from the existing group's legs (paycheck shape).
+    private func prefillFromEditingLegs() {
+        guard let legs = state.groupEditorLegs, let file = legs.first?.sourceFile,
+              let legMonth = AppState.ledgerMonth(of: file) else { return }
+        month = legMonth
+        accountId = legs.first?.accountId ?? ""
+        if let grossLeg = legs.first(where: { $0.groupRole == .gross }) {
+            gross = NSDecimalNumber(decimal: abs(grossLeg.amount)).stringValue
+        }
+        if let netLeg = legs.first(where: { $0.groupRole == .net }) {
+            net = NSDecimalNumber(decimal: abs(netLeg.amount)).stringValue
+        }
+        let held = legs.filter { $0.groupRole == .withholding }
+        if !held.isEmpty {
+            withholdings = held.map {
+                Withholding(label: "Withholding",
+                            amount: NSDecimalNumber(decimal: abs($0.amount)).stringValue)
+            }
+        }
     }
 
     // MARK: - Reconciliation
@@ -125,8 +155,14 @@ struct TransactionGroupEditor: View {
                             memo: item.label.isEmpty ? "Withholding" : item.label))
         }
         legs.append(leg(role: .net, magnitude: netValue, signed: netValue, date: date, memo: "Net pay"))
-        state.presentGroupWrite(kind: .grossNet, month: month, legs: legs)
+        if let old = state.groupEditorLegs {
+            state.presentGroupRewrite(kind: .grossNet, month: month, legs: legs, replacing: old)
+        } else {
+            state.presentGroupWrite(kind: .grossNet, month: month, legs: legs)
+        }
     }
+
+    private func abs(_ value: Decimal) -> Decimal { value < 0 ? -value : value }
 
     private func leg(role: MultiEntryLeg.Role, magnitude: Decimal, signed: Decimal,
                      date: String, memo: String) -> MultiEntryLeg {

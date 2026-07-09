@@ -50,7 +50,7 @@ struct KPICardView: View {
                     }
                 }
                 if let footnote = model.footnote {
-                    Text(footnote).font(DS.Fonts.caption).foregroundStyle(DS.Colors.muted2)
+                    Text(footnote).font(DS.Fonts.caption).foregroundStyle(DS.Colors.muted)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

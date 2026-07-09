@@ -53,6 +53,7 @@ struct ImportView: View {
             .padding(12)
         }
         .frame(width: 560, height: 520)
+        .onAppear { consumeDroppedFile() }
     }
 
     private var mappingSection: some View {
@@ -65,6 +66,7 @@ struct ImportView: View {
                         ForEach(sourceColumns, id: \.self) { Text($0).tag(String?.some($0)) }
                     }
                     .labelsHidden()
+                    .accessibilityLabel("Map \(canonical) column")
                 }
             }
             LabeledContent("Target account") {
@@ -73,6 +75,7 @@ struct ImportView: View {
                     ForEach(accountOptions, id: \.0) { Text($0.1).tag($0.0) }
                 }
                 .labelsHidden()
+                .accessibilityLabel("Target account")
             }
             Toggle("Source uses the opposite sign convention", isOn: $flipped)
                 .font(DS.Fonts.body)
@@ -115,12 +118,24 @@ struct ImportView: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.commaSeparatedText, .plainText]
         panel.allowsMultipleSelection = false
-        guard panel.runModal() == .OK, let url = panel.url,
-              let text = try? String(contentsOf: url, encoding: .utf8) else { return }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        load(url)
+    }
+
+    /// Load a source CSV (file picker or a window drop — 008 US5 T043) and auto-detect mapping.
+    private func load(_ url: URL) {
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return }
         csvText = text
         let headerLine = text.components(separatedBy: "\n").first ?? ""
         sourceColumns = CSVLine.fields(headerLine).map { $0.trimmingCharacters(in: .whitespaces) }
         mapping = ImportMapper().autoDetect(sourceColumns: sourceColumns)
+    }
+
+    /// Consume a CSV dropped onto the window (the drop opens this sheet pre-loaded).
+    private func consumeDroppedFile() {
+        guard let url = state.droppedImportURL else { return }
+        state.droppedImportURL = nil
+        load(url)
     }
 
     private func rebuildBatch() {
