@@ -64,6 +64,7 @@ the 2026-07-07 review of the old tracker's open items, and PM requests.
 | SP-7 | **Verify `NSUserActivity` restoration in the signed app** — the deep-link codec + `AppRouter.resolve` nearest-valid fallback are implemented and unit-tested, but OS-level window restoration only exercises inside a signed, bundled app (the SwiftPM executable has no runtime `NSUserActivityTypes` registration). Run the check on a Developer-ID-signed install; restore to the nearest valid context when the prior entity is gone | OOS-9 / 008 T042 (the one 008 task left open) | S | Blocked on the Developer ID certificate; bundle with the Flow 10 two-device pass and the first signed build |
 | SP-8 | **First signed release** — the Developer ID signing + notarization RUN on the entitled app target (config + procedure landed: `App/project.yml` Release settings, `docs/_notes/running-and-testing.md` §7), the **two-device iCloud sync + conflict exercise** (`docs/test-plans.md` Flow 10), and the **release notes / known-limitations** doc (iCloud edge cases). Absorbs the last open Phase-7 roadmap tasks | Roadmap Phase 7 (Packaging & Signing + release-notes product task) | S–M | **Blocked on the Developer ID certificate** ($99 Apple Developer account — developer-machine action). Bundle with SP-7; the SwiftPM/CloudDocs path (`scripts/package-release.sh`) shares the same credentials |
 | SP-9 | **Run XCUITest in CI** — the `FinanceWorkspaceUITests` target + `ModuleSmokeUITests` exist and build; add an `xcodebuild test -scheme FinanceWorkspace` step to `.github/workflows/ci-macos.yml` so the smoke suite executes on the macOS runner | 008 T056 caveat | S | |
+| SP-10 | **CLI parity: `import-csv` + `export-summary` executables** — the planned dev-tool twins of the in-app flows were never built: an `import-csv` CLI (external CSV → column map → month-split canonical ledgers) and an `export-summary` CLI (budget Markdown / provenance CSV). Both wrap existing, tested Kit engines (`ImportMapper`, `ExportService`) — thin `main.swift` wrappers + `Package.swift` targets | Roadmap Phase 6 dev tasks (unchecked, undelivered — found in the 2026-07-09 MVP sweep) | S | |
 | SP-6 | **Per-file sync states → write gate** — the app calls `WriteService.apply(…, fileStates: [:])` from both `applyPendingWrite` and `onboardingApply`, and unknown files default to `.available`, so `WriteGate`'s per-file refusals (syncing/stale/conflict) can never fire. Thread real per-file states through `AppState`; `CloudDocsProvider.syncState(for:)` now supplies them **without an entitlement**, so this no longer waits on the signed build | OOS-22 (code audit) *(reworded per the alignment review)* | M | Pairs with VD-1 (per-file badges) and the Phase-7 signed-build sync tests, which pass trivially until this lands |
 
 ## 3 · Visual design updates
@@ -117,6 +118,10 @@ Items from the old tracker verified closed against the repo during the rename (e
 
 ## Changelog
 
+- **2026-07-09 (MVP sweep)** — Added **SP-10** (CLI parity: `import-csv` + `export-summary`
+  executables) — the single genuinely-undelivered, untracked item found when sweeping every
+  unchecked checkbox in the roadmap's MVP record before condensing it to prose; every other
+  unchecked box was either delivered (per-phase banners) or already had a backlog row.
 - **2026-07-09 (Growth)** — Project entered the **Growth phase**: this backlog is now the sole
   source of forward work (prioritization rule 5 above). Added **SP-8** (first signed release —
   sign+notarize run, two-device Flow 10, release notes; absorbs the last open Phase-7 roadmap
