@@ -80,14 +80,21 @@ extension AppState {
         }
     }
 
+    /// A built onboarding write: the plan plus what the wizard previews inline.
+    struct OnboardingGroupPlan {
+        let plan: WritePlan
+        let id: String
+        let row: String
+    }
+
     /// Build the Step-2 plan: append a row to `Accounts/account-groups.csv`.
-    func onboardingGroupPlan(name: String, groupType: String) -> (plan: WritePlan, id: String, row: String)? {
+    func onboardingGroupPlan(name: String, groupType: String) -> OnboardingGroupPlan? {
         guard let text = readWorkspaceFile("Accounts/account-groups.csv"),
               let header = CSVRowSerializer.header(of: text) else { return nil }
         let id = "grp-" + Self.slug(name)
         let fields = ["account_group_id": id, "name": name, "group_type": groupType]
         let plan = WritePlanBuilder.add(fields: fields, to: "Accounts/account-groups.csv", fileText: text)
-        return (plan, id, CSVRowSerializer.row(fields: fields, header: header))
+        return OnboardingGroupPlan(plan: plan, id: id, row: CSVRowSerializer.row(fields: fields, header: header))
     }
 
     /// Build the Step-3 plan: append a row to `Accounts/accounts.csv` linked to the Step-2 group.

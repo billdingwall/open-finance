@@ -12,6 +12,7 @@ import Foundation
 
     private func makeState(_ root: URL) async -> AppState {
         let state = AppState()
+        state.fileWatchingEnabled = false   // no FSEvents streams in the test process
         state.workspaceURL = root
         state.syncState = .available
         await state.reindex()

@@ -141,9 +141,8 @@ struct EntityEditForm: View {
     private func referenceOptions(_ reference: String) -> [(id: String, name: String)] {
         guard let context = state.projections?.context else { return [] }
         let parts = reference.split(separator: "#")
-        guard parts.count == 2,
-              let parentSchema = try? CSVSchemaRegistry().schema(forRelativePath: String(parts[0]))
-        else { return [] }
+        guard parts.count == 2 else { return [] }
+        guard let parentSchema = try? CSVSchemaRegistry().schema(forRelativePath: String(parts[0])) else { return [] }
         let ids = context.identifierSet(fileTypeKey: parentSchema.fileTypeKey, column: String(parts[1]))
         let names = displayNames(fileTypeKey: parentSchema.fileTypeKey, context: context)
         return ids.sorted().map { (id: $0, name: names[$0] ?? "") }

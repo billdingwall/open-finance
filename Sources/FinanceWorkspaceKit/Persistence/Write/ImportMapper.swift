@@ -148,7 +148,7 @@ public struct ImportMapper: Sendable {
             let diffs = included.map {
                 WriteRowDiff(rowRef: nil, kind: .add(after: CSVRowSerializer.row(fields: $0.values, header: header)))
             }
-            changes.append(FileChange(relativePath: path, expectedHash: nil, rowDiffs: diffs))
+            changes.append(FileChange(relativePath: path, expectedHash: nil, rowDiffs: diffs, seedHeader: header))
         }
         return WritePlan(intent: .importCSV, changes: changes)
     }

@@ -13,6 +13,7 @@ import Foundation
     /// A ready AppState over a temp fixture workspace (no provider/openWorkspace involved).
     private func makeState(_ fixture: AppFixture) async -> AppState {
         let state = AppState()
+        state.fileWatchingEnabled = false   // no FSEvents streams in the test process
         state.workspaceURL = fixture.root
         state.syncState = .available
         await state.reindex()

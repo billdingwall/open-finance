@@ -47,7 +47,9 @@ public enum MultiEntry {
             return WriteRowDiff(rowRef: nil, kind: .add(after: line), groupId: groupId)
         }
         let path = "Accounts/transactions/\(month).csv"
-        return WritePlan(intent: .add, changes: [FileChange(relativePath: path, expectedHash: nil, rowDiffs: diffs)])
+        return WritePlan(intent: .add, changes: [
+            FileChange(relativePath: path, expectedHash: nil, rowDiffs: diffs, seedHeader: header),
+        ])
     }
 
     /// Delete every row of a group atomically. `groupRows` are (rowRef, line) pairs sharing the id.

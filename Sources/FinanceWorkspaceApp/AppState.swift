@@ -132,6 +132,9 @@ final class AppState {
     @ObservationIgnored private var domainKeys: ProjectionStore.DomainKeys?
     // Debounced FSEvents watcher → re-index on external edits (008 US4 T036) — not UI state.
     @ObservationIgnored private var watcher: FileWatcherService?
+    // Tests set false BEFORE reindex: FSEvents streams on soon-deleted temp dirs crash the
+    // parallel test process; the app itself always watches.
+    @ObservationIgnored var fileWatchingEnabled = true
 
     var router: AppRouter { AppRouter(state: self) }
 
@@ -198,7 +201,7 @@ final class AppState {
     /// (008 US4 T036 — the debounce lives in `FileWatcherService`; `.finance-meta/` is filtered
     /// there too, so the app's own backups/logs never re-trigger). Idempotent.
     private func startWatchingIfNeeded() {
-        guard watcher == nil, let workspaceURL else { return }
+        guard fileWatchingEnabled, watcher == nil, let workspaceURL else { return }
         let service = FileWatcherService(workspaceRoot: workspaceURL) { [weak self] _ in
             Task { @MainActor [weak self] in await self?.reindex() }
         }

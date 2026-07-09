@@ -27,6 +27,14 @@ struct FixtureWorkspace {
         try? Data(content.utf8).write(to: url)
     }
 
+    /// Write a file verbatim (no `# schema_version` prefix) — e.g. Workspace.md.
+    func writeRaw(_ relativePath: String, _ content: String) {
+        let url = root.appendingPathComponent(relativePath)
+        try? FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? Data(content.utf8).write(to: url)
+    }
+
     func parse() throws -> WorkspaceContext { try WorkspaceParser().parse(workspaceURL: root) }
 
     func cleanup() { try? FileManager.default.removeItem(at: root.deletingLastPathComponent()) }
@@ -91,6 +99,8 @@ struct FixtureWorkspace {
     /// the shared base for the US6 fixture matrix, the integration tests, and the App VM suites.
     static func full(month: String = "2026-06") -> FixtureWorkspace {
         let fixture = FixtureWorkspace()
+        // Workspace.md is a required file; its absence is a workspace-level validation error.
+        fixture.writeRaw("Workspace.md", "---\nworkspace_id: fixture\n---\n")
         fixture.write("Accounts/accounts.csv", acctHeader, [
             "A1,Checking,Bank,checking,personal,active,G1",
             "A2,Savings,Bank,savings,hysa,active,G1",

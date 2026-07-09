@@ -89,9 +89,8 @@ struct AppShellView: View {
         // Drag a CSV anywhere onto the window to start the import flow (008 US5 T043).
         // .md files are parsed workspace content, not importable documents, in v1.
         .dropDestination(for: URL.self) { urls, _ in
-            guard state.writesEnabled,
-                  let url = urls.first(where: { $0.pathExtension.lowercased() == "csv" })
-            else { return false }
+            let droppedCSV = urls.first { $0.pathExtension.lowercased() == "csv" }
+            guard state.writesEnabled, let url = droppedCSV else { return false }
             state.droppedImportURL = url
             state.showingImport = true
             return true

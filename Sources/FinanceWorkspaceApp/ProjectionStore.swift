@@ -146,26 +146,22 @@ struct ProjectionStore: Sendable {
     }
 
     /// Stat digests per domain path group (skipping the app-managed `.finance-meta/`).
+    /// Symlinks are resolved on BOTH sides — /tmp vs /private/tmp style aliases otherwise make
+    /// every relative path (and so every key) empty, which would wrongly mark all domains fresh.
     static func domainKeys(workspaceURL: URL, asOf: Date) -> DomainKeys {
         var keys = DomainKeys()
         var parts: [String: [String]] = [:]
+        let base = workspaceURL.resolvingSymlinksInPath()
         let keysOf: Set<URLResourceKey> = [.fileSizeKey, .contentModificationDateKey, .isRegularFileKey]
-        let enumerator = FileManager.default.enumerator(at: workspaceURL,
+        let enumerator = FileManager.default.enumerator(at: base,
                                                         includingPropertiesForKeys: Array(keysOf))
         while let url = enumerator?.nextObject() as? URL {
             guard let values = try? url.resourceValues(forKeys: keysOf),
                   values.isRegularFile == true else { continue }
-            let rel = url.path.replacingOccurrences(of: workspaceURL.path + "/", with: "")
-            guard !rel.hasPrefix(".finance-meta") else { continue }
+            let rel = url.resolvingSymlinksInPath().path
+                .replacingOccurrences(of: base.path + "/", with: "")
+            guard !rel.hasPrefix(".finance-meta"), let group = Self.domainGroup(for: rel) else { continue }
             let stamp = "\(rel)|\(values.fileSize ?? 0)|\(values.contentModificationDate?.timeIntervalSince1970 ?? 0)"
-            let group: String
-            if rel.hasPrefix("Accounts/transactions/") { group = "transactions" }
-            else if rel.hasPrefix("Accounts/") { group = "accounts" }
-            else if rel.hasPrefix("Budget/") { group = "budget" }
-            else if rel.hasPrefix("Savings/") { group = "savings" }
-            else if rel.hasPrefix("Investments/") { group = "investments" }
-            else if rel.hasPrefix("Taxes/") { group = "taxes" }
-            else { continue }
             parts[group, default: []].append(stamp)
         }
         func digest(_ group: String) -> String { (parts[group] ?? []).sorted().joined(separator: ";") }
@@ -177,6 +173,16 @@ struct ProjectionStore: Sendable {
         keys.taxes = digest("taxes")
         keys.day = ISO8601DateFormatter().string(from: asOf).prefix(10).description
         return keys
+    }
+
+    private static func domainGroup(for rel: String) -> String? {
+        if rel.hasPrefix("Accounts/transactions/") { return "transactions" }
+        if rel.hasPrefix("Accounts/") { return "accounts" }
+        if rel.hasPrefix("Budget/") { return "budget" }
+        if rel.hasPrefix("Savings/") { return "savings" }
+        if rel.hasPrefix("Investments/") { return "investments" }
+        if rel.hasPrefix("Taxes/") { return "taxes" }
+        return nil
     }
 
     /// Closed years from `Taxes/archive/YYYY-*.csv` file names (a read-only directory scan —

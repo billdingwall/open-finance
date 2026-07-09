@@ -15,6 +15,7 @@ import Foundation
         let fixture = AppFixture.standard()
         defer { fixture.cleanup() }
         let state = AppState()
+        state.fileWatchingEnabled = false   // no FSEvents streams in the test process
         state.workspaceURL = fixture.root
         state.syncState = .available
         await state.reindex()
