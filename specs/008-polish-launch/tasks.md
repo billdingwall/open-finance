@@ -366,9 +366,12 @@ relaunch restores; drag a CSV imports; iCloud-off launch shows enable-iCloud + r
   CLI portion ✓ 2026-07-07 (bootstrap 16 folders/46 files; 12-month fixture; validate clean
   0/0/0; backup-prune; live overview-dashboard). The interactive US1/US2 walkthrough + US3
   hardware steps + `swift test` remain manual / CI (CLT box cannot run them)
-- [ ] T056 Confirm CI green: `swift test` + `swiftlint --strict` + unsigned app-target build + XCUITest
-  on the macOS runner — **pending push** (all suites written; the CLT box can build but not run
-  them). Note: CI's app-target step may need `xcodebuild test` added for the new XCUITest target
+- [X] T056 Confirm CI green: `swift test` + `swiftlint --strict` + unsigned app-target build + XCUITest
+  on the macOS runner ✓ 2026-07-09 (PR #23, runs 29038719225/29038719235 after two fix rounds —
+  206 tests green; the first-ever execution of the 008 suites caught two real engine bugs:
+  headerless new monthly files in `WriteService` and the never-firing savings-progress
+  VAL-CROSS-008 key). **Caveat**: the XCUITest target builds but CI does not yet run
+  `xcodebuild test` — adding that step is a small CI follow-up
 
 ---
 
