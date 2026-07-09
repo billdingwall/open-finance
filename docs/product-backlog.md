@@ -42,6 +42,7 @@ the 2026-07-07 review of the old tracker's open items, and PM requests.
 | UV-5 | **Surface sleeve-funding links** — `LinkingEngine.sleeveLinks` computes and trades exist since Phase 4, but nothing consumes `SleeveFundingLink`; feed it into `PortfolioEngine`/`PortfolioView` (sleeve table contribution tracking) | OOS-5 (004 FR-015) *(reworded per the alignment review — the gap is a missing consumer, not missing data)* | M | |
 | UV-6 | **Transfer authoring in the multi-entry editor** — `TransactionGroupEditor` ships paycheck groups only; add credit/debit roles to `MultiEntryLeg.Role` (small additive engine change) + a transfer mode in the editor | OOS-20 (008 T018 deviation) | M | |
 | UV-7 | **Typed tax-archive read model** — the parser skips `Taxes/archive/`, so closed years render as raw file previews; add a parser/engine extension for typed adjustment/payment tables in `TaxArchiveView` | OOS-7 (006 FR-029) | M | Or close as won't-do if raw previews suffice — PM call at spec time |
+| UV-9 | **Workspace reset + fresh-or-seeded onboarding** — a "Reset workspace…" action that wipes the iCloud workspace folder and relaunches the first-run wizard; onboarding Step 1 gains a choice: **start fresh** (standard bootstrap seed) or **start with sample data** (a fixture-generate-style 12-month demo dataset). Destructive: typed confirmation + an automatic pre-wipe archive of the old folder (safe-writes principle — never an unrecoverable wipe); must also clear device-local state (manifest, onboarding-complete flag) so the wizard re-triggers | PM request 2026-07-09 | M | Needs a small PRD amendment (no reset flow is specced); the sample-data path reuses `fixture-generate`'s generator via the Kit |
 | UV-8 | **Investment/reinvested-gain retained equity** — extend the personal-inflow vs retained-equity split beyond the business portion: `PortfolioEngine`/`TaxEngine` compute retained equity from reinvested realized gains now that trades are modeled | OOS-4 (004 FR-001/A1) | L | Cross-engine; spec of its own |
 
 ## 2 · Security & performance
@@ -68,6 +69,7 @@ the 2026-07-07 review of the old tracker's open items, and PM requests.
 | VD-2 | **Onboarding wizard prototype mock** — add the `onboarding-wizard` + `step-indicator` components (DESIGN.md v1.2) to `prototype/` so the living reference matches the shipped app | DESIGN.md v1.2 changelog note | S | |
 | VD-3 | **Final iconography pass** — section icons, status icons, issue-severity icons, account-group icons consistent and at correct scale (the one Phase-7 design `[DECIDE]` not folded into spec 008) | Phase-7 design task | M | |
 | VD-4 | **Designed app icon** — replace the generated placeholder (`scripts/make-icon.swift`) with a designed icon for the distributable app | Packaging scripts note | M | Coordinate with VD-3 |
+| VD-5 | **iCloud folder cleanup + app-icon branding** — tidy the user-visible workspace tree (today the CloudDocs path nests iCloud Drive › OpenFinance › Finance — decide whether that flattens) and brand the folder with the app icon. Entitled-container path: declare `NSUbiquitousContainers` (public document scope + container display name) so iCloud Drive shows the app's branded folder natively; CloudDocs path: custom folder icon via `NSWorkspace.setIcon` (local-only — resource forks don't sync over iCloud Drive) | PM request 2026-07-09 | S–M | Structure changes touch `WorkspaceLayout` + both providers — check against the §21 locked layout; icon asset comes from VD-4 |
 
 ## Under consideration
 
@@ -108,6 +110,12 @@ Items from the old tracker verified closed against the repo during the rename (e
 
 ## Changelog
 
+- **2026-07-09** — Added **UV-9** (workspace reset + fresh-or-seeded onboarding — wipe the iCloud
+  folder behind a typed confirmation + pre-wipe archive, re-run the wizard with a start-fresh vs
+  start-with-sample-data choice) and **VD-5** (iCloud folder structure cleanup + app-icon
+  branding: `NSUbiquitousContainers` for the entitled container, `NSWorkspace.setIcon` for
+  CloudDocs). UV-9 is slotted by effort (M) ahead of UV-8 (L) — IDs are stable, table order is
+  priority.
 - **2026-07-09** — Added **SP-7** (verify `NSUserActivity` restoration in the signed app — OOS-9 /
   008 T042, the one spec-008 task left open after PR #23 went green; blocked on the Developer ID
   certificate). Ordering note: SP-7 sits with the other signed-build actions rather than strictly
