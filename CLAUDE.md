@@ -145,7 +145,7 @@ Project docs are living, updated per refinement round (detail: `docs/_notes/work
 2. Synthesize into `docs/_refinement/r{n}-update-{doc}.md` per affected doc.
 3. Apply to `docs/product-requirements.md` (+ Changelog).
 4. Cascade to `docs/technical-design.md` and `docs/product-roadmap.md` (+ Changelogs); update the
-   relevant `docs/architecture/` file directly for spec details; update `docs/project-management.md`.
+   relevant `docs/architecture/` file directly for spec details; update `docs/product-backlog.md`.
 5. If principles changed, amend `.specify/memory/constitution.md` (version bump).
 6. Update `docs/_design/` and `prototype/`, then start the next round.
 7. Commit all affected docs together.
@@ -160,7 +160,7 @@ Project docs are living, updated per refinement round (detail: `docs/_notes/work
 | `docs/technical-design.md` | Architecture overview + locked decisions (§21); links to `docs/architecture/`. |
 | `docs/architecture/` | Canonical specs: entities, workspace layout, all CSV/MD specs, validation rules, pipelines. |
 | `docs/product-roadmap.md` | Phased plan + milestone gates. |
-| `docs/project-management.md` | Planned `[FIX]`/`[DECIDE]` backlog by phase. |
+| `docs/product-backlog.md` | Prioritized product backlog (user value → security & performance ∥ visual design; under-consideration at bottom). Replaced `docs/project-management.md` 2026-07-07. |
 | `docs/out-of-scope-followups.md` | Items skipped/deferred during spec implementation. |
 | `docs/test-plans.md` | App testability status + manual user flows. |
 | `.specify/memory/constitution.md` | The 7 non-negotiable principles. |

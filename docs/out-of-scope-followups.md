@@ -3,16 +3,20 @@
 Items that were **in a Spec Kit spec's field of view but deliberately skipped or deferred during
 implementation** — captured here so nothing falls through the cracks between phases.
 
-> **Last updated**: 2026-07-06 (spec 002–008 review + source audit on branch
+> **Last updated**: 2026-07-07 (**roadmap Phase 8 closed** — every open item triaged into
+> [`docs/product-backlog.md`](product-backlog.md); per-item statuses below now carry their backlog
+> IDs). Earlier, 2026-07-06: spec 002–008 review + source audit on branch
 > `009-out-of-scope-followups`: OOS-19 added from spec `003`'s partial tasks; OOS-20…OOS-24 added
-> from the code audit — see the *Code audit* section). Earlier same day: Phase 6
+> from the code audit — see the *Code audit* section. Earlier same day: Phase 6
 > `007-write-flows-repair-export` follow-ups split into their own section and renumbered
 > OOS-13…OOS-18 to remove the ID collision with the 006 series. Earlier: 2026-07-04 (Phase 5
 > follow-ups added; OOS-1/3/6 → Resolved).
 
-This is distinct from [`docs/project-management.md`](project-management.md), which tracks the
-*planned* `[FIX]`/`[DECIDE]` backlog for upcoming phases. This doc tracks the *unplanned residue* of
-work already done: the "we shipped the spec, but consciously left X for later" items.
+This is distinct from [`docs/product-backlog.md`](product-backlog.md) (formerly
+`docs/project-management.md`), which holds the *prioritized product backlog*. This doc tracks the
+*unplanned residue* of work already done: the "we shipped the spec, but consciously left X for
+later" items. **As of 2026-07-07 every open item below has been triaged into the product backlog**
+(roadmap Phase 8 closed); this doc remains the provenance record.
 
 ---
 
@@ -21,8 +25,7 @@ work already done: the "we shipped the spec, but consciously left X for later" i
 - **As each GitHub Spec Kit spec is implemented**, the remaining items that were skipped or
   deferred during that implementation are added here, attributed to their source spec and task.
 - **The product manager reviews these follow-ups** and decides on next steps as needed — promote to
-  a future spec, fold into a roadmap phase, convert to a `[DECIDE]` in
-  [`docs/project-management.md`](project-management.md), or close as won't-do.
+  a future spec, fold into the [`product backlog`](product-backlog.md), or close as won't-do.
 
 ### Status legend
 
@@ -63,7 +66,7 @@ work already done: the "we shipped the spec, but consciously left X for later" i
 - **Suggested next step / target phase**: revisit alongside **Phase 6** (Write Flows, Repair &
   Export), where the write/sync-gate path is built out; the "expected columns" notion may inform the
   optional-column repair.
-- **Status**: Open.
+- **Status**: Triaged → backlog **SP-5** (2026-07-07).
 
 #### OOS-19 — Pending validation rule predicates (catalog metadata only)
 - **Source**: T023/T024/T025 (each marked `[~]` partial). *(Added 2026-07-06 during the spec
@@ -79,11 +82,11 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   that file.
 - **Suggested next step / target phase**: **Phase 8** — small self-contained predicates in
   `Sources/FinanceWorkspaceKit/Validation/Rules/`; fix the stale header comment alongside.
-- **Status**: Open.
+- **Status**: Triaged → backlog **SP-4** (2026-07-07).
 
 #### OOS-3 — Phase 2 validation/repair UI design
 - **Source**: the Phase 2 **Design Tasks** in [`docs/product-roadmap.md`](product-roadmap.md) and the
-  three Phase 2 Design `[DECIDE]`s in [`docs/project-management.md`](project-management.md) —
+  three Phase 2 Design `[DECIDE]`s in [`docs/project-management.md`](product-backlog.md) *(now the product backlog)* —
   validation issue card, repair preview panel, indexing progress state.
 - **Skipped because**: spec `003` was the engine/infrastructure layer only; there is no app UI to
   host these surfaces yet. Intended treatments are explored in the static `prototype/` but are not
@@ -100,7 +103,7 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   reinvested realized gains depends on trade/lot data.
 - **Suggested next step / target phase**: **Phase 4** — extend the split in `PortfolioEngine`/
   `TaxEngine` once trades are modeled.
-- **Status**: Open.
+- **Status**: Triaged → backlog **UV-8** (2026-07-07).
 
 #### OOS-5 — Sleeve-funding links populated
 - **Source**: spec `004` (FR-015) — `LinkingEngine.sleeveLinks`.
@@ -109,11 +112,11 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   links until investment trades exist.
 - **Suggested next step / target phase**: **Phase 4** — alongside `PortfolioEngine` and the unified
   trade ledger.
-- **Status**: Open.
+- **Status**: Triaged → backlog **UV-5** (2026-07-07, reworded — the remaining gap is a missing consumer of `SleeveFundingLink`).
 
 #### OOS-6 — Phase 3 module UI design + Overview KPI "estimated rate"
 - **Source**: the six Phase-3 **Design** `[DECIDE]`s in
-  [`docs/project-management.md`](project-management.md) (Accounts overview, per-account detail, Budget
+  [`docs/project-management.md`](product-backlog.md) *(now the product backlog)* (Accounts overview, per-account detail, Budget
   overview, Budget history, Overview dashboard, empty states) and the Savings/Investments "estimated
   rate" field.
 - **Skipped because**: spec `004` is the engine/model/seed layer only (no SwiftUI); the rate formulas
@@ -134,7 +137,7 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   account; `estimated-payments.csv` (workspace-level, no account link) feeds the tax **estimate**, not
   per-account rates. *(Source: US2/US3.)* Acceptable for v1.
 - **Live price ingestion** stays V2 — prices/benchmark come from static CSVs (as planned).
-- **Status**: Open.
+- **Status**: Per-account tax allocation triaged → backlog **UC-1** (2026-07-07); sector-vs-benchmark + live prices remain V2.
 
 ---
 
@@ -144,22 +147,22 @@ work already done: the "we shipped the spec, but consciously left X for later" i
   (read-only year-close snapshots), so `TaxArchiveView` renders closed years as **raw file
   previews** rather than typed adjustment/payment tables. A typed archive projection would need a
   parser/engine extension. *(Source: 006 T055/T058, FR-029.)* Target: Phase 6 (alongside the
-  year-close write flow) or close as won't-do if raw previews suffice. **Status: Open.**
+  year-close write flow) or close as won't-do if raw previews suffice. **Status: Triaged → backlog UV-7 (2026-07-07).**
 - **OOS-8 — Account estimates surface**: the per-account "Rules & estimates" panel lists
   `account-rules` rows; the separate `AccountEstimate` entity has no `WorkspaceContext` accessor /
   engine projection, so it isn't rendered. *(Source: 006 T041, FR-019.)* Target: Phase 6 with the
-  rules/estimates edit flows. **Status: Open.**
+  rules/estimates edit flows. **Status: Triaged → backlog UV-4 (2026-07-07).**
 - **OOS-9 — `NSUserActivity` restoration end-to-end**: the codec + scene modifiers are implemented
   and unit-tested, but OS-level state restoration is only fully exercisable inside the bundled app
   target (the SwiftPM executable has no `NSUserActivityTypes` registration at runtime). Verify in
   the Xcode-built app during the Phase 7 polish pass. *(Source: 006 T011/T019, research D6.)*
-  **Status: Open.**
+  **Status: Scheduled — Phase 7 (`008-polish-launch` T042).**
 - **XCUITest automation** deferred to Phase 7 (as planned, research D8); view rendering is covered
   by light/dark previews + the manual Flow 9 demo script in `docs/test-plans.md`.
 - **Milestone-5 interactive demo (Flow 9)**: automated proofs passed (boot, SC-005 read-only
   tar-compare, engine⇄view parity tests); the human keyboard/dark-mode/traceability walkthrough is
   recorded as **[Manual pass pending]** in `docs/test-plans.md`. *(Source: 006 T063.)*
-  **Status: Open (PM action).**
+  **Status: Triaged → backlog SP-1 (2026-07-07).**
 
 ---
 
@@ -213,30 +216,30 @@ Findings from a source audit of `Sources/` + `Tests/` against the shipped specs,
   gross → withholdings → net **paycheck** groups only. `MultiEntryLeg.Role` has no credit/debit
   case, so a balanced transfer group would emit a schema-invalid `group_role`. Needs a small
   additive engine change (credit/debit roles) plus a transfer mode in the editor.
-  **Status: Open.**
+  **Status: Triaged → backlog UV-6 (2026-07-07).**
 - **OOS-21 — Generic per-table "current view" export not wired** *(Source: 007 T043 / FR-027
   simplification — carried as a sentence inside OOS-18, not picked up by spec 008)*: ⌘E exports
   the active module's **primary file** as CSV-with-provenance; exporting the *visible rows of any
   table* (post-filter/sort) is the deferred refinement. `ExportService.csv(rows:columns:)` already
-  accepts arbitrary rows — the gap is view-side plumbing only. **Status: Open.**
+  accepts arbitrary rows — the gap is view-side plumbing only. **Status: Triaged → backlog UV-3 (2026-07-07).**
 - **OOS-22 — Per-file sync states never reach the write gate** *(Source: code audit;
   `AppState+WriteFlows.swift` `applyPendingWrite`)*: the app calls
   `WriteService.apply(…, fileStates: [:])` and `WriteService` defaults unknown files to
   `.available`, so `WriteGate`'s per-file refusals (syncing / stale local copy / conflict) can
   never fire — only the workspace-level state gates writes today. Wire the `NSMetadataQuery`
   per-file states through `AppState` into apply. Pairs with OOS-2 (repair-write gating) and the
-  Phase-7 signed-build sync tests, which would otherwise pass trivially. **Status: Open.**
+  Phase-7 signed-build sync tests, which would otherwise pass trivially. **Status: Triaged → backlog SP-6 (2026-07-07, reworded — see the alignment review).**
 - **OOS-23 — Tax tables hardcoded for 2025/2026 with a silent latest-year fallback** *(Source:
   code audit; `WorkspaceLayout.standardDeduction` / `taxBrackets`)*: any other tax year silently
-  uses the newest table with no warning. Ties to the still-open Phase-4 `[DECIDE]` in
-  [`docs/project-management.md`](project-management.md) (hardcode per year vs user-editable
-  setting); needs an annual update procedure and ideally a "no tax table for year N" validation
-  warning. **Status: Open.**
+  uses the newest table with no warning. Ties to the old Phase-4 `[DECIDE]` (hardcode per year vs
+  user-editable setting), now folded into this item as backlog **SP-3**; needs an annual update
+  procedure and ideally a "no tax table for year N" validation warning.
+  **Status: Triaged → backlog SP-3.**
 - **OOS-24 — Interest income detected by category-name heuristic** *(Source: code audit;
   `TaxEngine.project`)*: interest categories are matched by `name.contains("interest")` — renamed
   or non-English categories silently drop interest income from the tax projection. Replace with a
   typed category flag (a future schema round) or lock the naming convention in as a documented
-  validation rule. **Status: Open.**
+  validation rule. **Status: Triaged → backlog SP-2 (2026-07-07).**
 
 ---
 

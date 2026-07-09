@@ -27,8 +27,11 @@ branch** — its implementation tasks are checked `[X]`; only its tests remain.
 
 - [ ] T001 [P] Scaffold `Sources/FinanceWorkspaceApp/UI/Write/TransactionGroupEditor.swift` and
   `Sources/FinanceWorkspaceApp/UI/Write/ReassignmentPickerView.swift` (file headers only)
-- [ ] T002 [P] Scaffold `Sources/FinanceWorkspaceApp/UI/Onboarding/OnboardingView.swift` and
-  `Sources/FinanceWorkspaceApp/UI/Shell/ConflictResolutionView.swift` (file headers only)
+- [~] T002 [P] Scaffold `Sources/FinanceWorkspaceApp/UI/Onboarding/OnboardingView.swift` and
+  `Sources/FinanceWorkspaceApp/UI/Shell/ConflictResolutionView.swift` (file headers only) —
+  **`OnboardingView.swift` superseded**: built directly to full implementation on branch
+  `009-out-of-scope-followups` rather than scaffolded first (see T045). `ConflictResolutionView.swift`
+  is still unscaffolded (US3, T031).
 - [X] T003 [P] Scaffold `Sources/FinanceWorkspaceKit/Persistence/Write/BackupPruneService.swift`
   (implemented fully with T046)
 - [X] T004 [P] Add the `backup-prune` executable target (`Sources/backup-prune/main.swift`) and
@@ -220,8 +223,18 @@ relaunch restores; drag a CSV imports; iCloud-off launch shows enable-iCloud + r
   `Sources/FinanceWorkspaceApp/FinanceWorkspaceApp.swift`
 - [ ] T044 [US5] Confirm the full macOS menu set incl. **Open Backup Folder** in
   `Sources/FinanceWorkspaceApp/UI/Shell/AppCommands.swift`
-- [ ] T045 [US5] Build the **require-iCloud** first-launch onboarding (enable-iCloud + retry; no local
+- [X] T045 [US5] Build the **require-iCloud** first-launch onboarding (enable-iCloud + retry; no local
   store; confirm success + "add your first account") in `Sources/FinanceWorkspaceApp/UI/Onboarding/`
+  — delivered on branch `009-out-of-scope-followups`: `OnboardingView.swift` (3-step wizard,
+  non-dismissable) + `AppState+Onboarding.swift` (provisioning, retry, safe-write apply). Satisfies
+  spec.md acceptance scenarios 5 & 6 — `OnboardingCloudStatus.failure(reason:)` renders the
+  enable-iCloud state with retry via Continue; `.success(path:)` confirms; Step 3 is "add your
+  first account". "No local store" holds for RELEASE (`AppConfig.makeProvider()` never returns
+  `LocalFolderProvider` outside `#if DEBUG` — DEBUG keeps the existing dev-local exception used
+  throughout the app, not a deviation). Distribution note: this onboarding targets the
+  **CloudDocs/direct-download** provider ladder (new this branch — `CloudDocsProvider.swift`),
+  a second distribution path alongside the entitled-container target US3 (T029–T033) still
+  assumes; the signed/notarized Xcode-target work and the conflict-resolution UI remain open.
 
 **Checkpoint**: launch-quality accessibility + native behavior.
 

@@ -3,7 +3,7 @@
 **Project**: Personal Finance Workspace for macOS
 **Scope**: v1 as defined in `docs/product-requirements.md` and `docs/technical-design.md`
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
-**Last updated**: 2026-07-06 (Phases 1–6 complete and merged to `main`, PRs #15–#21; Phase 6 write flows landed via PR #21. Phase 7 is the active phase; Phase 8 added for out-of-scope follow-ups — see status banners & changelog)
+**Last updated**: 2026-07-07 (Phases 1–6 complete and merged to `main`, PRs #15–#21. Phase 7 is the active phase; **Phase 8 closed 2026-07-07** — all rows triaged into `docs/product-backlog.md`, see status banners & changelog)
 
 ---
 
@@ -1020,6 +1020,15 @@ No new features — this phase hardens everything built in phases 1–6.
 
 ## Phase 8: Out-of-Scope Follow-ups (post-v1 backlog)
 
+> **✅ Status (2026-07-07): COMPLETE — triaged to the product backlog.** Every row below was
+> verified against the code and key docs (`docs/_notes/phase8-alignment-review.md`) and migrated
+> into [`docs/product-backlog.md`](product-backlog.md) with a backlog ID (the two PM-requested
+> enhancements lead the backlog as UV-1/UV-2; OOS-5 and OOS-22 migrated with the corrected wording
+> from the alignment review; per-account tax allocation moved to *Under consideration* as UC-1).
+> Per Milestone 8's gate — "done when the PM has triaged every open row" — the phase is closed.
+> The rows below are retained for provenance; work continues from the backlog, item by item,
+> through the normal Spec Kit flow.
+
 **Goal**: Pick up the work that was **in a shipped spec's field of view but consciously deferred
 during implementation** — the residue of Phases 1–6. This is a backlog phase, not a milestone-gated
 build: items are promoted individually into their own Spec Kit specs (or folded into a future
@@ -1083,7 +1092,7 @@ refinement round) as the PM prioritizes them.
   plumbing only.
 - [ ] **OOS-23** — Tax tables (`WorkspaceLayout.standardDeduction`/`taxBrackets`) are hardcoded for
   2025/2026 with a **silent latest-year fallback** for any other year. Resolve the open Phase-4
-  `[DECIDE]` in `docs/project-management.md` (hardcode per year vs user-editable setting), add an
+  `[DECIDE]` (hardcode per year vs user-editable setting — now backlog **SP-3**), add an
   annual update procedure + a "no tax table for year N" validation warning.
 - [ ] **OOS-24** — `TaxEngine` detects interest income by category-name heuristic
   (`name.contains("interest")`); renamed or non-English categories silently drop interest from the
@@ -1127,10 +1136,12 @@ and are listed here only so the trail is unbroken:
   sector data is a future schema round (`BenchmarkEngine` reports portfolio sector weights only).
 - **Live price ingestion** — prices/benchmark come from static CSVs; live ingestion stays V2.
 
-### Milestone 8 — Backlog burndown (no fixed gate)
-> Phase 8 has no single completion gate. Each promoted item ships as its own increment; the phase
-> is "done" when the PM has triaged every open row in `docs/out-of-scope-followups.md` to
-> shipped / rescheduled / won't-do.
+### Milestone 8 — Backlog burndown — ✅ reached (2026-07-07)
+> Phase 8 had no single completion gate; it is "done" when the PM has triaged every open row in
+> `docs/out-of-scope-followups.md`. **That triage completed 2026-07-07**: every open row now
+> carries a backlog ID in [`docs/product-backlog.md`](product-backlog.md) (UV/SP/VD/UC tiers) and
+> the follow-ups doc records the mapping. Individual items ship as their own increments from the
+> backlog.
 
 ---
 
@@ -1145,7 +1156,7 @@ and are listed here only so the trail is unbroken:
 | 5 | Presentation — Shell & All Views | Full UI connected to domain projections | Phase 3 + 4 | ✅ merged (PR #20) |
 | 6 | Write Flows, Repair & Export | App is writable, repair is guided | Phase 5 | ✅ merged (PR #21) |
 | 7 | Polish & Launch Readiness | Finish Phase-6 write flows + performance, accessibility, signing, test coverage | Phase 6 | 🔵 active (`008-polish-launch`) |
-| 8 | Out-of-Scope Follow-ups | Engine/read-model + repair-infra residue backlog | Phases 2/4/5 (residue) | ⚪ backlog |
+| 8 | Out-of-Scope Follow-ups | Engine/read-model + repair-infra residue backlog | Phases 2/4/5 (residue) | ✅ triaged → `docs/product-backlog.md` (2026-07-07) |
 
 ---
 
@@ -1173,6 +1184,19 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Phase 8 closed — 2026-07-07 (triaged to the product backlog)
+- **Phase 8 marked COMPLETE / Milestone 8 reached**: every Phase-8 row was verified against code +
+  key docs (`docs/_notes/phase8-alignment-review.md`, 13/15 aligned, 2 with corrected wording) and
+  **migrated into the new [`docs/product-backlog.md`](product-backlog.md)** — a prioritized backlog
+  (tiers: *add user value* → *security & performance* ∥ *visual design updates* → *under
+  consideration*; effort-ordered within tiers). The two PM-requested enhancements lead as UV-1/UV-2.
+- **`docs/project-management.md` renamed to `docs/product-backlog.md`** and rewritten: the stale
+  open items were closed against the repo first (onboarding/loading/shell design `[DECIDE]`s
+  shipped in 006/009; `[FIX-C6/M1/M6]` overtaken by the R7 lean refactor; 5 of 6 Phase-7
+  `[DECIDE]`s resolved by spec 008) — remaining residue became backlog rows (VD-1, VD-3, UC-2,
+  UC-3). Cross-references updated in `CLAUDE.md` and `docs/out-of-scope-followups.md`; the
+  follow-ups doc now records each item's backlog ID and stays as the provenance record.
 
 ### Backlog addition — 2026-07-07 (PM request)
 - **Phase 8 gained a *PM-requested enhancements* grouping** with its first row: manual
