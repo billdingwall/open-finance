@@ -32,7 +32,8 @@ public struct WriteService: Sendable {
         stamped.changes = plan.changes.map { change in
             FileChange(relativePath: change.relativePath,
                        expectedHash: Self.hash(of: workspaceURL.appendingPathComponent(change.relativePath)),
-                       rowDiffs: change.rowDiffs)
+                       rowDiffs: change.rowDiffs,
+                       seedHeader: change.seedHeader)
         }
         return stamped
     }

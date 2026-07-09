@@ -93,9 +93,22 @@ struct ProjectionStore: Sendable {
                             previous: previous, previousKeys: previousKeys)
     }
 
+    /// Thrown when the workspace root has vanished (unmounted / evicted / deleted). Parsing a
+    /// missing tree would otherwise yield an EMPTY context and silently blank the whole UI —
+    /// throwing instead keeps the last-known-valid snapshot visible with the "Stale" chip (FR-016).
+    struct WorkspaceMissing: Error, CustomStringConvertible {
+        let path: String
+        var description: String { "workspace root missing at \(path)" }
+    }
+
     static func buildCachedSync(workspaceURL: URL, asOf: Date,
                                 previous: WorkspaceProjections?, previousKeys: DomainKeys?)
         throws -> (snapshot: WorkspaceProjections, keys: DomainKeys) {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: workspaceURL.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            throw WorkspaceMissing(path: workspaceURL.path)
+        }
         let keys = domainKeys(workspaceURL: workspaceURL, asOf: asOf)
         let context = try WorkspaceParser().parse(workspaceURL: workspaceURL)
         let settings = (try? SettingsStore().read(workspaceURL: workspaceURL)) ?? .defaults()
