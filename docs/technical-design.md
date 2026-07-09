@@ -4,6 +4,10 @@
 # Personal Finance Workspace for macOS
 ## Technical Design Document
 
+> **Project phase: 🌱 GROWTH (2026-07-09).** The v1 architecture this document locks is built and
+> shipped (roadmap MVP record). Growth items promoted from `docs/product-backlog.md` amend this
+> document (and §21) at promotion time when they touch the architecture.
+
 > **Round 7 note:** Sections 6–8 (workspace structure and file specs) and 10–16 (data model,
 > architecture, service responsibilities, flows, validation, UI requirements) have been extracted
 > to `docs/architecture/` to keep this file reviewable. This document remains the authoritative

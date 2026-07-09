@@ -1,11 +1,57 @@
-# Open Finance — v1 Product Roadmap
+# Open Finance — Product Roadmap
 
 **Project**: Personal Finance Workspace for macOS
-**Scope**: v1 as defined in `docs/product-requirements.md` and `docs/technical-design.md`
+**Project phase**: 🌱 **GROWTH** (entered 2026-07-09) — the MVP (v1) is code-complete; all forward
+work flows **backlog → Growth roadmap → spec-driven delivery**
 **Architecture reference**: File layer → Parsing layer → Domain layer → Projection layer → Presentation layer
-**Last updated**: 2026-07-07 (Phases 1–6 complete and merged to `main`, PRs #15–#21. Phase 7 is the active phase; **Phase 8 closed 2026-07-07** — all rows triaged into `docs/product-backlog.md`, see status banners & changelog)
+**Last updated**: 2026-07-09 (Growth phase entered: Phase 7 closed via spec `008` (PRs #22/#23, CI
+green); roadmap restructured — Growth pipeline on top, Phases 1–8 preserved below as the **MVP
+delivery record**)
 
 ---
+
+## Growth — active phase
+
+The MVP shipped the complete v1 product (see the delivery record below). From here the roadmap is a
+**pipeline**, not a phase plan:
+
+1. **Source of work**: [`docs/product-backlog.md`](product-backlog.md) — the single prioritized
+   backlog (*add user value* → *security & performance* ∥ *visual design*; effort-ordered;
+   *under-consideration* items need a PRD/TDD reconciliation first).
+2. **Promote**: the PM moves an item (or a coherent bundle) from the backlog into the **Readying**
+   table below. If the item isn't yet inline with `docs/product-requirements.md` /
+   `docs/technical-design.md`, the promotion includes the amendment (refinement-round or direct,
+   per the doc workflow in `CLAUDE.md`).
+3. **Ready & deliver**: each promoted item goes through Spec Kit on its own `NNN-` branch —
+   `/speckit-specify` → `/speckit-clarify` → `/speckit-plan` → `/speckit-tasks` →
+   `/speckit-implement` — with the design-adherence gate on any UI work.
+4. **Close the loop**: on merge, the item moves to **Delivered** below and its backlog row closes.
+   Anything consciously skipped during implementation is recorded in
+   [`docs/out-of-scope-followups.md`](out-of-scope-followups.md) and triaged **straight back into
+   the backlog** (there is no residue phase anymore).
+
+### Readying (promoted from the backlog — next up for spec-driven delivery)
+
+| Backlog ID | Item | Branch / spec | Status |
+|---|---|---|---|
+| — | *Nothing promoted yet. Per the PM's standing priority, **UV-1** (sidebar re-ordering) and **UV-2** (delete in edit modals) lead the backlog; **SP-8** (first signed release) unblocks distribution and is certificate-gated.* | — | — |
+
+### Delivered in Growth
+
+| Backlog ID | Item | Spec / PR | Merged |
+|---|---|---|---|
+| — | *None yet. PR [#23](https://github.com/billdingwall/open-finance/pull/23) (onboarding + CloudDocs distribution, Phase-8 triage, spec-008 completion) is the MVP-closing PR, in review.* | — | — |
+
+---
+
+# MVP — v1 delivery record (Phases 1–8, complete)
+
+> **Everything from here down is the historical record of how the MVP was built** — the eight
+> phases, their milestones, and the locked decisions. Nothing below is open work: every genuinely
+> open item has been triaged into [`docs/product-backlog.md`](product-backlog.md) (see the Phase-7/8
+> banners and the changelog). Unchecked `- [ ]` boxes inside the Phase 1–6 task lists are the
+> **authored plan detail retained for history** — the per-phase ✅ status banners are authoritative.
+
 
 ## Out of Scope for v1
 
@@ -852,7 +898,16 @@ Every user-addable object supports **add / edit / delete** (review functionality
 
 ## Phase 7: Polish & Launch Readiness
 
-> **🔵 Status (2026-07-06): ACTIVE — branch `008-polish-launch`.** Not yet specced; the task list
+> **✅ Status (2026-07-09): COMPLETE — spec `008-polish-launch`, delivered across PR #22 (US1 +
+> write-flow completion) and PR #23 (US2–US6 + onboarding/CloudDocs; CI green, 206 tests).**
+> 53/56 spec tasks done; the three residues are in `docs/product-backlog.md`: **SP-7**
+> (signed-app `NSUserActivity` verification), **SP-8** (first signed release: Developer ID
+> sign+notarize run, two-device iCloud sync / Flow 10, release notes), **SP-9** (run XCUITest in
+> CI). The first CI execution of the 008 suites also caught and fixed two shipped engine bugs
+> (headerless new monthly ledgers; the never-firing savings-progress VAL-CROSS-008 key).
+> The original pre-spec banner is kept below for history.
+>
+> *(Historical banner, 2026-07-06:)* Not yet specced; the task list
 > below is the pre-spec backlog. Some hardening groundwork already exists from Phases 1–6 and is
 > annotated inline (✅ done / 🟡 partial) so this phase can focus on the true gaps. The two biggest
 > net-new items are **code signing + notarization of the app target** (the entitled XcodeGen target
@@ -874,29 +929,28 @@ No new features — this phase hardens everything built in phases 1–6.
 
 ### Product Tasks
 
-- [ ] Write the complete validation fixture suite: one valid and one invalid file per file type,
-  covering all repairable and manual-only issue types
-  - 🟡 Partial — per-engine unit fixtures exist (`Tests/FinanceWorkspaceKitTests/`); the systematic
-    one-valid/one-invalid-per-file-type matrix is the remaining work
-- [ ] Define performance acceptance criteria: initial indexing time for a realistic dataset
-  (12 months × unified transactions × 3 entities), UI frame rate during re-index,
-  time-to-first-projection on cold launch (SC-002 hard thresholds + Apple-Silicon baseline)
-- [ ] Write the first-launch onboarding acceptance test: empty iCloud container → bootstrap →
-  all required files created → workspace validates cleanly
-- [ ] Document any known limitations or workarounds for iCloud availability edge cases to include
-  in release notes
+- [x] Write the complete validation fixture suite ✓ 2026-07-09 (008 T048 — `FixtureMatrixTests`:
+  all 23 managed types valid + 12 exact-rule invalid cases; caught the never-firing
+  savings-progress reference rule on first run)
+- [x] Define performance acceptance criteria ✓ 2026-07-06 (008 clarify: cold-launch ≤ 2s,
+  full re-index ≤ 5s on the 12-month fixture; asserted in CI by the T034 `PerformanceHarness`)
+- [x] Write the first-launch onboarding acceptance test ✓ 2026-07-09 — the wizard (T045) +
+  `ReadWriteRepairIntegrationTests.bootstrapParseValidateProject` (provision → parse → validate
+  clean → project) + the XCUITest launch path cover the bootstrap contract
+- [ ] → **backlog SP-8** — Document known limitations / iCloud edge-case workarounds for release
+  notes (ships with the first signed release)
 
 ### Design Tasks
 
-- [ ] Accessibility audit: VoiceOver labels for all interactive elements, keyboard focus order
-  review, color contrast pass against WCAG AA
-- [ ] Dark mode audit: all custom colors, chart palettes, and status indicators tested in dark mode
-- [ ] Responsive layout audit: test at minimum and comfortable window sizes, verify sidebar
-  collapse behavior
-- [ ] Final iconography pass: all section icons, status icons, issue severity icons, account
-  group icons consistent and at correct scale
-- [ ] Onboarding polish: first-launch empty state, workspace creation success confirmation,
-  guided "add your first account" prompt
+- [x] Accessibility audit ✓ 2026-07-07 (008 T039/T040 — VoiceOver label pass + computed WCAG AA
+  contrast audit with fixes, DESIGN.md v1.3; the runtime VoiceOver walkthrough rides Flow 9 / SP-1)
+- [x] Dark mode audit ✓ 2026-07-07 (008 T040 — every used token pair computed in both modes;
+  dark `info-soft` + `on-accent` fixes landed)
+- [x] Responsive layout audit ✓ 2026-07-07 (min-window 900×600 enforced since Phase 5; native
+  `NavigationSplitView` collapse; interactive resize check rides Flow 9)
+- [ ] → **backlog VD-3** — Final iconography pass (with the designed app icon, VD-4)
+- [x] Onboarding polish ✓ 2026-07-06 (the 3-step wizard: iCloud states + retry, creation
+  confirmation, "add your first account" as Step 3 — DESIGN.md v1.2)
 
 ### Development Tasks
 
@@ -928,93 +982,96 @@ No new features — this phase hardens everything built in phases 1–6.
 > The Phase-6 build shipped the write **engine** and most UI but consciously deferred these surfaces
 > (was OOS-13…OOS-18 in `docs/out-of-scope-followups.md`, previously routed to Phase 8). Finishing
 > them here makes the writable app feature-complete before launch hardening.
-- [ ] **OOS-16** — Multi-entry transaction editor UI (`TransactionGroupEditor` + ledger group
-  edit/delete). The reconciliation + atomic group-write/delete **engine** shipped and is unit-tested;
-  only the SwiftUI authoring surface is missing. Unblocks in-app paycheck/transfer/split entry.
-- [ ] **OOS-17** — Interactive per-collection reassignment picker (`ReassignmentPickerView`).
-  Delete-with-references never orphans today (defaults to the first available target); this adds
-  user choice of reassignment target.
+- [x] **OOS-16** — Multi-entry transaction editor UI ✓ 2026-07-07 (008 T018/T019 — paycheck
+  authoring + whole-group ledger edit/delete via context menu, atomic rewrite/delete plans;
+  transfer authoring → backlog UV-6).
+- [x] **OOS-17** — Interactive per-collection reassignment picker ✓ 2026-07-07 (008 T020–T022 —
+  `ReassignmentPickerView` + testable model replaces the first-available-target default).
 - [x] **OOS-18** — Budget Markdown-summary export button ✓ 2026-07-06 (008 T023 — "Export summary
   (Markdown)" action in `BudgetOverviewView` via save panel).
-- [ ] **OOS-13** — Per-entity typed edit forms (plan research D10): grouped pickers for
-  group/category parents, sign-aware amount fields, enum pickers — replacing the current single
-  schema/header-driven `EntityEditForm`.
-- [ ] **OOS-14** — Dedicated-screen account edit placement (FR-010): edit in the screen's local
-  actions, delete inside the edit flow on `AccountDetailView`. *(Overlaps the Write-affordance
-  enablement group above — the account-group Edit action is the same gap; track them together.)*
+- [x] **OOS-13** — Per-entity typed edit forms ✓ 2026-07-07 (008 T024 — schema-driven typed
+  controls: enum + parent-reference pickers, sign-aware amounts, boolean toggles).
+- [x] **OOS-14** — Dedicated-screen account edit placement ✓ 2026-07-06 (008 US1 T012 — edit in
+  local actions; the delete-inside-edit refinement is backlog UV-2).
 - [x] **OOS-15** — Optional `transactions.description` column ✓ 2026-07-06 (008 T025–T027 —
   schema + synonym mapping + date+amount+description dedup with absent-safe fallback).
-- [ ] Deferred App-target write test suites (Phase-6 T010/T021/T032/T036): WritePreview / Import /
-  Reassignment view-models + RepairApply integration — land alongside the Hardening pass below.
+- [x] Deferred App-target write test suites ✓ 2026-07-07/09 (008 T014/T020/T028/T050 —
+  WritePreview / Import / Reassignment VM + RepairApply suites, green in CI).
 
 #### Performance
-- [ ] Profile initial indexing on a realistic fixture workspace; optimize hash computation and
-  manifest write to stay under perceived threshold
-- [ ] Implement projection caching in each domain engine: cache last result keyed by file hashes;
-  invalidate only affected domains when `FileWatcherService` fires
-- [ ] Move all parsing and validation off the main thread; ensure UI remains responsive during
-  full re-index
-- [ ] Debounce `FileWatcherService` events to prevent thrashing during bulk file imports
-- [ ] Lazy-load module views so cold launch does not block on all domain engines simultaneously
+- [x] Profile initial indexing ✓ 2026-07-09 (008 T034 — the CI `PerformanceHarness` measures the
+  full pipeline on the 12-month fixture against the ≤2s/≤5s budgets; the stat-key cache avoids
+  byte re-hashing entirely)
+- [x] Implement projection caching ✓ 2026-07-07 (008 T035 — per-domain cache in
+  `ProjectionStore.buildCached`, stat-keyed with conservative cross-domain invalidation;
+  watcher-triggered re-index recomputes only changed domains)
+- [x] Move all parsing and validation off the main thread ✓ verified 2026-07-07 (008 T037 —
+  `ProjectionStore.build` is `nonisolated async`; one main-actor assignment swaps the snapshot)
+- [x] Debounce `FileWatcherService` events ✓ 2026-07-07 (008 T036 — the service already
+  debounced; the real gap was that no app code started a watcher — now wired to a debounced
+  re-index in `AppState`)
+- [x] Lazy-load module views ✓ verified 2026-07-07 (008 T037 — the route switch instantiates
+  only the active module view)
 
 #### Reliability
-- [ ] Ensure all domain engines handle sparse data gracefully: missing months, empty files,
-  partially-filled optional columns — no crashes, sensible empty-state projections
-- [ ] Implement last-known-valid projection persistence: cache the last successful projection
-  for each module in `.finance-meta/`; serve it while re-indexing is in progress
-- [ ] Add iCloud conflict detection and surface `Conflict detected` sync state in UI with
-  guidance to resolve
+- [x] Sparse-data resilience ✓ 2026-07-07 (008 T038 — `SparseDataResilienceTests`: empty /
+  header-only / month-gap / partial+bad-row fixtures across every engine)
+- [x] Last-known-valid projection ✓ 2026-07-07/09 (008 T038 — the in-memory snapshot is retained
+  through failed re-indexes with the "Stale" chip, and a vanished workspace root now throws
+  rather than blanking the UI; the on-disk `.finance-meta/` variant proved unnecessary since the
+  previous snapshot stays visible during re-index by design)
+- [x] iCloud conflict detection + resolution UI ✓ 2026-07-07 (008 T031/T032 — sync chip
+  "Conflict — click to resolve" → pick-a-version surface over `NSFileVersion`; two-device
+  exercise is Flow 10 / backlog SP-8)
 
 #### Native Behavior
-- [ ] Full keyboard navigation: `Tab` / `Shift+Tab` across sidebar → main panel → detail pane;
-  arrow keys within tables; `Return` to open detail; `Escape` to close detail pane
-  - 🟡 Partial — sidebar/table/inspector keyboard nav shipped in Phase 5; audit for full coverage
-- [ ] Implement all macOS menu commands: New Workspace, Open Workspace, Reindex Workspace,
-  Validate Workspace, Repair Selected Issue, Open Source File, Reveal in Finder, Export Current
-  View, Toggle Inspector, Open Backup Folder
-  - 🟡 Partial — the §17 `CommandMatrix` (incl. Export ⌘E, Repair ⇧⌘R, New Record ⌘N) shipped in
-    Phases 5–6; verify the full command set + wire any remaining (Open Backup Folder)
-- [ ] `NSUserActivity` / Handoff: encode navigation state so window restoration after relaunch
-  returns to the same view and selection
-  - 🟡 Partial — the codec + scene modifiers shipped and are unit-tested in Phase 5; **OS-level
-    restoration is only exercisable in the signed app target** — verify end-to-end here
-    (OOS-9)
-- [ ] Register UTType declarations for `.csv` and `.md` for drag-and-drop import
+- [x] Full keyboard navigation ✓ 2026-07-07 (008 T041 — audit confirmed native
+  arrow/Return coverage + sheet ⏎/⎋; added the missing Escape-closes-inspector; interactive
+  walkthrough rides Flow 9)
+- [x] All macOS menu commands ✓ verified 2026-07-07 (008 T044 — all 13 §17 commands present
+  incl. Open Backup Folder, CommandMatrix-gated)
+- [ ] → **backlog SP-7** — `NSUserActivity` restoration verified end-to-end in the **signed**
+  app (codec + nearest-valid fallback implemented and unit-tested; OS-level run needs the
+  Developer ID build)
+- [x] `.csv`/`.md` UTType + drag-and-drop import ✓ 2026-07-07 (008 T043 — window-wide CSV drop
+  → pre-loaded import sheet; `CFBundleDocumentTypes` registered)
 
 #### Packaging & Signing
-- [ ] Code-sign + notarize the XcodeGen app target (`App/project.yml`) with the
-  `iCloud.<bundle-id>` ubiquity-container entitlement; the target builds **unsigned** in CI today —
-  signing/notarization are the outstanding developer-machine actions (OOS-1)
-- [ ] Real iCloud sync testing on a signed build: edit on one device → observe sync state and the
-  update on another; exercise `NSFileVersion` conflict resolution
+- [ ] → **backlog SP-8** — Code-sign + notarize the app target (config landed 2026-07-07, 008
+  T029/T030: Release Developer-ID settings + documented release procedure; the signing RUN needs
+  the Developer ID certificate — developer-machine action)
+- [ ] → **backlog SP-8** — Real two-device iCloud sync + conflict exercise on the signed build
+  (protocol documented as `docs/test-plans.md` Flow 10, 008 T033)
 
 #### Hardening
-- [ ] Comprehensive unit tests for all domain engines against fixture data
-  - ✅ Done — `Tests/FinanceWorkspaceKitTests/Unit/*` covers every domain engine; write-engine
-    suites live in `WriteEngineTests/`. Remaining: the deferred **App-target** view-model /
-    integration suites (Phase-6 T010/T021/T032/T036 — WritePreview/Import/Reassignment/RepairApply)
-- [ ] Integration tests for the full read flow: bootstrap → index → parse → validate → project
-- [ ] Integration test for each write flow: intent → preview → backup → apply → re-index →
-  re-validate
-  - 🟡 Partial — engine-level write path covered by `WriteServiceTests`; the App-target
-    preview→apply view-model integration tests are the deferred piece
-- [ ] Integration test for each auto-repair flow
-- [ ] Test against realistic personal finance dataset: 12 months transactions, 3 investment
-  accounts, 2 business themes/entities, full deduction set
-- [ ] XCUITest automation for the module views (deferred from Phase 5 research D8)
+- [x] Comprehensive unit tests for all domain engines ✓ (Phases 3–6) + the deferred App-target
+  view-model suites ✓ 2026-07-09 (206 tests green in CI, PR #23)
+- [x] Full read-flow integration test ✓ 2026-07-09 (008 T049 — bootstrap → parse → validate →
+  project against a temp workspace)
+- [x] Write-flow integration tests ✓ 2026-07-09 (008 T049 — add/edit/delete round-trip with
+  backup assertions, import month-split, multi-entry group write + whole-group delete; caught the
+  headerless-new-file engine bug on first run)
+- [x] Auto-repair integration tests ✓ 2026-07-09 (008 T049/T050 — damage → plan → apply →
+  re-validate clean, plus App-level apply-clears-issue + manual-only-offers-no-apply)
+- [x] Realistic-dataset test ✓ 2026-07-09 (008 T034 harness generates and times the 12-month
+  multi-account dataset in CI; `fixture-generate` covers the fuller manual variant)
+- [x] XCUITest module-view smoke ✓ 2026-07-07 (008 T005/T051 — target + suite; **executing it in
+  CI needs an `xcodebuild test` step → backlog SP-9**)
 
 #### Developer Script
 - [x] `fixture-generate.swift` — generate a realistic fixture workspace for QA and development
   (seeded with synthetic but plausible data for all file types) — shipped in Phase 1, extended
   through Phases 3–4 to emit every file type
-- [ ] `backup-prune.swift` — prune old backups from `.finance-meta/backups/` beyond retention
-  limit (depends on the Phase-6 backup retention policy `[DECIDE]`)
+- [x] `backup-prune` ✓ 2026-07-06 (008 T046/T047 — `BackupPruneService` last-10 + 30-day policy,
+  pruned after each write + on launch, plus the CLI)
 
-### Milestone 7 — Launch Readiness
-> **v1 complete.** The app is stable, performant, accessible, signed/notarized, and handles all
-> iCloud edge cases gracefully. All domain engines pass their integration test suites against
-> realistic fixture data. All write and repair flows are tested end-to-end. The app is ready for
-> internal beta or TestFlight distribution.
+### Milestone 7 — Launch Readiness — ✅ reached in code (2026-07-09)
+> **v1 feature- and code-complete.** The app is stable, performant, accessible, and handles iCloud
+> edge cases gracefully; every engine, write, and repair flow is tested end-to-end (206 tests green
+> in CI, PR #23). The one gap between "code-complete" and "distributable" is the **first signed
+> release** — the Developer ID signing/notarization run, the two-device sync exercise (Flow 10),
+> and the signed-app restoration check — tracked as backlog **SP-7/SP-8/SP-9** (blocked on the
+> Developer ID certificate, a developer-machine action).
 
 ---
 
@@ -1155,7 +1212,7 @@ and are listed here only so the trail is unbroken:
 | 4 | Domain II — S&I, Tax | All domain engines functional | Phase 3 (AccountEngine) | ✅ merged (PR #19) |
 | 5 | Presentation — Shell & All Views | Full UI connected to domain projections | Phase 3 + 4 | ✅ merged (PR #20) |
 | 6 | Write Flows, Repair & Export | App is writable, repair is guided | Phase 5 | ✅ merged (PR #21) |
-| 7 | Polish & Launch Readiness | Finish Phase-6 write flows + performance, accessibility, signing, test coverage | Phase 6 | 🔵 active (`008-polish-launch`) |
+| 7 | Polish & Launch Readiness | Finish Phase-6 write flows + performance, accessibility, signing, test coverage | Phase 6 | ✅ complete (spec `008`, PRs #22/#23; signed-release run → backlog SP-8) |
 | 8 | Out-of-Scope Follow-ups | Engine/read-model + repair-infra residue backlog | Phases 2/4/5 (residue) | ✅ triaged → `docs/product-backlog.md` (2026-07-07) |
 
 ---
@@ -1184,6 +1241,25 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### Growth phase entered — 2026-07-09 (roadmap restructured; Phase 7 closed)
+- **Project phase → GROWTH.** The roadmap is now a pipeline: a **Growth** section on top (Readying /
+  Delivered tables + the backlog→spec process) and the entire Phase 1–8 plan preserved below as the
+  **MVP — v1 delivery record**. Forward work is promoted from `docs/product-backlog.md` and shipped
+  spec-first; implementation residue flows to `docs/out-of-scope-followups.md` and straight back to
+  the backlog (no residue phase).
+- **Phase 7 marked COMPLETE / Milestone 7 reached in code** (spec `008-polish-launch`: PR #22 US1 +
+  write-flow completion; PR #23 US2–US6 + onboarding/CloudDocs, 206 tests green in CI). Every
+  Phase-7 checkbox was synced against the delivery; the three genuine residues moved to the backlog:
+  **SP-7** (signed-app restoration check), **SP-8** (first signed release: sign+notarize run,
+  two-device Flow 10, release notes), **SP-9** (XCUITest in CI). The remaining open design row
+  (iconography) already lived in the backlog as **VD-3**.
+- **All other open roadmap material triaged**: the *Open Decisions (Pre-Build)* table was already a
+  fully-resolved record (kept as history); Phase 1–6 unchecked boxes are annotated as historical
+  plan detail under the MVP banner.
+- Doc set updated for the phase shift: `CLAUDE.md` (status, workflow, key docs), the backlog
+  (Growth process + SP-8/SP-9), `docs/out-of-scope-followups.md` (residue now flows to the
+  backlog), PRD/TDD phase banners, and the project-state memory.
 
 ### Phase 8 closed — 2026-07-07 (triaged to the product backlog)
 - **Phase 8 marked COMPLETE / Milestone 8 reached**: every Phase-8 row was verified against code +

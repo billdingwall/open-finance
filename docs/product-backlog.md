@@ -22,6 +22,11 @@ the 2026-07-07 review of the old tracker's open items, and PM requests.
    sit at the bottom under **Under consideration** until they're reconciled or dropped.
 4. Items promoted into a build go through the normal Spec Kit flow (`/speckit-specify` …); UI
    items clear the `design-adherence` gate at build time.
+5. **Growth process (since 2026-07-09)**: this backlog is the sole source of forward work. The PM
+   promotes items into the **Growth → Readying** table in
+   [`docs/product-roadmap.md`](product-roadmap.md); each ships spec-first on its own `NNN-` branch;
+   on merge the roadmap row moves to *Delivered* and the backlog row closes. Implementation residue
+   flows through `docs/out-of-scope-followups.md` straight back into this backlog.
 
 **ID scheme**: `UV-` user value · `SP-` security & performance · `VD-` visual design ·
 `UC-` under consideration. Prior `OOS-n` provenance is kept in the Source column.
@@ -57,6 +62,8 @@ the 2026-07-07 review of the old tracker's open items, and PM requests.
 | SP-4 | **Wire the six inert validation rules** — `VAL-FILE-004`, `VAL-CROSS-009`, `VAL-DOMAIN-001/002/007/008` are catalog metadata with no predicate (can never fire); write the predicates + tests; fix the stale `DomainRules.swift` header comment; DOMAIN-002 may close as covered by CROSS-008 | OOS-19 (003 T023–T025) | M | |
 | SP-5 | **Deferred `RepairService` repair classes** — optional-column injection (needs an "expected columns" notion), blank-field normalization, and `WriteGate` sync-gating of repair writes (FR-016a) | OOS-2 (003 T030) | M | |
 | SP-7 | **Verify `NSUserActivity` restoration in the signed app** — the deep-link codec + `AppRouter.resolve` nearest-valid fallback are implemented and unit-tested, but OS-level window restoration only exercises inside a signed, bundled app (the SwiftPM executable has no runtime `NSUserActivityTypes` registration). Run the check on a Developer-ID-signed install; restore to the nearest valid context when the prior entity is gone | OOS-9 / 008 T042 (the one 008 task left open) | S | Blocked on the Developer ID certificate; bundle with the Flow 10 two-device pass and the first signed build |
+| SP-8 | **First signed release** — the Developer ID signing + notarization RUN on the entitled app target (config + procedure landed: `App/project.yml` Release settings, `docs/_notes/running-and-testing.md` §7), the **two-device iCloud sync + conflict exercise** (`docs/test-plans.md` Flow 10), and the **release notes / known-limitations** doc (iCloud edge cases). Absorbs the last open Phase-7 roadmap tasks | Roadmap Phase 7 (Packaging & Signing + release-notes product task) | S–M | **Blocked on the Developer ID certificate** ($99 Apple Developer account — developer-machine action). Bundle with SP-7; the SwiftPM/CloudDocs path (`scripts/package-release.sh`) shares the same credentials |
+| SP-9 | **Run XCUITest in CI** — the `FinanceWorkspaceUITests` target + `ModuleSmokeUITests` exist and build; add an `xcodebuild test -scheme FinanceWorkspace` step to `.github/workflows/ci-macos.yml` so the smoke suite executes on the macOS runner | 008 T056 caveat | S | |
 | SP-6 | **Per-file sync states → write gate** — the app calls `WriteService.apply(…, fileStates: [:])` from both `applyPendingWrite` and `onboardingApply`, and unknown files default to `.available`, so `WriteGate`'s per-file refusals (syncing/stale/conflict) can never fire. Thread real per-file states through `AppState`; `CloudDocsProvider.syncState(for:)` now supplies them **without an entitlement**, so this no longer waits on the signed build | OOS-22 (code audit) *(reworded per the alignment review)* | M | Pairs with VD-1 (per-file badges) and the Phase-7 signed-build sync tests, which pass trivially until this lands |
 
 ## 3 · Visual design updates
@@ -110,6 +117,11 @@ Items from the old tracker verified closed against the repo during the rename (e
 
 ## Changelog
 
+- **2026-07-09 (Growth)** — Project entered the **Growth phase**: this backlog is now the sole
+  source of forward work (prioritization rule 5 above). Added **SP-8** (first signed release —
+  sign+notarize run, two-device Flow 10, release notes; absorbs the last open Phase-7 roadmap
+  tasks, certificate-gated) and **SP-9** (execute XCUITest in CI). Placement note: like SP-7,
+  SP-8 groups with the signed-build actions rather than strictly by effort.
 - **2026-07-09** — Added **UV-9** (workspace reset + fresh-or-seeded onboarding — wipe the iCloud
   folder behind a typed confirmation + pre-wipe archive, re-run the wizard with a start-fresh vs
   start-with-sample-data choice) and **VD-5** (iCloud folder structure cleanup + app-icon

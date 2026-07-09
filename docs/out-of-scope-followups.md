@@ -24,8 +24,9 @@ later" items. **As of 2026-07-07 every open item below has been triaged into the
 
 - **As each GitHub Spec Kit spec is implemented**, the remaining items that were skipped or
   deferred during that implementation are added here, attributed to their source spec and task.
-- **The product manager reviews these follow-ups** and decides on next steps as needed — promote to
-  a future spec, fold into the [`product backlog`](product-backlog.md), or close as won't-do.
+- **Since the Growth phase (2026-07-09)** every recorded item is triaged **straight into
+  [`docs/product-backlog.md`](product-backlog.md)** (or closed as won't-do) — there is no residue
+  phase; this doc stays the provenance record linking each item to its source spec/task.
 
 ### Status legend
 
