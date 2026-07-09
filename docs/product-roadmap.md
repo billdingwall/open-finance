@@ -56,30 +56,31 @@ The MVP shipped the complete v1 product (see the delivery record below). From he
 
 ## Out of Scope for v1
 
-The following are explicitly excluded from this roadmap. Any work that touches these areas requires
-a PRD amendment before proceeding.
+The following were explicitly excluded from the MVP. **Each now has an Under-consideration entry
+in [`docs/product-backlog.md`](product-backlog.md)** (added 2026-07-09) — promoting one follows
+the Growth process, starting with the PRD amendment.
 
-| Item | Deferred to |
-|---|---|
-| Notes viewer and editor | V2 |
-| Issues management standalone view | V2 |
-| Files explorer | V2 |
-| Budget rules and recurring automation | Post-MVP |
-| Bank account sync | V2 |
-| Brokerage API integration | V2 |
-| Real-time market data | V2 |
-| Live price ingestion strategy (endpoint choice, polling interval, error handling) | V2 |
-| OCR ingestion of PDFs | V2 |
-| Tax return filing engine | V2 |
-| Multi-workspace / multi-user support | V2 |
-| AI-driven analysis or recommendations | V2 |
-| Alternative cloud storage providers (Google Drive, Dropbox, local folder) | V2 |
-| xlsx and other spreadsheet format ingestion and export | V2 |
-| Savings goal lifecycle states (active/archived) — flat goal list in v1 | V2 |
-| Dedicated sleeves screen — sleeve table lives on the Portfolio overview in v1 | V2 |
-| Dedicated benchmark screen — heat map is a holdings table view toggle in v1 | V2 |
-| Dedicated deductions screen — deductions content lives within Current Tax Year in v1 | V2 |
-| Contextual filter bar / filter chips on module screens | V2 |
+| Item | Deferred to | Backlog |
+|---|---|---|
+| Notes viewer and editor | V2 | UC-4 |
+| Issues management standalone view | V2 | UC-5 |
+| Files explorer | V2 | UC-6 |
+| Budget rules and recurring automation | Post-MVP | UC-7 |
+| Bank account sync | V2 | UC-8 |
+| Brokerage API integration | V2 | UC-9 |
+| Real-time market data | V2 | UC-10 |
+| Live price ingestion strategy (endpoint choice, polling interval, error handling) | V2 | UC-11 (incl. benchmark sector data) |
+| OCR ingestion of PDFs | V2 | UC-12 |
+| Tax return filing engine | V2 | UC-13 |
+| Multi-workspace / multi-user support | V2 | UC-14 |
+| AI-driven analysis or recommendations | V2 | UC-15 |
+| Alternative cloud storage providers (Google Drive, Dropbox, local folder) | V2 | UC-16 (CloudDocs variant shipped) |
+| xlsx and other spreadsheet format ingestion and export | V2 | UC-17 |
+| Savings goal lifecycle states (active/archived) — flat goal list in v1 | V2 | UC-18 |
+| Dedicated sleeves screen — sleeve table lives on the Portfolio overview in v1 | V2 | UC-19 |
+| Dedicated benchmark screen — heat map is a holdings table view toggle in v1 | V2 | UC-19 |
+| Dedicated deductions screen — deductions content lives within Current Tax Year in v1 | V2 | UC-19 |
+| Contextual filter bar / filter chips on module screens | V2 | UC-20 |
 
 Inline period/account selection that a screen intrinsically needs stays in v1; only the dedicated filter-bar surface is deferred.
 
@@ -370,6 +371,11 @@ All Phase 1 architectural decisions have been locked as of 2026-06-10. See `docs
 > The roadmap participates in the same round-numbered refinement loop as the PRD and technical
 > design. Rounds are global across all three docs; see `docs/_refinement/r{N}-*` for the source
 > review and per-doc update plans.
+
+### V2 exclusions absorbed into the backlog — 2026-07-09
+- Every *Out of Scope for v1* row now has an **Under-consideration** backlog entry (**UC-4…UC-20**;
+  the three dedicated-screen rows share UC-19). The table gained a Backlog column so the two docs
+  stay linked; promotion of any V2 item starts with its PRD amendment per the Growth process.
 
 ### MVP record condensed — 2026-07-09 (task lists → prose delivery records)
 - **Swept every unchecked checkbox in the MVP section against the delivery + backlog** before

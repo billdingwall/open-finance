@@ -89,6 +89,23 @@ promoting.)*
 | UC-1 | **Per-account tax allocation precision** — `TaxEngine` effective rate uses ledger withholding legs; `estimated-payments.csv` is workspace-level and feeds the estimate only. Precision would need an account-allocation model (schema + engine) | Explicitly "acceptable for v1" (spec 005); no PRD requirement for per-account payment allocation — needs a product decision first |
 | UC-2 | **Doc-consistency pass: PRD data-model naming (`[FIX-M3]`)** — the PRD data-model table still carries legacy entity names (`Lot`, `Position`, `BenchmarkSeries`, `RealizedGain`, `IncomeEvent`, `MonthlyReview`, …); reconcile to the canonical names in `docs/architecture/core-domain.md §1`, and remove the now-stale entity-naming note at `core-domain.md §1` (it points at a TDD §10 listing that the R7 refactor replaced with a pointer) | The item *is* a PRD/TDD misalignment — it can't be "inline" by definition until done |
 | UC-3 | **Doc-consistency pass: PRD architecture language (`[FIX-M4]`)** — PRD §Technical still recommends "MVVM for presentation logic"; the shipped app is `@Observable`-based (TDD §11). Update the PRD wording | Same — the misalignment is the work |
+| UC-4 | **Notes viewer and editor** — render + edit workspace Markdown notes (monthly reviews, strategy/business/tax notes) in-app; v1 parses front matter only | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-5 | **Issues management standalone view** — a dedicated issues module (all / repairable / manual-review); v1 surfaces issues on the Overview dashboard + header chip | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-6 | **Files explorer** — an in-app browser of the workspace file tree; v1 relies on Finder + the source inspector | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-7 | **Budget rules and recurring automation** — rule-driven categorization + recurring-transaction automation | Post-MVP exclusion (roadmap Out-of-Scope table) — needs a PRD amendment first |
+| UC-8 | **Bank account sync** — direct bank connections for transaction ingestion; v1 is CSV import only | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-9 | **Brokerage API integration** — holdings/trades/prices from brokerage APIs; v1 is file-based | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-10 | **Real-time market data** — live quotes in Portfolio/Benchmark; v1 prices come from static CSVs | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-11 | **Live price ingestion strategy** — endpoint choice, polling interval, error handling; includes the benchmark **sector-data schema round** deferred from Phase 4 (sector-vs-benchmark comparison) | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-12 | **OCR ingestion of PDFs** — statement/receipt PDFs → transactions | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-13 | **Tax return filing engine** — v1 stops at estimates + prep checklist by design | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-14 | **Multi-workspace / multi-user support** — v1 is single-workspace, single-user | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-15 | **AI-driven analysis or recommendations** — v1 has no AI features by design | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-16 | **Alternative cloud storage providers** (Google Drive, Dropbox, user-selected local folder) — the `CloudStorageProvider` protocol was designed for this; note a scoped variant already shipped (the entitlement-free `CloudDocsProvider` iCloud-Drive folder, 2026-07-06) | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-17 | **xlsx and other spreadsheet format ingestion + export** — v1 is CSV/Markdown only | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-18 | **Savings goal lifecycle states** (active/archived UI) — v1 renders a flat goal list; note the `goals.csv status ∈ {active, archived}` column already exists (R8), so this is UI/engine grouping work | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-19 | **Dedicated module screens: sleeves, benchmark, deductions** — v1 deliberately in-lines all three (sleeve table on Portfolio overview; heat map as a holdings view toggle; deductions inside Current Tax Year); promoting any to its own screen is the same IA pattern | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
+| UC-20 | **Contextual filter bar / filter chips on module screens** — v1 keeps only intrinsic inline selectors (period/account); the general filter surface was a locked v1 exclusion | V2 exclusion (roadmap Out-of-Scope table) — promoting it requires the PRD amendment first (Growth process) |
 
 ---
 
@@ -118,6 +135,10 @@ Items from the old tracker verified closed against the repo during the rename (e
 
 ## Changelog
 
+- **2026-07-09 (V2 absorption)** — Added **UC-4…UC-20**: every row of the roadmap's *Out of Scope
+  for v1* table now has an Under-consideration entry (the three "dedicated screen" rows merged
+  into UC-19 — one IA pattern). Each needs its PRD amendment at promotion time; partial-delivery
+  notes on UC-16 (CloudDocsProvider) and UC-18 (`status` column already in the schema).
 - **2026-07-09 (MVP sweep)** — Added **SP-10** (CLI parity: `import-csv` + `export-summary`
   executables) — the single genuinely-undelivered, untracked item found when sweeping every
   unchecked checkbox in the roadmap's MVP record before condensing it to prose; every other
