@@ -82,6 +82,43 @@ struct AppFixture {
         return fixture
     }
 
+    /// `standard()` plus one valid row in **every remaining managed file type** (008 T009) —
+    /// the shared base for the write view-model + repair-apply integration suites. Kept separate
+    /// from `standard()` so its assertions stay stable.
+    static func full() -> AppFixture {
+        let fixture = standard()
+        fixture.write("Accounts/account-rules.csv",
+                      "rule_id,account_id,rule_type,description,amount,frequency,start_date,end_date,category_id,is_active,kind,value",
+                      ["R1,A1,recurring,Rent,-1500,monthly,2026-01-01,,C1,true,,"])
+        fixture.write("Accounts/liabilities.csv",
+                      "liability_id,account_id,principal_balance,interest_rate,term_months",
+                      ["L1,A1,15000,0.05,120"])
+        fixture.write("Savings/progress.csv", "progress_id,goal_id,as_of,balance",
+                      ["PR1,SG1,2026-06-15,2500"])
+        fixture.write("Investments/dividends.csv", "dividend_id,asset_id,date,amount",
+                      ["D1,AS1,2026-06-20,12.50"])
+        fixture.write("Investments/tax-lots.csv", "lot_id,asset_id,acquired_date,quantity,cost_basis",
+                      ["LOT1,AS1,2026-06-12,10,1000"])
+        fixture.write("Investments/portfolios.csv", "portfolio_id,name,account_id,expected_return_rate",
+                      ["PF1,Core,B1,0.07"])
+        fixture.write("Investments/sleeves.csv", "sleeve_id,portfolio_id,name", ["SL1,PF1,US Equity"])
+        fixture.write("Investments/sleeve-targets.csv", "target_id,sleeve_id,target_weight",
+                      ["ST1,SL1,0.6"])
+        fixture.write("Investments/benchmarks/sp500.csv", "date,close",
+                      ["2026-06-01,5000", "2026-06-27,5100"])
+        fixture.write("Taxes/tax-adjustments.csv",
+                      "tax_adjustment_id,adjustment_type,amount,tax_year,status,linked_id",
+                      ["ADJ1,standard,15750,2026,estimated,"])
+        fixture.write("Taxes/estimates.csv",
+                      "estimate_id,tax_year,gross_income,taxes_paid,estimated_return",
+                      ["E1,2026,60000,9000,"])
+        fixture.write("Taxes/documents.csv", "document_id,tax_year,kind,label,linked_path",
+                      ["DOC1,2026,w2,Employer W-2,"])
+        fixture.write("Taxes/estimated-payments.csv", "payment_id,tax_year,quarter,amount,paid",
+                      ["PAY1,2026,1,1500,true"])
+        return fixture
+    }
+
     /// Recursive path → content snapshot for the read-only guarantee (SC-005).
     func contentSnapshot() -> [String: Data] {
         var out: [String: Data] = [:]

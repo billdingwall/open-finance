@@ -59,31 +59,124 @@ struct ProjectionStore: Sendable {
     }
 
     static func buildSync(workspaceURL: URL, asOf: Date) throws -> WorkspaceProjections {
+        try buildCachedSync(workspaceURL: workspaceURL, asOf: asOf, previous: nil, previousKeys: nil).snapshot
+    }
+
+    // MARK: - Per-domain projection cache (008 US4 T035)
+
+    /// Per-domain invalidation keys — a stat digest (path · size · mtime) of each domain's input
+    /// files. Cheap to compute (no byte reads); a matching key means the domain's inputs are
+    /// byte-identical for engine purposes, so the previous projection is carried forward. The
+    /// unified ledger feeds every domain, so it is its own key mixed into each dependency set.
+    /// This is an in-memory cache only — projections stay regenerable from files (P-II).
+    struct DomainKeys: Sendable, Equatable {
+        var transactions = ""   // Accounts/transactions/**
+        var accounts = ""       // Accounts/** (minus transactions/)
+        var budget = ""         // Budget/**
+        var savings = ""        // Savings/**
+        var investments = ""    // Investments/**
+        var taxes = ""          // Taxes/**
+        /// Engine outputs are `asOf`-dependent; reuse only within the same calendar day.
+        var day = ""
+    }
+
+    /// Cache-aware build: reparses the workspace (the context must always be current) but skips
+    /// engine recomputation for domains whose inputs are unchanged since `previousKeys`, carrying
+    /// the previous snapshot's projections forward. Cross-domain dependencies are honored
+    /// conservatively (e.g. the tax group also invalidates on accounts/budget changes — Schedule C
+    /// cross-references). The dashboard always recomputes: it is cheap given the sub-projections
+    /// and aggregates validation issues, which any file change can alter.
+    static func buildCached(workspaceURL: URL, asOf: Date = Date(),
+                            previous: WorkspaceProjections?, previousKeys: DomainKeys?)
+        async throws -> (snapshot: WorkspaceProjections, keys: DomainKeys) {
+        try buildCachedSync(workspaceURL: workspaceURL, asOf: asOf,
+                            previous: previous, previousKeys: previousKeys)
+    }
+
+    static func buildCachedSync(workspaceURL: URL, asOf: Date,
+                                previous: WorkspaceProjections?, previousKeys: DomainKeys?)
+        throws -> (snapshot: WorkspaceProjections, keys: DomainKeys) {
+        let keys = domainKeys(workspaceURL: workspaceURL, asOf: asOf)
         let context = try WorkspaceParser().parse(workspaceURL: workspaceURL)
         let settings = (try? SettingsStore().read(workspaceURL: workspaceURL)) ?? .defaults()
 
-        // Compute the cross-domain sub-projections once, then hand them to OverviewEngine so the
-        // dashboard doesn't re-run AccountEngine / PortfolioEngine / TaxAdjustmentEngine (FR-036,
-        // review finding 7 — this was ~2× work at index time).
-        let accounts = AccountEngine().overview(context, asOf: asOf, settings: settings)
-        let goals = SavingsGoalEngine().projectGoals(context, asOf: asOf)
-        let holdings = PortfolioEngine().holdings(context, asOf: asOf, scope: .aggregate)
-        let heatMap = BenchmarkEngine().heatMap(context, asOf: asOf)
-        let tax = TaxEngine().project(context, taxYear: settings.taxYear)
-        let deductions = TaxAdjustmentEngine().deductionSummary(context, settings: settings)
-        let estimate = TaxAdjustmentEngine().taxEstimate(context, settings: settings)
-        let prep = TaxPrepEngine().prepSummary(context, settings: settings)
+        // A domain is reusable when its full dependency set (incl. the shared ledger + day) is
+        // unchanged AND a previous snapshot with the same settings exists.
+        func fresh(_ dependencyKeys: (DomainKeys) -> [String]) -> Bool {
+            guard let previous, let previousKeys, previous.settings == settings,
+                  previousKeys.day == keys.day else { return false }
+            return dependencyKeys(previousKeys) == dependencyKeys(keys)
+        }
+
+        let accountsFresh = fresh { [$0.accounts, $0.transactions] }
+        let savingsFresh = fresh { [$0.savings, $0.accounts, $0.transactions] }
+        let investmentsFresh = fresh { [$0.investments, $0.transactions] }
+        let taxesFresh = fresh { [$0.taxes, $0.transactions, $0.accounts, $0.budget, $0.investments] }
+
+        // Compute the cross-domain sub-projections once (reusing cached ones), then hand them to
+        // OverviewEngine so the dashboard doesn't re-run the engines (FR-036, review finding 7).
+        let accounts = accountsFresh ? previous!.accounts
+            : AccountEngine().overview(context, asOf: asOf, settings: settings)
+        let goals = savingsFresh ? previous!.goals
+            : SavingsGoalEngine().projectGoals(context, asOf: asOf)
+        let holdings = investmentsFresh ? previous!.holdings
+            : PortfolioEngine().holdings(context, asOf: asOf, scope: .aggregate)
+        let heatMap = investmentsFresh ? previous!.heatMap
+            : BenchmarkEngine().heatMap(context, asOf: asOf)
+        let tax = taxesFresh ? previous!.tax
+            : TaxEngine().project(context, taxYear: settings.taxYear)
+        let deductions = taxesFresh ? previous!.deductions
+            : TaxAdjustmentEngine().deductionSummary(context, settings: settings)
+        let estimate = taxesFresh ? previous!.taxEstimate
+            : TaxAdjustmentEngine().taxEstimate(context, settings: settings)
+        let prep = taxesFresh ? previous!.prep
+            : TaxPrepEngine().prepSummary(context, settings: settings)
 
         let dashboard = OverviewEngine().dashboard(
             context, asOf: asOf, settings: settings,
             accounts: accounts, aggregateHoldings: holdings, taxEstimate: estimate)
 
-        return WorkspaceProjections(
+        let snapshot = WorkspaceProjections(
             builtAt: Date(), asOf: asOf, workspaceURL: workspaceURL, settings: settings,
             context: context, dashboard: dashboard, accounts: accounts, goals: goals,
             holdings: holdings, heatMap: heatMap, tax: tax, deductions: deductions,
             taxEstimate: estimate, prep: prep,
             closedTaxYears: closedYears(workspaceURL: workspaceURL))
+        return (snapshot, keys)
+    }
+
+    /// Stat digests per domain path group (skipping the app-managed `.finance-meta/`).
+    static func domainKeys(workspaceURL: URL, asOf: Date) -> DomainKeys {
+        var keys = DomainKeys()
+        var parts: [String: [String]] = [:]
+        let keysOf: Set<URLResourceKey> = [.fileSizeKey, .contentModificationDateKey, .isRegularFileKey]
+        let enumerator = FileManager.default.enumerator(at: workspaceURL,
+                                                        includingPropertiesForKeys: Array(keysOf))
+        while let url = enumerator?.nextObject() as? URL {
+            guard let values = try? url.resourceValues(forKeys: keysOf),
+                  values.isRegularFile == true else { continue }
+            let rel = url.path.replacingOccurrences(of: workspaceURL.path + "/", with: "")
+            guard !rel.hasPrefix(".finance-meta") else { continue }
+            let stamp = "\(rel)|\(values.fileSize ?? 0)|\(values.contentModificationDate?.timeIntervalSince1970 ?? 0)"
+            let group: String
+            if rel.hasPrefix("Accounts/transactions/") { group = "transactions" }
+            else if rel.hasPrefix("Accounts/") { group = "accounts" }
+            else if rel.hasPrefix("Budget/") { group = "budget" }
+            else if rel.hasPrefix("Savings/") { group = "savings" }
+            else if rel.hasPrefix("Investments/") { group = "investments" }
+            else if rel.hasPrefix("Taxes/") { group = "taxes" }
+            else { continue }
+            parts[group, default: []].append(stamp)
+        }
+        func digest(_ group: String) -> String { (parts[group] ?? []).sorted().joined(separator: ";") }
+        keys.transactions = digest("transactions")
+        keys.accounts = digest("accounts")
+        keys.budget = digest("budget")
+        keys.savings = digest("savings")
+        keys.investments = digest("investments")
+        keys.taxes = digest("taxes")
+        keys.day = ISO8601DateFormatter().string(from: asOf).prefix(10).description
+        return keys
     }
 
     /// Closed years from `Taxes/archive/YYYY-*.csv` file names (a read-only directory scan —

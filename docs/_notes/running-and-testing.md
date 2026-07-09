@@ -122,6 +122,41 @@ sync-state mapping + write gate (SC-005), conflict resolution (SC-006), and dual
 If you only have Command Line Tools, `swift test` fails with `no such module 'Testing'`. The tests
 still run in **CI** — see `.github/workflows/ci-macos.yml`.
 
+## 7. Release: sign + notarize the app target (008 US3 T030)
+
+Two distribution paths exist; both are Developer ID + notarization (no Mac App Store in v1):
+
+**A — Entitled Xcode target** (sandboxed, iCloud ubiquity container — the launch build):
+
+```bash
+# 1. Generate the project (never committed) and build Release with your team.
+xcodegen generate --spec App/project.yml
+xcodebuild -project App/FinanceWorkspace.xcodeproj -scheme FinanceWorkspace \
+  -configuration Release DEVELOPMENT_TEAM=<TEAMID> \
+  -derivedDataPath build build
+
+# 2. Zip for notarization (ditto preserves the bundle correctly).
+APP="build/Build/Products/Release/Finance Workspace.app"
+ditto -c -k --keepParent "$APP" FinanceWorkspace.zip
+
+# 3. Submit + wait, then staple (one-time: xcrun notarytool store-credentials openfinance-notary
+#    --apple-id <you> --team-id <TEAMID> --password <app-specific-password>).
+xcrun notarytool submit FinanceWorkspace.zip --keychain-profile openfinance-notary --wait
+xcrun stapler staple "$APP"
+
+# 4. Verify Gatekeeper acceptance, then re-zip the stapled app for upload.
+spctl --assess --type execute --verbose=2 "$APP"
+ditto -c -k --keepParent "$APP" FinanceWorkspace.zip
+```
+
+Release config signs with the `Developer ID Application` identity + `--timestamp` (hardened
+runtime is on for all configs); Debug stays ad-hoc so local dev needs no certificate. CI still
+builds unsigned (`CODE_SIGNING_ALLOWED=NO`).
+
+**B — SwiftPM direct-download bundle** (unsandboxed, iCloud Drive `CloudDocsProvider`):
+`scripts/package-release.sh` builds, bundles, zips + dmgs, and — when `SIGN_IDENTITY` and
+`NOTARY_PROFILE` are set — signs, notarizes, and staples. Works from Command Line Tools alone.
+
 ## Current limitations
 
 - **No Xcode app target / iCloud yet.** `ICloudContainerService`, `NSMetadataQuery` sync states, and

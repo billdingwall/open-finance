@@ -60,7 +60,7 @@ struct GoalCardView: View {
                         Text(goal.monthsToGoal.map { "\($0) mo to goal" } ?? "months to goal: \(TypedStateText.notAvailable)")
                             .font(DS.Fonts.captionNumeric).foregroundStyle(DS.Colors.muted)
                         Text(goal.balanceSource == .snapshot ? "snapshot" : "ledger-derived")
-                            .font(DS.Fonts.caption).foregroundStyle(DS.Colors.muted2)
+                            .font(DS.Fonts.caption).foregroundStyle(DS.Colors.muted)
                     }
                 }
             }

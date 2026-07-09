@@ -177,31 +177,43 @@ later" items. **As of 2026-07-07 every open item below has been triaged into the
   deviates from plan research D10)*: US1 ships one `EntityEditForm` that renders a labelled field per
   canonical column of the target file (all 12 row entities editable through the same safe-write path).
   Per-entity typed controls (grouped pickers for account-group/category parents, sign-aware amount
-  fields, enum pickers) are the D10 refinement, deferred. **Status: Scheduled — Phase 7 (`008-polish-launch`, *Complete Phase 6 write flows*).**
+  fields, enum pickers) are the D10 refinement, deferred. **Status: Resolved — 008 T024 (2026-07-07): schema-driven typed controls (enum pickers from
+  schema `values`, parent-reference pickers over live workspace ids, sign-aware amount field,
+  boolean toggles) layered over the one `EntityEditForm`.**
 - **OOS-14 — Account edit uses the shared right-panel path, not dedicated-screen local actions**
   *(Source: 007 T016; FR-010)*: accounts are add/edit/deletable via ⌘N + the detail-pane
   edit/delete buttons like every other entity. The FR-010 placement for a dedicated-screen object
   (edit in the screen's local actions, delete inside the edit flow) on `AccountDetailView` is not yet
-  wired. **Status: Scheduled — Phase 7 (`008-polish-launch`, *Complete Phase 6 write flows*).**
+  wired. **Status: Resolved (edit placement) — 008 US1 T012 (2026-07-06): Edit lives in the
+  dedicated screens' local actions. The "delete inside the edit flow" residue is backlog UV-2.**
 - **OOS-15 — transactions schema has no description/merchant column** *(Source: 007 US2; FR-015a)*:
   the canonical `transactions` schema is `transaction_id, account_id, date, amount, type, …` with no
   memo/payee/description field, so imported bank memos are **not retained** and the duplicate key is
   **date + amount + account** (not date+amount+description as the clarified spec assumed). Adding an
-  *optional* `description` column (non-breaking per the constitution) is the fix. **Status: Scheduled — Phase 7 (`008-polish-launch`, *Complete Phase 6 write flows*).**
+  *optional* `description` column (non-breaking per the constitution) is the fix. **Status:
+  Resolved — 008 T025–T027 (2026-07-06): optional `description` column + memo/payee synonym
+  mapping + date+amount+description dedup with absent-safe fallback.**
 - **OOS-16 — US3 multi-entry transaction editor UI deferred** *(Source: 007 T029/T030)*: the
   reconciliation + atomic group-write/delete **engine** shipped and is unit-tested (`MultiEntry`,
   `MultiEntryWriteTests`), but the `TransactionGroupEditor` SwiftUI view and the ledger group
   edit/delete affordances are not built. Paychecks/transfers cannot yet be authored in-app.
-  **Status: Scheduled — Phase 7 (`008-polish-launch`, *Complete Phase 6 write flows*).**
+  **Status: Resolved (paycheck scope) — 008 T018 (editor, 2026-07-06) + T019 (whole-group ledger
+  edit/delete via context menu, atomic rewrite/delete plans, 2026-07-07). Transfer authoring
+  (credit/debit roles) remains backlog UV-6.**
 - **OOS-17 — US4 reassignment uses a default target + preview surfacing, not an interactive picker**
   *(Source: 007 T035)*: delete-with-reference **works and never orphans** (scan → expand delete +
   reassignments into one atomic plan, shown in the preview) but the per-collection reassignment
   **picker** (`ReassignmentPickerView`) is not built — the target defaults to the first available id
-  (or unlink/remove where nullable/list). User choice of target is the refinement. **Status: Scheduled — Phase 7 (`008-polish-launch`, *Complete Phase 6 write flows*).**
+  (or unlink/remove where nullable/list). User choice of target is the refinement. **Status:
+  Resolved — 008 T020–T022 (2026-07-07): `ReassignmentPickerView` (one picker per collection,
+  unlink only where nullable/list, apply blocked until every group chosen) replaces the
+  first-available-target default.**
 - **OOS-18 — US6 budget Markdown export button not wired** *(Source: 007 T043)*: ⌘E exports the
   active module's primary file as CSV-with-provenance (FR-027); `ExportService.budgetSummaryMarkdown`
   exists and is tested but has no in-view button yet (FR-028). Generic per-table "current view" CSV
-  (visible rows of any table) is also simplified to the module's primary file. **Status: Scheduled — Phase 7 (`008-polish-launch`, *Complete Phase 6 write flows*).**
+  (visible rows of any table) is also simplified to the module's primary file. **Status:
+  Resolved — 008 T023 (2026-07-06): the Budget "Export summary (Markdown)" action is wired.
+  The generic visible-rows export remains backlog UV-3 (OOS-21).**
 
 ---
 

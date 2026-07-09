@@ -303,6 +303,7 @@ struct OnboardingGroupStep: View {
                         ForEach(OnboardingModel.groupTypes, id: \.self) { Text($0).tag($0) }
                     }
                     .labelsHidden().pickerStyle(.menu)
+                    .accessibilityLabel("Group type")
                 }
             }
 
@@ -343,6 +344,7 @@ struct OnboardingAccountStep: View {
                         }
                     }
                     .labelsHidden().pickerStyle(.menu)
+                    .accessibilityLabel("Kind of account")
                 }
             }
 

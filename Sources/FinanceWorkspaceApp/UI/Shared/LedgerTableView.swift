@@ -120,6 +120,30 @@ struct LedgerTableView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(
+            "\(entry.title), \(Format.date(entry.date)), \(Format.money(entry.netAmount))"
+            + (entry.isGroup ? ", grouped entry with \(entry.legs.count) legs" : ""))
+        .contextMenu { if entry.isGroup { groupMenu(entry) } }
+    }
+
+    /// Whole-group edit/delete (008 US2 T019): the group moves as one atomic unit — edit re-authors
+    /// every leg in place (same `group_id`, same monthly file); delete removes every leg. Editing is
+    /// offered for paycheck-shaped (gross/withholding/net) groups, which is what the editor authors.
+    @ViewBuilder private func groupMenu(_ entry: LedgerEntry) -> some View {
+        if entry.legs.contains(where: { $0.groupRole == .gross }) {
+            Button("Edit group…", systemImage: "pencil") {
+                state.presentGroupEditor(editing: entry.legs)
+            }
+            .disabled(!state.writesEnabled)
+        }
+        Button("Delete group…", systemImage: "trash", role: .destructive) {
+            state.requestGroupDelete(legs: entry.legs)
+        }
+        .disabled(!state.writesEnabled)
+        if let reason = state.writeGateReason {
+            Divider()
+            Text(reason)
+        }
     }
 
     private func legRow(_ leg: UnifiedTransaction) -> some View {
@@ -141,6 +165,7 @@ struct LedgerTableView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(leg.groupRole?.rawValue ?? leg.type.rawValue) leg, \(Format.money(leg.amount))")
     }
 }
 

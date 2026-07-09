@@ -50,12 +50,20 @@ struct GlobalHeaderView: View {
                 case .syncing: return (.info, "Syncing")
                 case .localCopyStale, .fileMissingLocally: return (.warn, "Waiting for iCloud")
                 case .notSignedIn, .containerUnavailable: return (.warn, "Offline")
-                case .conflictDetected: return (.err, "Conflict")
+                case .conflictDetected: return (.err, "Conflict — click to resolve")
                 }
             }
         }()
-        return StatusChip(kind: kind, label: label)
-            .help("Workspace sync / indexing state")
+        // The chip is the per-file "conflict detected" entry point (008 US3 T032): clicking it
+        // opens the pick-a-version surface. Opening it in any state is harmless (empty state).
+        return Button {
+            state.showingConflicts = true
+        } label: {
+            StatusChip(kind: kind, label: label)
+        }
+        .buttonStyle(.plain)
+        .help("Workspace sync / indexing state — click to review file conflicts")
+        .accessibilityLabel("Sync state: \(label). Opens conflict resolution.")
     }
 }
 

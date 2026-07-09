@@ -112,7 +112,7 @@ private struct HeatCellView: View {
             } else {
                 Text("—")
                     .font(DS.Fonts.tableNumeric)
-                    .foregroundStyle(DS.Colors.muted2)
+                    .foregroundStyle(DS.Colors.muted)
                     .help(TypedStateText.insufficientHistory)
             }
         }

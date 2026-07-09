@@ -904,24 +904,24 @@ No new features — this phase hardens everything built in phases 1–6.
 > Phase 6 built the write flows but left the primary buttons wired to Phase-5 disabled
 > placeholders. Until this lands, users cannot Import/Add/Edit from the visible toolbar — only via
 > ⌘N and the inspector. This is the top Phase-7 priority.
-- [ ] **Enable the top-level Import / Add / Edit local actions** — replace the module page-title
+- [x] **Enable the top-level Import / Add / Edit local actions** ✓ 2026-07-06 (008 US1 T010–T012) — replace the module page-title
   `LocalAction.writeStub(...)` placeholders (hardcoded `isEnabled: false`) with live handlers that
   present the Phase-6 `ImportView` / `EntityEditForms` / `WritePreviewView`, in
   `AccountsView`, `AccountGroupDetailView`, `AccountDetailView` (Import/Add/Edit),
   `BudgetCategoriesView` (Add category), `SavingsInvestmentsView` (Add goal), and
   `GoalDetailView` (Edit)
-- [ ] **Add the missing "Edit account group" action** — `AccountGroupDetailView` today offers only
+- [x] **Add the missing "Edit account group" action** ✓ 2026-07-06 (008 US1 T012) — `AccountGroupDetailView` today offers only
   Import/Add, with **no way to edit the group itself** (the affordance is absent, not merely
   disabled). Add an Edit local action on the group screen that opens the existing `EntityEditForms`
   "account group" form → `WritePreviewView`; expose the same entry from the account-group card /
   sidebar group context. (The engine + edit form already support the account-group entity.)
-- [ ] Enable the sidebar **"New group"** action (`NavigationSidebarView`, currently `.disabled(true)`)
+- [x] ✓ 2026-07-06 (008 US1 T013) Enable the sidebar **"New group"** action (`NavigationSidebarView`, currently `.disabled(true)`)
   and the **empty-state CTAs** (`EmptyStateView` — "add your first account", etc.) to launch the
   matching add form
-- [ ] Remove the stale "available with write flows (Phase 6)" help text / `.writeStub` factory once
+- [x] ✓ 2026-07-06 (008 US1 T011) Remove the stale "available with write flows (Phase 6)" help text / `.writeStub` factory once
   every affordance is live; keep only the runtime `WriteGate` disable (with its sync-reason tooltip)
   as the legitimate disabled state (FR-005)
-- [ ] Verify parity with the ⌘N command + inspector Edit/Delete so every entity has one consistent
+- [x] ✓ 2026-07-07 (008 T014/T015 — VM tests + SC-001 smoke test) Verify parity with the ⌘N command + inspector Edit/Delete so every entity has one consistent
   write entry point; add a smoke test asserting no module ships a permanently-disabled write button
 
 #### Complete Phase 6 write flows (unfinished spec `007` work — folded in from Phase 8)
@@ -934,16 +934,16 @@ No new features — this phase hardens everything built in phases 1–6.
 - [ ] **OOS-17** — Interactive per-collection reassignment picker (`ReassignmentPickerView`).
   Delete-with-references never orphans today (defaults to the first available target); this adds
   user choice of reassignment target.
-- [ ] **OOS-18** — Budget Markdown-summary export button. `ExportService.budgetSummaryMarkdown`
-  exists and is tested; only the in-view action is unwired.
+- [x] **OOS-18** — Budget Markdown-summary export button ✓ 2026-07-06 (008 T023 — "Export summary
+  (Markdown)" action in `BudgetOverviewView` via save panel).
 - [ ] **OOS-13** — Per-entity typed edit forms (plan research D10): grouped pickers for
   group/category parents, sign-aware amount fields, enum pickers — replacing the current single
   schema/header-driven `EntityEditForm`.
 - [ ] **OOS-14** — Dedicated-screen account edit placement (FR-010): edit in the screen's local
   actions, delete inside the edit flow on `AccountDetailView`. *(Overlaps the Write-affordance
   enablement group above — the account-group Edit action is the same gap; track them together.)*
-- [ ] **OOS-15** — Add an optional `description`/memo column to the `transactions` schema
-  (non-breaking) so imported bank memos are retained and dedup keys on date+amount+description.
+- [x] **OOS-15** — Optional `transactions.description` column ✓ 2026-07-06 (008 T025–T027 —
+  schema + synonym mapping + date+amount+description dedup with absent-safe fallback).
 - [ ] Deferred App-target write test suites (Phase-6 T010/T021/T032/T036): WritePreview / Import /
   Reassignment view-models + RepairApply integration — land alongside the Hardening pass below.
 

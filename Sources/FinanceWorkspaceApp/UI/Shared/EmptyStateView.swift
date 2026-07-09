@@ -22,7 +22,7 @@ struct EmptyStateView: View {
         VStack(spacing: 8) {
             Image(systemName: model.systemImage)
                 .font(.system(size: 28))
-                .foregroundStyle(DS.Colors.muted2)
+                .foregroundStyle(DS.Colors.muted)
             Text(model.title).font(DS.Fonts.section).foregroundStyle(DS.Colors.ink2)
             Text(model.message).font(DS.Fonts.body).foregroundStyle(DS.Colors.muted)
                 .multilineTextAlignment(.center)

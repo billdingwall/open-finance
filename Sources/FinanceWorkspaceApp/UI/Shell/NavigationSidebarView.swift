@@ -169,7 +169,7 @@ private struct EmptyGroupRow: View {
     var body: some View {
         Text(message)
             .font(DS.Fonts.caption)
-            .foregroundStyle(DS.Colors.muted2)
+            .foregroundStyle(DS.Colors.muted)
             .padding(.leading, 12)
     }
 }

@@ -62,7 +62,7 @@ struct BudgetCategoriesView: View {
                 TagView(kind: .warn, label: "tax-relevant")
             }
             Spacer()
-            Text(category.categoryId).font(DS.Fonts.captionNumeric).foregroundStyle(DS.Colors.muted2)
+            Text(category.categoryId).font(DS.Fonts.captionNumeric).foregroundStyle(DS.Colors.muted)
         }
         .frame(height: 24)
     }

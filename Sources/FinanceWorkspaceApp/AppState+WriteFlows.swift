@@ -147,33 +147,55 @@ extension AppState {
         let groups = scanner.referencesTo(id: deletedId, parentSubtype: subtype)
         guard !groups.isEmpty else { return presentWrite(simpleDelete) }
 
-        let target = scanner.reassignTargets(parentSubtype: subtype, excluding: [deletedId]).first
-        var diffsByFile: [String: [WriteRowDiff]] = [ref.filePath: [
-            WriteRowDiff(rowRef: row, kind: .delete(before: before)),
+        // Referenced object → the user chooses each collection's new target (T022 / OOS-17);
+        // the previous first-available-target default is gone.
+        pendingReassignment = ReassignmentModel(
+            ref: ref, rowRef: row, before: before, deletedId: deletedId, groups: groups,
+            targets: scanner.reassignTargets(parentSubtype: subtype, excluding: [deletedId]))
+    }
+
+    /// Build the atomic delete + reassignment plan from the picker's confirmed choices and hand
+    /// it to the standard write preview (T022). One plan; the delete and every FK repoint apply
+    /// together or not at all.
+    func applyReassignments(_ model: ReassignmentModel) {
+        guard model.canApply else { return }
+        var diffsByFile: [String: [WriteRowDiff]] = [model.ref.filePath: [
+            WriteRowDiff(rowRef: model.rowRef, kind: .delete(before: model.before)),
         ]]
-        for group in groups {
-            for referencing in group.rows {
-                if let modify = reassignDiff(group: group, at: referencing, deletedId: deletedId, target: target) {
+        for reassignment in model.reassignments {
+            for referencing in reassignment.group.rows {
+                if let modify = reassignDiff(group: reassignment.group, at: referencing,
+                                             deletedId: model.deletedId, target: reassignment.target) {
                     diffsByFile[referencing.relativePath, default: []].append(modify)
                 }
             }
         }
         let changes = diffsByFile.map { FileChange(relativePath: $0.key, expectedHash: nil, rowDiffs: $0.value) }
-        presentWrite(WritePlan(intent: .delete, changes: changes, references: groups))
+        let plan = WritePlan(intent: .delete, changes: changes,
+                             references: model.groups, reassignments: model.reassignments)
+        pendingReassignment = nil
+        Task { @MainActor in self.presentWrite(plan) }
     }
 
     /// Build the modify diff that reassigns one referencing row away from the deleted id.
     private func reassignDiff(group: ReferenceGroup, at referencing: RowRef,
-                              deletedId: String, target: String?) -> WriteRowDiff? {
+                              deletedId: String, target: Reassignment.Target) -> WriteRowDiff? {
         guard let refText = readWorkspaceFile(referencing.relativePath),
               let refHeader = CSVRowSerializer.header(of: refText),
               let refLine = dataLine(in: refText, rowRef: referencing.rowRef),
               let colIndex = refHeader.firstIndex(of: group.column) else { return nil }
         var refCells = CSVLine.fields(refLine)
         while refCells.count < refHeader.count { refCells.append("") }
-        refCells[colIndex] = reassignedValue(current: refCells[colIndex], deletedId: deletedId,
-                                             target: target ?? "", unlink: group.nullable && target == nil,
-                                             isList: group.isList)
+        let newValue: String
+        switch target {
+        case .unlink:
+            newValue = reassignedValue(current: refCells[colIndex], deletedId: deletedId,
+                                       target: "", unlink: true, isList: group.isList)
+        case .reassign(let id):
+            newValue = reassignedValue(current: refCells[colIndex], deletedId: deletedId,
+                                       target: id, unlink: false, isList: group.isList)
+        }
+        refCells[colIndex] = newValue
         let after = refCells.map { CSVRowSerializer.escape($0) }.joined(separator: ",")
         return WriteRowDiff(rowRef: referencing.rowRef, kind: .modify(before: refLine, after: after))
     }
@@ -307,6 +329,58 @@ extension AppState {
                                          legs: legs, header: monthlyLedgerHeader(month)) else { return }
         showingGroupEditor = false
         Task { @MainActor in self.presentWrite(plan) }
+    }
+
+    // MARK: - Whole-group ledger operations (008 US2 T019)
+
+    /// "2026-06" from "Accounts/transactions/2026-06.csv"; nil for non-ledger paths.
+    static func ledgerMonth(of relativePath: String) -> String? {
+        let prefix = "Accounts/transactions/"
+        guard relativePath.hasPrefix(prefix), relativePath.hasSuffix(".csv") else { return nil }
+        return String(relativePath.dropFirst(prefix.count).dropLast(4))
+    }
+
+    /// Delete every leg of a multi-entry group as ONE atomic plan. Refuses to build a partial
+    /// plan — if any leg's row can't be resolved, nothing is presented (a group never splits).
+    func requestGroupDelete(legs: [UnifiedTransaction]) {
+        guard let file = legs.first?.sourceFile, let month = Self.ledgerMonth(of: file),
+              let text = readWorkspaceFile(file) else { return }
+        let rows: [(rowRef: Int, line: String)] = legs.compactMap { leg in
+            guard leg.sourceFile == file, let row = leg.sourceRow,
+                  let line = dataLine(in: text, rowRef: row) else { return nil }
+            return (row, line)
+        }
+        guard rows.count == legs.count, !rows.isEmpty else { return }
+        presentWrite(MultiEntry.deletePlan(month: month, groupRows: rows))
+    }
+
+    /// Open the group editor pre-filled with an existing group's legs (whole-group edit).
+    func presentGroupEditor(editing legs: [UnifiedTransaction]) {
+        groupEditorLegs = legs
+        showingGroupEditor = true
+    }
+
+    /// Whole-group EDIT: one atomic `FileChange` that deletes the old legs and appends the
+    /// re-authored group in the same monthly file. The group keeps its `group_id`; the engine
+    /// reconciliation check still gates the re-authored legs (never a partial or unbalanced group).
+    func presentGroupRewrite(kind: MultiEntryKind, month: String, legs: [MultiEntryLeg],
+                             replacing old: [UnifiedTransaction]) {
+        guard let file = old.first?.sourceFile, Self.ledgerMonth(of: file) == month,
+              let text = readWorkspaceFile(file) else { return }
+        let groupId = old.first?.groupId ?? ("grp-" + UUID().uuidString.prefix(8).lowercased())
+        guard let addPlan = MultiEntry.plan(kind: kind, month: month, groupId: groupId,
+                                            legs: legs, header: monthlyLedgerHeader(month)),
+              let adds = addPlan.changes.first?.rowDiffs else { return }
+        let deletes: [WriteRowDiff] = old.compactMap { leg in
+            guard leg.sourceFile == file, let row = leg.sourceRow,
+                  let line = dataLine(in: text, rowRef: row) else { return nil }
+            return WriteRowDiff(rowRef: row, kind: .delete(before: line), groupId: groupId)
+        }
+        guard deletes.count == old.count else { return }
+        let change = FileChange(relativePath: file, expectedHash: nil, rowDiffs: deletes + adds)
+        groupEditorLegs = nil
+        showingGroupEditor = false
+        Task { @MainActor in self.presentWrite(WritePlan(intent: .edit, changes: [change])) }
     }
 
     // MARK: - Export (US6, FR-027)
