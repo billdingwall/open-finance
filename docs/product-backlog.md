@@ -55,6 +55,7 @@ the 2026-07-07 review of the old tracker's open items, and PM requests.
 | SP-3 | **Tax tables: coverage + fallback warning** — `WorkspaceLayout.standardDeduction`/`taxBrackets` are hardcoded for 2025/2026 with a silent latest-year fallback; decide hardcode-per-year vs user-editable setting (the old Phase-4 `[DECIDE]`, still open — now this row), add an annual update procedure and a "no tax table for year N" validation warning | OOS-23 (code audit) | S–M | |
 | SP-4 | **Wire the six inert validation rules** — `VAL-FILE-004`, `VAL-CROSS-009`, `VAL-DOMAIN-001/002/007/008` are catalog metadata with no predicate (can never fire); write the predicates + tests; fix the stale `DomainRules.swift` header comment; DOMAIN-002 may close as covered by CROSS-008 | OOS-19 (003 T023–T025) | M | |
 | SP-5 | **Deferred `RepairService` repair classes** — optional-column injection (needs an "expected columns" notion), blank-field normalization, and `WriteGate` sync-gating of repair writes (FR-016a) | OOS-2 (003 T030) | M | |
+| SP-7 | **Verify `NSUserActivity` restoration in the signed app** — the deep-link codec + `AppRouter.resolve` nearest-valid fallback are implemented and unit-tested, but OS-level window restoration only exercises inside a signed, bundled app (the SwiftPM executable has no runtime `NSUserActivityTypes` registration). Run the check on a Developer-ID-signed install; restore to the nearest valid context when the prior entity is gone | OOS-9 / 008 T042 (the one 008 task left open) | S | Blocked on the Developer ID certificate; bundle with the Flow 10 two-device pass and the first signed build |
 | SP-6 | **Per-file sync states → write gate** — the app calls `WriteService.apply(…, fileStates: [:])` from both `applyPendingWrite` and `onboardingApply`, and unknown files default to `.available`, so `WriteGate`'s per-file refusals (syncing/stale/conflict) can never fire. Thread real per-file states through `AppState`; `CloudDocsProvider.syncState(for:)` now supplies them **without an entitlement**, so this no longer waits on the signed build | OOS-22 (code audit) *(reworded per the alignment review)* | M | Pairs with VD-1 (per-file badges) and the Phase-7 signed-build sync tests, which pass trivially until this lands |
 
 ## 3 · Visual design updates
@@ -107,6 +108,10 @@ Items from the old tracker verified closed against the repo during the rename (e
 
 ## Changelog
 
+- **2026-07-09** — Added **SP-7** (verify `NSUserActivity` restoration in the signed app — OOS-9 /
+  008 T042, the one spec-008 task left open after PR #23 went green; blocked on the Developer ID
+  certificate). Ordering note: SP-7 sits with the other signed-build actions rather than strictly
+  by effort.
 - **2026-07-07** — Created from `docs/project-management.md`: closed the stale open items (above),
   reformatted as a prioritized backlog (user value → security & performance ∥ visual design →
   under consideration; effort-ordered within tiers), and merged all verified roadmap **Phase 8**

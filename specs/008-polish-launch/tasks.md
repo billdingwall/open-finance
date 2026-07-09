@@ -280,7 +280,8 @@ relaunch restores; drag a CSV imports; iCloud-off launch shows enable-iCloud + r
   nearest valid context when the prior entity is gone (`AppState`/`AppRouter`) — **BLOCKED on the
   signed build** (developer-machine action, T029 note): the codec + `AppRouter.resolve`
   nearest-valid fallback are implemented and unit-tested; only the OS-level restoration run on a
-  signed install remains
+  signed install remains. **Triaged → backlog SP-7 (2026-07-09)** — tracked there with the other
+  signed-build actions
 - [X] T043 [US5] Register `.csv`/`.md` `UTType` drag-and-drop import in
   `Sources/FinanceWorkspaceApp/FinanceWorkspaceApp.swift` ✓ 2026-07-07 — window-wide
   `dropDestination` routes dropped CSVs into the import sheet pre-loaded (sync-gated);

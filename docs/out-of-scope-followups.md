@@ -156,7 +156,8 @@ later" items. **As of 2026-07-07 every open item below has been triaged into the
   and unit-tested, but OS-level state restoration is only fully exercisable inside the bundled app
   target (the SwiftPM executable has no `NSUserActivityTypes` registration at runtime). Verify in
   the Xcode-built app during the Phase 7 polish pass. *(Source: 006 T011/T019, research D6.)*
-  **Status: Scheduled — Phase 7 (`008-polish-launch` T042).**
+  **Status: Triaged → backlog SP-7 (2026-07-09; was 008 T042 — left open when PR #23 went green,
+  blocked on the Developer ID certificate).**
 - **XCUITest automation** deferred to Phase 7 (as planned, research D8); view rendering is covered
   by light/dark previews + the manual Flow 9 demo script in `docs/test-plans.md`.
 - **Milestone-5 interactive demo (Flow 9)**: automated proofs passed (boot, SC-005 read-only
