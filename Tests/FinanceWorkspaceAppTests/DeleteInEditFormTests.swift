@@ -121,9 +121,10 @@ import Foundation
         let formModel = try #require(formState.pendingReassignment)
         #expect(formState.pendingWrite == nil)                    // picker first, not a bare plan
         #expect(formModel.deletedId == "C1")
-        // Identical reference groups from both entry points (SC-002).
+        // Identical reference groups + candidate targets from both entry points (SC-002).
         #expect(formModel.groups == paneModel?.groups)
-        #expect(formModel.targets == paneModel?.targets)
+        let firstGroup = try #require(formModel.groups.first)
+        #expect(formModel.candidates(for: firstGroup) == paneModel?.candidates(for: firstGroup))
     }
 
     @Test func groupWithAccountsYieldsReassignOnlyReferences() async throws {

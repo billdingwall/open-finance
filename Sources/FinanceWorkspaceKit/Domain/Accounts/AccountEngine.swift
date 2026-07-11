@@ -114,8 +114,7 @@ public struct AccountEngine: Sendable {
         }
 
         let groups = buildGroups(accounts: accounts, groups: context.accountGroups,
-                                 groupType: groupType, figures: figures,
-                                 taxYear: taxYear, asOf: asOf)
+                                 figures: figures, taxYear: taxYear, asOf: asOf)
 
         return AccountsOverview(
             asOfMonth: asOfMonth, taxYear: taxYear, accounts: cards, groups: groups,
@@ -148,11 +147,10 @@ public struct AccountEngine: Sendable {
                             settings: WorkspaceSettings) -> AccountGroupProjection? {
         let accounts = context.accounts
         guard accounts.contains(where: { $0.accountGroupId == accountGroupId }) else { return nil }
-        let groupType = groupTypeByAccount(accounts, groups: context.accountGroups)
         let figures = monthlyFigures(context.transactions)
         return buildGroups(accounts: accounts, groups: context.accountGroups,
-                           groupType: groupType, figures: figures,
-                           taxYear: settings.taxYear, asOf: asOf, only: accountGroupId).first
+                           figures: figures, taxYear: settings.taxYear, asOf: asOf,
+                           only: accountGroupId).first
     }
 
     // MARK: - Internals
@@ -200,9 +198,9 @@ public struct AccountEngine: Sendable {
     }
 
     private func buildGroups(accounts: [Account], groups: [AccountGroup],
-                             groupType: [String: GroupType],
                              figures: [String: [String: Figures]], taxYear: Int, asOf: Date,
                              only: String? = nil) -> [AccountGroupProjection] {
+        let groupType = groupTypeByAccount(accounts, groups: groups)
         let byGroup = Dictionary(grouping: accounts, by: \.accountGroupId)
         let monthsYTD = monthsInYTD(taxYear: taxYear, asOf: asOf)
         // Canonical group order (spec 010 UV-1): the accessor-ordered account-groups first, then
