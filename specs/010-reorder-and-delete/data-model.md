@@ -61,6 +61,9 @@
 - `accountIds` within a group projection: accessor order (replace `.sorted()`).
 - No other engine sorts accounts/groups by ID for display (verified by inspection; a test
   asserts projection order == accessor order).
+- **Orphan groups**: group IDs referenced by accounts but absent from `account-groups.csv` sort
+  after all known groups, in default (ID) order — today's behavior for them is preserved; they
+  are not reorderable until the group row exists.
 
 ## Relationships & invariants
 

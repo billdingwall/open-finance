@@ -117,7 +117,9 @@ module and confirm group cards and account rows render in the same order.
 - **Entity deleted or reassigned**: remaining ordering values keep working; gaps in the sequence
   are harmless and are compacted on the next reorder write.
 - **Reorder attempted while a write is already pending/previewing**: refused with the standard
-  busy/blocked feedback; the visible order never gets ahead of what was actually persisted.
+  busy/blocked feedback — only one reorder may be in flight at a time. The optimistically
+  updated visible order is provisional until its safe write settles; a refused or failed write
+  rolls the visible order back to the last file-derived order.
 - **External change to order while the app is open** (e.g., sync delivers a reordered file):
   the next workspace rescan reflects the file's order — files remain the source of truth.
 

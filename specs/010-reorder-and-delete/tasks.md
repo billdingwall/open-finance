@@ -26,20 +26,20 @@ Swift Package layout per plan.md: `Sources/FinanceWorkspaceKit/`, `Sources/Finan
 **Purpose**: land the guiding-doc changes the feature is contractually tied to. **T001 (DA-004)
 gates every UI task** — the design-adherence gate cannot pass without the pattern existing.
 
-- [ ] T001 [DA-004] Add the **list drag-reorder pattern** to `DESIGN.md` (Components table row +
+- [ ] T001 Implement spec DA-004 — add the **list drag-reorder pattern** to `DESIGN.md` (Components table row +
       Do's/Don'ts note + Changelog entry): drag affordance on sidebar rows, system drop
       indicator, context-menu "Move up"/"Move down" fallback, disabled-while-gated treatment
       matching the "New group" affordance, drop-settle in the 80–120ms motion tier. Then run
       `/design-adherence` against the planned `NavigationSidebarView` change.
-- [ ] T002 [P] [DA-001] Amend `docs/architecture/containers-and-budgets.md`: add
+- [ ] T002 [P] Implement spec DA-001 — amend `docs/architecture/containers-and-budgets.md`: add
       `sort_order | integer | Optional — display ordering` to §3.21 (accounts.csv, note scope =
       within `account_group_id`) and §3.14 (account-groups.csv), mirroring the §3.3 categories
       wording exactly.
-- [ ] T003 [P] [DA-002] Amend `docs/product-requirements.md` (+ Changelog entry): add the
+- [ ] T003 [P] Implement spec DA-002 — amend `docs/product-requirements.md` (+ Changelog entry): add the
       user-defined manual ordering concept for account groups and accounts (sidebar drag +
       context menu, plain-file `sort_order` persistence, default-order fallback, all surfaces
       share the canonical order).
-- [ ] T004 [P] [DA-003] Amend `docs/product-roadmap.md`: add UV-1 and UV-2 rows to the
+- [ ] T004 [P] Implement spec DA-003 — amend `docs/product-roadmap.md`: add UV-1 and UV-2 rows to the
       **Growth → Readying** table (Branch/spec = `010-reorder-and-delete`, status = in build);
       note the on-merge obligation (move to Delivered, close backlog rows).
 
@@ -84,7 +84,9 @@ at the `WorkspaceContext` accessor choke point (research R3). No UI yet.
       `Tests/FinanceWorkspaceKitTests/Unit/SortOrderTests.swift`: composite-key accessor order
       (explicit first, unordered after in ID order), duplicate values tie-break
       deterministically, non-integer/negative → `nil` + warning (never an error), engine
-      projections preserve accessor order (SC-004, SC-005; depends on T008–T009).
+      projections preserve accessor order, and orphan group IDs (present in `accounts.csv` but
+      absent from `account-groups.csv`) sort after all known groups in ID order (SC-004, SC-005;
+      depends on T008–T009).
 - [ ] T012 [P] Kit unit tests for the reorder plan in
       `Tests/FinanceWorkspaceKitTests/Unit/ReorderPlanTests.swift`: gap-of-10 stamping of the
       full scope on first reorder, compaction on re-reorder, only-`sort_order`-cell diffs,
@@ -111,7 +113,9 @@ sidebar + relaunch + `account-groups.csv` gap-of-10 values + timestamped backup.
       the new ID order, applies it optimistically to the displayed projections, builds the plan
       via `ReorderPlanBuilder`, applies through the existing `WriteService.apply` path (gate +
       backup + atomic + drift), rolls back the optimistic order and surfaces the standard
-      write-error on refusal/failure, then triggers the standard projection refresh (research
+      write-error on refusal/failure, then triggers the standard projection refresh. Enforce
+      **single-flight**: while a reorder write is in flight (or any write is pending/previewing),
+      further reorders are refused with the standard busy feedback (spec Edge Cases; research
       R5/R6; contracts/reorder-interaction.md rules 1, 4, 6).
 - [ ] T014 [US1] Restructure the Account-groups section of
       `Sources/FinanceWorkspaceApp/UI/Shell/NavigationSidebarView.swift` into nested `ForEach`es
@@ -174,11 +178,12 @@ any picker/dropdown match the sidebar.
 ### Implementation for User Story 3
 
 - [ ] T020 [US3] Audit every view/picker that enumerates accounts or groups for local re-sorting
-      or direct dictionary iteration that bypasses accessor order — sweep
-      `Sources/FinanceWorkspaceApp/UI/Accounts/`, `UI/Write/EntityEditForms.swift`,
-      `UI/Write/ReassignmentPickerView.swift`, `UI/Write/ImportView.swift`,
-      `UI/Write/TransactionGroupEditor.swift`, `UI/Overview/` — and fix any offender to consume
-      projection/accessor order (FR-008; depends on Phase 2).
+      or direct dictionary iteration that bypasses accessor order — first `ls
+      Sources/FinanceWorkspaceApp/UI/` and sweep the **actual** module directories (expected:
+      `UI/Accounts/`, `UI/Write/EntityEditForms.swift`, `UI/Write/ReassignmentPickerView.swift`,
+      `UI/Write/ImportView.swift`, `UI/Write/TransactionGroupEditor.swift`, the Overview module
+      views; names unverified — trust the listing, not this list) — and fix any offender to
+      consume projection/accessor order (FR-008; depends on Phase 2).
 - [ ] T021 [P] [US3] Add order-agreement tests in
       `Tests/FinanceWorkspaceAppTests/OrderMirroringTests.swift`: with a reordered fixture
       workspace, assert `AccountEngine` projections, picker option lists, and edit-form dropdown
@@ -198,7 +203,9 @@ any picker/dropdown match the sidebar.
       workspace that was never reordered leaves `accounts.csv`/`account-groups.csv` without a
       `sort_order` column and byte-identical (SC-002).
 - [ ] T024 Run the full quickstart.md manual walkthrough (steps 1–8) against a fixture workspace
-      via `swift run FinanceWorkspaceApp`; fix anything surfaced.
+      via `swift run FinanceWorkspaceApp`; fix anything surfaced. This walkthrough is the manual
+      verification of SC-001's <100ms visible-reorder half (the ≤1s write half is automated in
+      T022).
 - [ ] T025 [P] Update `docs/test-plans.md`: add the sidebar-reorder user flow (drag + context
       menu + gating + hand-edit tolerance) to the manual flows and testability status.
 - [ ] T026 Close out per CLAUDE.md "On spec completion": add any consciously skipped items from
