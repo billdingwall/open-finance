@@ -123,13 +123,13 @@ under-consideration), then run the Spec Kit chain on a fresh `NNN-` branch. On m
 roadmap's *Delivered* table and close the backlog row.
 
 <!-- SPECKIT START -->
-**Active feature**: none — awaiting the first Growth promotion from `docs/product-backlog.md`
-(PM's standing priority: **UV-1** sidebar re-ordering, **UV-2** delete in edit modals; **SP-8**
-first signed release is certificate-gated). **Previous**: `008-polish-launch` (Phase 7 — Polish &
-Launch Readiness) **complete 2026-07-09** — 53/56 tasks across PR #22 (US1 + write-flow
-completion) and PR #23 (US2–US6, onboarding/CloudDocs, 206 tests green in CI); residues SP-7/SP-8/
-SP-9 in the backlog. Earlier: `007-write-flows-repair-export` (Phase 6, merged PR #21).
-**Next**: promote a backlog item → `/speckit-specify`.
+**Active feature**: `010-reorder-and-delete` — backlog **UV-1** (sidebar re-ordering of accounts
+& account groups; spec + 2 clarify sessions + plan complete 2026-07-10, see
+`specs/010-reorder-and-delete/plan.md`) with **UV-2** (delete in edit modals) queued on the same
+branch. Plan artifacts: research.md (R1–R7), data-model.md, contracts/, quickstart.md; doc
+amendments DA-001…DA-004 ship with the feature (DA-004 DESIGN.md pattern gates UI work).
+**Previous**: `008-polish-launch` complete 2026-07-09 (PRs #22/#23, 206 tests green; residues
+SP-7/SP-8/SP-9 in the backlog). **Next**: `/speckit-tasks` → `/speckit-implement` for UV-1.
 <!-- SPECKIT END -->
 
 ### On spec completion — maintain the living docs
