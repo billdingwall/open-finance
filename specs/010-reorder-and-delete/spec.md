@@ -206,9 +206,10 @@ Additional plan-phase notes from the doc review:
 - No code parses `sort_order` today — the categories column is documented but inert. UV-1 is the
   first consumer; define the parsing/ordering convention so categories can later adopt it
   (category reordering itself stays out of scope).
-- State explicitly in the plan that the no-modal-preview decision (Clarifications, 2026-07-09) is
-  an interpretation of constitution principle 4 — live drag feedback is the preview — so
-  `/speckit-analyze` doesn't flag it as a violation.
+- The no-modal-preview decision (Clarifications, 2026-07-09) is compliant under the
+  **constitution v1.1.2 direct-manipulation carve-out** (PATCH amended 2026-07-10, resolving
+  `/speckit-analyze` finding C1) — live drag feedback satisfies the preview requirement; backup,
+  atomicity, gating, and reversibility constraints unchanged.
 - No `docs/technical-design.md §21` locked decision touches ordering; no conflicts found.
 
 ## Assumptions

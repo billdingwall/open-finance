@@ -36,7 +36,7 @@ tension (see Complexity Tracking).*
 | I. Plain Files First | ✅ | Order lives in the CSVs as a human-editable integer column; hand edits are honored (contract `sort-order-column.md`); no hidden store, no device-local ordering. |
 | II. Read Model Second | ✅ | Order is re-derived from files on every scan; the optimistic UI order is provisional and rolled back if the write fails (research R6); deleting/reinstalling the app reproduces the order from files alone. |
 | III. Native Over Generic | ✅ | Native `List`/`ForEach.onMove` drag with system drop indicators; context-menu Move up/down for full keyboard/VoiceOver access (research R4). |
-| IV. Safe Writes Only | ⚠️ justified | Backup + atomic apply + WriteGate + drift detection all reused unchanged via `WritePlan`/`WriteService`. Deviation: no preview *UI* before apply — clarified product decision (Session 2026-07-09); the drag's live feedback is the preview. See Complexity Tracking. |
+| IV. Safe Writes Only | ✅ | Backup + atomic apply + WriteGate + drift detection all reused unchanged via `WritePlan`/`WriteService`. No preview *sheet* on drag: compliant under the **constitution v1.1.2 direct-manipulation carve-out** (the live drop indicator shows affected rows + resulting arrangement before release; write alters only `sort_order` cells; re-drag reverts). Form/repair flows keep full preview. |
 | V. Traceability Always | ✅ | Reorder writes are ordinary `WritePlan`s (intent `.edit`) targeting a named file with row diffs; backups are timestamped; the rows remain traceable in inspectors as today. |
 | VI. Cross-Domain Visibility | ✅ | Master-registry files gain the column; ordering applied at the shared accessor layer feeds all domains identically (research R3). |
 | VII. Repair When Safe | ✅ | No new repair class; invalid values degrade at the normalizer with a warning (research R7) — no speculative repair. |
@@ -116,8 +116,13 @@ new code surface is one `AppState` entry point and the sidebar restructure.
 
 ## Complexity Tracking
 
-> Constitution Check has one justified tension.
+> No open violations. The former Principle IV tension (no preview sheet on drag-reorder) was
+> resolved by **constitution PATCH 1.1.1 → 1.1.2 (2026-07-10)**, which adds the
+> direct-manipulation carve-out: live in-place drop feedback satisfies the preview requirement
+> when the write alters only the gesture-implied cells and the gesture is trivially reversible;
+> backup + atomic apply + gating + drift detection unchanged. Origin: `/speckit-analyze` finding
+> C1 on this feature; PM decision in spec Clarifications, Session 2026-07-09.
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| Principle IV "preview before apply" — reorder writes skip the preview sheet (backup, atomicity, gating, drift detection retained) | Direct manipulation: a modal preview per drag makes rearranging unusable; the drag's live drop indicator + immediate visible result *is* the change preview; clarified with the PM (spec Clarifications, Session 2026-07-09) | Showing the standard preview sheet per drag — rejected in clarification: multi-step rearranging becomes a modal gauntlet; risk is already bounded (single-column diffs, timestamped backup, re-drag reverts). **Interpretation, not amendment**: the write flow still "shows the affected rows" — live in the list — before the user releases the drop. `/speckit-analyze` should treat this row as the sanctioned justification. |
+| *(none)* | | |

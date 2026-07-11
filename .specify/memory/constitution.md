@@ -1,8 +1,41 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version: 1.1.0 → 1.1.1
-Bump type: PATCH — wording refinement of the migration-script clause to match the SwiftPM packaging
+Version: 1.1.1 → 1.1.2
+Bump type: PATCH — clarifies how Principle IV's preview requirement is satisfied for
+direct-manipulation gestures (no principle added, removed, or redefined; backup, atomicity,
+gating, and reversibility requirements unchanged)
+
+Modified principles:
+  - IV. Safe Writes Only — added a clause: for direct-manipulation gestures (e.g., drag-reorder),
+    the gesture's live visual feedback showing the exact resulting arrangement satisfies the
+    preview requirement; no modal preview sheet is required. Constraints retained: backup +
+    atomic apply + sync-state gating + drift detection unchanged; the write may alter only the
+    cells implied by the gesture; the gesture must be trivially reversible by repeating it.
+    Form-based and repair flows keep the full preview-before-apply behavior.
+
+Rationale: surfaced by /speckit-analyze (finding C1) on the 010-reorder-and-delete feature
+(UV-1 sidebar reorder, PM-clarified 2026-07-09): a modal preview per drag makes direct
+manipulation unusable, and the live drop indicator already shows the target rows and resulting
+order before the user commits by releasing. Anchoring this in the constitution (rather than a
+per-feature Complexity Tracking justification) prevents re-litigation on every future
+direct-manipulation write (e.g., category reordering).
+
+Templates reviewed:
+  - .specify/templates/plan-template.md  ✅ No changes required (Constitution Check gate is generic)
+  - .specify/templates/spec-template.md  ✅ No changes required
+  - .specify/templates/tasks-template.md ✅ No changes required
+
+Dependent docs:
+  - docs/product-requirements.md ✅ No change — its preview statements (§ repair flows) are
+    repair-specific and retain mandatory preview
+  - docs/technical-design.md ✅ No restatement of the write-preview clause found
+  - specs/010-reorder-and-delete/plan.md ✅ Complexity Tracking row updated to cite this PATCH
+
+Deferred placeholders: none
+
+--- Prior amendment (1.1.0 → 1.1.1, PATCH) ---
+Wording refinement of the migration-script clause to match the SwiftPM packaging
 reality and release-scoped migrations (no principle added, removed, or redefined)
 
 Modified principles: none
@@ -81,6 +114,13 @@ ambiguous mutations are prohibited.
 
 - The app MUST create a timestamped backup before any write or repair operation.
 - Every write flow MUST show the target file, affected rows, and backup behavior before applying.
+- For direct-manipulation gestures (e.g., drag-reorder), the gesture's live visual feedback —
+  showing the affected rows and the exact resulting arrangement in place before the user commits
+  by releasing — satisfies the preview requirement; no modal preview sheet is required. This
+  carve-out applies only when the write alters nothing beyond the cells implied by the gesture
+  and the gesture is trivially reversible by repeating it; backup, atomic apply, sync-state
+  gating, and drift detection apply unchanged. Form-based edit/add/delete flows and all repair
+  flows retain the full preview-before-apply behavior.
 - Write failures MUST leave the file in its pre-write state (atomic writes required).
 - Writes MUST be gated on sync state: the app MUST NOT write to a file that is downloading or
   uploading. Reads and writes on monitored files MUST be coordinated to serialize concurrent access.
@@ -205,4 +245,4 @@ It is the authoritative reference for project principles and prohibited patterns
 - Agent/build context: `CLAUDE.md`
 - Review and update history: `docs/_refinement/`
 
-**Version**: 1.1.1 | **Ratified**: 2026-06-08 | **Last Amended**: 2026-06-29
+**Version**: 1.1.2 | **Ratified**: 2026-06-08 | **Last Amended**: 2026-07-10
