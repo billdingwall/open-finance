@@ -70,4 +70,26 @@ import Foundation
         let elapsed = try clock.measure { try runPipeline(fixture.root) }
         #expect(elapsed < .seconds(5), "re-index pipeline took \(elapsed) (budget 5s, SC-003)")
     }
+
+    /// Spec 010 UV-1 (SC-001): a reorder's persistence — plan build + preview + safe-write apply
+    /// (gate → drift → backup → atomic write) — completes within 1s on the realistic workspace.
+    @Test func reorderWriteWithinOneSecond() throws {
+        let fixture = twelveMonthWorkspace()
+        defer { fixture.cleanup() }
+        let relativePath = "Accounts/account-groups.csv"
+        let fileURL = fixture.root.appendingPathComponent(relativePath)
+        let text = try String(contentsOf: fileURL, encoding: .utf8)
+        let context = try WorkspaceParser().parse(workspaceURL: fixture.root)
+        var ids = context.accountGroups.map(\.accountGroupId)
+        ids.reverse()                                   // a real, every-row reorder
+
+        let clock = ContinuousClock()
+        let elapsed = try clock.measure {
+            let plan = try ReorderPlanBuilder.plan(orderedIds: ids, keyColumn: "account_group_id",
+                                                   in: relativePath, fileText: text)
+            let service = WriteService(workspaceURL: fixture.root)
+            _ = try service.apply(service.preview(plan), workspaceState: .available, fileStates: [:])
+        }
+        #expect(elapsed < .seconds(1), "reorder write took \(elapsed) (budget 1s, 010 SC-001)")
+    }
 }

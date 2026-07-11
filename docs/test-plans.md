@@ -304,6 +304,30 @@ direct-download build with iCloud Drive enabled on both.
 
 Record results here (date, macOS versions, container vs CloudDocs path) when the pass runs.
 
+### Flow 11 — Sidebar reorder (drag + Move up/down) · principles 1, 3, 4 (spec 010 UV-1) **[Manual drag pass pending]**
+
+Automated coverage already in CI: `SortOrderTests`, `ReorderPlanTests`, `ReorderFlowTests`,
+`OrderMirroringTests`, and the ≤1s reorder-write perf budget (`PerformanceHarness`). The CLI read
+path is verified (hand-stamped `sort_order` flips `accounts-overview` group order;
+`validate-workspace` stays clean). What needs the manual pass is the **drag interaction itself**:
+
+1. **Drag a group** in the sidebar's Account groups section to a new position → order updates
+   instantly and survives quit + relaunch; `Accounts/account-groups.csv` gains unique gap-of-10
+   `sort_order` values; a timestamped backup lands in `.finance-meta/backups/`; no other cell
+   changed.
+2. **Drag an account within its group**; attempt to drop it into another group → the drop is
+   refused (an account can never change groups by drag).
+3. **Context-menu path**: right-click a group/account row → "Move up" / "Move down" (the
+   keyboard/VoiceOver path); first/last rows disable the corresponding direction.
+4. **Mirroring**: Accounts module cards, account/group pickers, and edit-form dropdowns all show
+   the new order — no surface disagrees.
+5. **Gating**: while writes are blocked (syncing / read-only), dragging is disabled and the menu
+   items carry the gate reason tooltip — same treatment as "New group".
+6. **Hand-edit tolerance**: give two groups the same `sort_order` and a third a non-numeric value
+   in a text editor → the app still loads, order is deterministic, at most a warning.
+7. **Feel (SC-001)**: the visible reorder lands < 100ms after drop; the drop settle animates in
+   the restrained 80–120ms tier (DESIGN.md `list-reorder`).
+
 ### Formerly blocked flows — status as of 2026-07-07 (008 build)
 
 - **[Testable]** Create/edit/delete records through the app — write affordances are live and

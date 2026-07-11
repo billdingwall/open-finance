@@ -86,6 +86,37 @@ import Foundation
         #expect(context.accountGroups.allSatisfy { $0.sortOrder == nil })
     }
 
+    /// SC-002: a workspace that has never been reordered gains no `sort_order` column and its
+    /// files stay byte-identical through a full parse + engine run (zero migration).
+    @Test func untouchedWorkspaceStaysByteIdentical() throws {
+        let fx = FixtureWorkspace()
+        defer { fx.cleanup() }
+        fx.write("Accounts/account-groups.csv", "account_group_id,name,group_type", [
+            "g-a,Alpha,personal",
+            "g-b,Beta,business",
+        ])
+        fx.write("Accounts/accounts.csv",
+                 "account_id,display_name,institution,account_group,account_type,status,account_group_id", [
+            accountRowBare("acc-1", group: "g-a"),
+            accountRowBare("acc-2", group: "g-b"),
+        ])
+        let groupsURL = fx.root.appendingPathComponent("Accounts/account-groups.csv")
+        let accountsURL = fx.root.appendingPathComponent("Accounts/accounts.csv")
+        let groupsBytes = try Data(contentsOf: groupsURL)
+        let accountsBytes = try Data(contentsOf: accountsURL)
+
+        let context = try fx.parse()
+        _ = AccountEngine().overview(context, asOf: Date(), settings: .defaults())
+
+        #expect(try Data(contentsOf: groupsURL) == groupsBytes)
+        #expect(try Data(contentsOf: accountsURL) == accountsBytes)
+        #expect(!(String(data: groupsBytes, encoding: .utf8) ?? "").contains("sort_order"))
+    }
+
+    private func accountRowBare(_ id: String, group: String) -> String {
+        "\(id),\(id.uppercased()),Bank,checking,checking,active,\(group)"
+    }
+
     @Test func enginePreservesAccessorOrderIncludingOrphans() throws {
         let fx = FixtureWorkspace()
         defer { fx.cleanup() }

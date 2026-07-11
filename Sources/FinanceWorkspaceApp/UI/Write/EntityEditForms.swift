@@ -145,7 +145,22 @@ struct EntityEditForm: View {
         guard let parentSchema = try? CSVSchemaRegistry().schema(forRelativePath: String(parts[0])) else { return [] }
         let ids = context.identifierSet(fileTypeKey: parentSchema.fileTypeKey, column: String(parts[1]))
         let names = displayNames(fileTypeKey: parentSchema.fileTypeKey, context: context)
-        return ids.sorted().map { (id: $0, name: names[$0] ?? "") }
+        return Self.orderedIds(fileTypeKey: parentSchema.fileTypeKey, context: context, ids: ids)
+            .map { (id: $0, name: names[$0] ?? "") }
+    }
+
+    /// Account and account-group dropdowns follow the canonical display order (spec 010 FR-008);
+    /// other parent collections keep the alphabetical default.
+    static func orderedIds(fileTypeKey: String, context: WorkspaceContext,
+                           ids: Set<String>) -> [String] {
+        let canonical: [String]
+        switch fileTypeKey {
+        case "registry": canonical = context.accounts.map(\.accountId)
+        case "account-groups": canonical = context.accountGroups.map(\.accountGroupId)
+        default: return ids.sorted()
+        }
+        let ordered = canonical.filter(ids.contains)
+        return ordered + ids.subtracting(ordered).sorted()
     }
 
     private func displayNames(fileTypeKey: String, context: WorkspaceContext) -> [String: String] {

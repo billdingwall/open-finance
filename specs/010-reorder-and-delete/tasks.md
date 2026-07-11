@@ -108,7 +108,7 @@ sidebar + relaunch + `account-groups.csv` gap-of-10 values + timestamped backup.
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Add the reorder entry point to AppState — new
+- [X] T013 [US1] Add the reorder entry point to AppState — new
       `Sources/FinanceWorkspaceApp/AppState+Reorder.swift`: `reorderGroups(moving:to:)` computes
       the new ID order, applies it optimistically to the displayed projections, builds the plan
       via `ReorderPlanBuilder`, applies through the existing `WriteService.apply` path (gate +
@@ -117,17 +117,17 @@ sidebar + relaunch + `account-groups.csv` gap-of-10 values + timestamped backup.
       **single-flight**: while a reorder write is in flight (or any write is pending/previewing),
       further reorders are refused with the standard busy feedback (spec Edge Cases; research
       R5/R6; contracts/reorder-interaction.md rules 1, 4, 6).
-- [ ] T014 [US1] Restructure the Account-groups section of
+- [X] T014 [US1] Restructure the Account-groups section of
       `Sources/FinanceWorkspaceApp/UI/Shell/NavigationSidebarView.swift` into nested `ForEach`es
       (outer = groups, inner = that group's accounts) preserving current rows, tags, counts, and
       the "New group" affordance (research R4 — prerequisite for `.onMove`; requires T001
       design gate).
-- [ ] T015 [US1] Wire group reordering in `NavigationSidebarView.swift`: `.onMove` on the outer
+- [X] T015 [US1] Wire group reordering in `NavigationSidebarView.swift`: `.onMove` on the outer
       groups `ForEach` → `state.reorderGroups`, `.moveDisabled(!state.writesEnabled)`, and
       context-menu "Move up"/"Move down" items on group rows (disabled with
       `state.writeGateReason` help text when gated) calling the same entry point (FR-001,
       FR-009; depends on T013, T014).
-- [ ] T016 [P] [US1] App tests in
+- [X] T016 [P] [US1] App tests in
       `Tests/FinanceWorkspaceAppTests/ReorderFlowTests.swift`: `reorderGroups` persists
       gap-of-10 values and refreshed projections show the new order; gate-blocked reorder is
       refused with unchanged order (rollback); a failed write leaves the file untouched
@@ -148,16 +148,16 @@ cross-group drop (refused), check `accounts.csv` scope-limited `sort_order`.
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Add `reorderAccounts(in:moving:to:)` to
+- [X] T017 [US2] Add `reorderAccounts(in:moving:to:)` to
       `Sources/FinanceWorkspaceApp/AppState+Reorder.swift`: same optimistic-apply → plan →
       safe-write → rollback pipeline against `Accounts/accounts.csv`, scope = the group's
       accounts only (FR-002, FR-006; depends on T013's shared plumbing).
-- [ ] T018 [US2] Wire account reordering in
+- [X] T018 [US2] Wire account reordering in
       `Sources/FinanceWorkspaceApp/UI/Shell/NavigationSidebarView.swift`: `.onMove` on each
       group's inner accounts `ForEach` → `state.reorderAccounts(in:…)` (the per-group `ForEach`
       structurally prevents cross-group drops — US2-AS2), `.moveDisabled` gating, and
       context-menu Move up/down on account rows (depends on T015, T017).
-- [ ] T019 [P] [US2] Extend `Tests/FinanceWorkspaceAppTests/ReorderFlowTests.swift`: within-group
+- [X] T019 [P] [US2] Extend `Tests/FinanceWorkspaceAppTests/ReorderFlowTests.swift`: within-group
       reorder stamps only that group's rows (other groups' accounts keep no/old `sort_order`);
       mixed state renders ordered-first-then-default (US2 acceptance scenarios 1 & 3; depends on
       T017).
@@ -177,14 +177,14 @@ any picker/dropdown match the sidebar.
 
 ### Implementation for User Story 3
 
-- [ ] T020 [US3] Audit every view/picker that enumerates accounts or groups for local re-sorting
+- [X] T020 [US3] Audit every view/picker that enumerates accounts or groups for local re-sorting
       or direct dictionary iteration that bypasses accessor order — first `ls
       Sources/FinanceWorkspaceApp/UI/` and sweep the **actual** module directories (expected:
       `UI/Accounts/`, `UI/Write/EntityEditForms.swift`, `UI/Write/ReassignmentPickerView.swift`,
       `UI/Write/ImportView.swift`, `UI/Write/TransactionGroupEditor.swift`, the Overview module
       views; names unverified — trust the listing, not this list) — and fix any offender to
       consume projection/accessor order (FR-008; depends on Phase 2).
-- [ ] T021 [P] [US3] Add order-agreement tests in
+- [X] T021 [P] [US3] Add order-agreement tests in
       `Tests/FinanceWorkspaceAppTests/OrderMirroringTests.swift`: with a reordered fixture
       workspace, assert `AccountEngine` projections, picker option lists, and edit-form dropdown
       sources all equal the accessor order (SC-004; depends on T020).
@@ -195,20 +195,22 @@ any picker/dropdown match the sidebar.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T022 [P] Perf test in `Tests/FinanceWorkspaceKitTests/Perf/PerformanceHarness.swift`:
+- [X] T022 [P] Perf test in `Tests/FinanceWorkspaceKitTests/Perf/PerformanceHarness.swift`:
       reorder plan build + safe-write apply completes ≤ 1s on the perf fixture workspace
       (SC-001; depends on T010).
-- [ ] T023 [P] Byte-identical regression test in
+- [X] T023 [P] Byte-identical regression test in
       `Tests/FinanceWorkspaceKitTests/Unit/SortOrderTests.swift`: bootstrapping + scanning a
       workspace that was never reordered leaves `accounts.csv`/`account-groups.csv` without a
       `sort_order` column and byte-identical (SC-002).
 - [ ] T024 Run the full quickstart.md manual walkthrough (steps 1–8) against a fixture workspace
       via `swift run FinanceWorkspaceApp`; fix anything surfaced. This walkthrough is the manual
       verification of SC-001's <100ms visible-reorder half (the ≤1s write half is automated in
-      T022).
-- [ ] T025 [P] Update `docs/test-plans.md`: add the sidebar-reorder user flow (drag + context
+      T022). **Status 2026-07-10**: the automatable subset ran green (bootstrap → hand-stamped
+      `sort_order` flips `accounts-overview` group order; `validate-workspace` 0 warnings); the
+      in-app drag pass is codified as test-plans.md **Flow 11** and awaits a human at the GUI.
+- [X] T025 [P] Update `docs/test-plans.md`: add the sidebar-reorder user flow (drag + context
       menu + gating + hand-edit tolerance) to the manual flows and testability status.
-- [ ] T026 Close out per CLAUDE.md "On spec completion": add any consciously skipped items from
+- [X] T026 Close out per CLAUDE.md "On spec completion": add any consciously skipped items from
       this spec to `docs/product-backlog.md` (Source = spec 010 + task), and verify
       `swiftlint --strict` + `swift build` are clean before push.
 
