@@ -26,20 +26,20 @@ Swift Package layout per plan.md: `Sources/FinanceWorkspaceKit/`, `Sources/Finan
 **Purpose**: land the guiding-doc changes the feature is contractually tied to. **T001 (DA-004)
 gates every UI task** — the design-adherence gate cannot pass without the pattern existing.
 
-- [ ] T001 Implement spec DA-004 — add the **list drag-reorder pattern** to `DESIGN.md` (Components table row +
+- [X] T001 Implement spec DA-004 — add the **list drag-reorder pattern** to `DESIGN.md` (Components table row +
       Do's/Don'ts note + Changelog entry): drag affordance on sidebar rows, system drop
       indicator, context-menu "Move up"/"Move down" fallback, disabled-while-gated treatment
       matching the "New group" affordance, drop-settle in the 80–120ms motion tier. Then run
       `/design-adherence` against the planned `NavigationSidebarView` change.
-- [ ] T002 [P] Implement spec DA-001 — amend `docs/architecture/containers-and-budgets.md`: add
+- [X] T002 [P] Implement spec DA-001 — amend `docs/architecture/containers-and-budgets.md`: add
       `sort_order | integer | Optional — display ordering` to §3.21 (accounts.csv, note scope =
       within `account_group_id`) and §3.14 (account-groups.csv), mirroring the §3.3 categories
       wording exactly.
-- [ ] T003 [P] Implement spec DA-002 — amend `docs/product-requirements.md` (+ Changelog entry): add the
+- [X] T003 [P] Implement spec DA-002 — amend `docs/product-requirements.md` (+ Changelog entry): add the
       user-defined manual ordering concept for account groups and accounts (sidebar drag +
       context menu, plain-file `sort_order` persistence, default-order fallback, all surfaces
       share the canonical order).
-- [ ] T004 [P] Implement spec DA-003 — amend `docs/product-roadmap.md`: add UV-1 and UV-2 rows to the
+- [X] T004 [P] Implement spec DA-003 — amend `docs/product-roadmap.md`: add UV-1 and UV-2 rows to the
       **Growth → Readying** table (Branch/spec = `010-reorder-and-delete`, status = in build);
       note the on-merge obligation (move to Delivered, close backlog rows).
 
@@ -55,39 +55,39 @@ at the `WorkspaceContext` accessor choke point (research R3). No UI yet.
 
 **⚠️ CRITICAL**: no user-story phase can begin until this phase is complete.
 
-- [ ] T005 [P] Add optional integer `sort_order` column to
+- [X] T005 [P] Add optional integer `sort_order` column to
       `Sources/FinanceWorkspaceKit/Resources/Schemas/accounts.schema.json` (no `schema_version`
       bump — research R1).
-- [ ] T006 [P] Add optional integer `sort_order` column to
+- [X] T006 [P] Add optional integer `sort_order` column to
       `Sources/FinanceWorkspaceKit/Resources/Schemas/account-groups.schema.json` (no bump).
-- [ ] T007 Add `sortOrder: Int?` to `Account` and `AccountGroup` (trailing optional init
+- [X] T007 Add `sortOrder: Int?` to `Account` and `AccountGroup` (trailing optional init
       parameters, default `nil`) in
       `Sources/FinanceWorkspaceKit/Domain/Accounts/AccountModels.swift`.
-- [ ] T008 Map `sort_order` → `sortOrder` in `RecordMappers.account` and
+- [X] T008 Map `sort_order` → `sortOrder` in `RecordMappers.account` and
       `RecordMappers.accountGroup`, and sort the `WorkspaceContext.accounts` /
       `WorkspaceContext.accountGroups` accessors by the composite key
       `(sortOrder ?? Int.max, id)` in
       `Sources/FinanceWorkspaceKit/Domain/Mapping/RecordMappers.swift` (data-model.md; invalid
       values already normalize to `nil` with a warning — research R7; depends on T007).
-- [ ] T009 Preserve accessor order in `AccountEngine`
+- [X] T009 Preserve accessor order in `AccountEngine`
       (`Sources/FinanceWorkspaceKit/Domain/Accounts/AccountEngine.swift`): group projections
       iterate groups in accessor order (replace `byGroup.keys.sorted()` at ~line 205) and
       `accountIds` keeps accessor order within each group (replace `.sorted()` at ~line 226)
       (depends on T008).
-- [ ] T010 Implement the reorder plan builder in the Kit: given a target file, the ordered IDs,
+- [X] T010 Implement the reorder plan builder in the Kit: given a target file, the ordered IDs,
       and the current parsed rows, emit a `WritePlan` (intent `.edit`) with one
       `WriteRowDiff.modify` per row whose `sort_order` changes, stamping gap-of-10 values
       (`10, 20, 30, …`) across the whole scope and touching **no other cell** — new
       `Sources/FinanceWorkspaceKit/Persistence/Write/ReorderPlanBuilder.swift` reusing
       `WritePlanBuilder`/`CSVRowSerializer` (research R5; depends on T008).
-- [ ] T011 [P] Kit unit tests for ordering + degradation in
+- [X] T011 [P] Kit unit tests for ordering + degradation in
       `Tests/FinanceWorkspaceKitTests/Unit/SortOrderTests.swift`: composite-key accessor order
       (explicit first, unordered after in ID order), duplicate values tie-break
       deterministically, non-integer/negative → `nil` + warning (never an error), engine
       projections preserve accessor order, and orphan group IDs (present in `accounts.csv` but
       absent from `account-groups.csv`) sort after all known groups in ID order (SC-004, SC-005;
       depends on T008–T009).
-- [ ] T012 [P] Kit unit tests for the reorder plan in
+- [X] T012 [P] Kit unit tests for the reorder plan in
       `Tests/FinanceWorkspaceKitTests/Unit/ReorderPlanTests.swift`: gap-of-10 stamping of the
       full scope on first reorder, compaction on re-reorder, only-`sort_order`-cell diffs,
       account scope limited to one group's rows, round-trip (apply plan via `WriteService` to a

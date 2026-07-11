@@ -261,6 +261,14 @@ Requirements:
 - Support **multi-entry transactions**: transfers and liability payments are linked entries that net to zero, while a paycheck is a gross/net split (gross income → HSA, insurance, 401k, federal/state withholdings → net take-home) that does not net to zero. Support the `trade` (asset swap, e.g. USD → AAPL, updating cost basis) and `credit` (loan / line-of-credit draw-down) transaction types. Investment buys/sells live in this single unified transaction history.
 - Support add, edit, and delete of account groups and individual accounts (see Object management).
 - Support account-level rules and estimates.
+- Support **user-defined manual ordering** of account groups and of the accounts within a group
+  (added spec `010`, UV-1): drag-reorder in the sidebar (context-menu "Move up"/"Move down" as
+  the keyboard/accessibility path); the order persists as an optional `sort_order` column on
+  `account-groups.csv`/`accounts.csv` (additive, non-breaking; absent values keep the default
+  identifier order) and is applied once at the projection layer so **every surface** — sidebar,
+  account/group cards, pickers, and edit-form dropdowns — shows the same order. Reorder writes
+  use the standard safe-write path (backup + atomic apply + sync gating) and apply immediately
+  without a modal preview per the constitution v1.1.2 direct-manipulation carve-out.
 
 ### 6. Budget module
 
@@ -517,6 +525,14 @@ Presentation Layer
 ```
 
 ## Changelog
+
+### Growth amendment — 2026-07-10
+Source: spec `010-reorder-and-delete` (backlog UV-1 promotion; Growth-process amendment)
+
+- §5 Accounts module: added the user-defined manual ordering requirement for account groups and
+  accounts (sidebar drag + context-menu path, optional `sort_order` persistence, canonical order
+  across all surfaces, safe-write + v1.1.2 direct-manipulation carve-out). Schema detail:
+  `docs/architecture/containers-and-budgets.md` §3.14/§3.21.
 
 ### Round 8 — 2026-06-26
 Source: `docs/_refinement/r8-review.md` (foundation hardening — Phase 1–2)

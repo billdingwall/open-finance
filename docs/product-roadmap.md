@@ -34,7 +34,10 @@ The MVP shipped the complete v1 product (see the delivery record below). From he
 
 | Backlog ID | Item | Branch / spec | Status |
 |---|---|---|---|
-| — | *Nothing promoted yet. Per the PM's standing priority, **UV-1** (sidebar re-ordering) and **UV-2** (delete in edit modals) lead the backlog; **SP-8** (first signed release) unblocks distribution and is certificate-gated.* | — | — |
+| **UV-1** | Manual re-ordering of accounts & account groups in the sidebar (optional `sort_order` columns, safe-write path, all surfaces mirror; PRD §5 + architecture §3.14/§3.21 amended 2026-07-10; constitution v1.1.2 direct-manipulation carve-out) | `010-reorder-and-delete` / [spec](../specs/010-reorder-and-delete/spec.md) | **In build** — spec, plan, tasks complete 2026-07-10 |
+| **UV-2** | Delete inside the edit modal for accounts, account groups, and categories (locked R5/R7 delete-reassign convention) | `010-reorder-and-delete` (queued — spec follows UV-1) | Promoted; awaiting spec |
+
+> On merge: move these rows to *Delivered* below and close the backlog rows (UV-1, UV-2).
 
 ### Delivered in Growth
 

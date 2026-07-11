@@ -31,6 +31,18 @@ public struct WriteRowDiff: Sendable, Equatable {
     }
 }
 
+/// A header-row replacement within a file change (spec 010 UV-1): used when a write must extend
+/// the canonical header with a new optional column (e.g. the first reorder adds `sort_order`).
+/// Applied with the same before-must-match assertion as row diffs.
+public struct HeaderChange: Sendable, Equatable {
+    public let before: String
+    public let after: String
+    public init(before: String, after: String) {
+        self.before = before
+        self.after = after
+    }
+}
+
 /// All row changes targeting a single file, applied atomically.
 public struct FileChange: Sendable, Equatable {
     public let relativePath: String       // e.g. "Accounts/transactions/2026-06.csv"
@@ -40,13 +52,16 @@ public struct FileChange: Sendable, Equatable {
     /// writer seeds `# schema_version` + this header before appending rows, so a brand-new file
     /// is never headerless (2026-07-09 fix — caught by the 008 integration tests).
     public let seedHeader: [String]?
+    /// Optional header-row replacement, applied before row diffs (spec 010 UV-1).
+    public let headerChange: HeaderChange?
 
     public init(relativePath: String, expectedHash: String?, rowDiffs: [WriteRowDiff],
-                seedHeader: [String]? = nil) {
+                seedHeader: [String]? = nil, headerChange: HeaderChange? = nil) {
         self.relativePath = relativePath
         self.expectedHash = expectedHash
         self.rowDiffs = rowDiffs
         self.seedHeader = seedHeader
+        self.headerChange = headerChange
     }
 }
 

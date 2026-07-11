@@ -35,6 +35,30 @@ public enum CSVRowSerializer {
         return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 
+    // MARK: - Header replacement (spec 010 UV-1)
+
+    /// Replace the header row (the first non-comment line), asserting the current header still
+    /// matches `change.before`. Comments and data rows are preserved byte-for-byte. Uses
+    /// `rowRef: 0` in errors to denote the header line.
+    public static func replaceHeader(_ change: HeaderChange, in fileText: String,
+                                     relativePath: String = "") throws -> String {
+        let hadTrailingNewline = fileText.hasSuffix("\n")
+        var lines = fileText.components(separatedBy: "\n")
+        if hadTrailingNewline { lines.removeLast() }
+        guard let idx = lines.firstIndex(where: {
+            let trimmed = $0.trimmingCharacters(in: .whitespaces)
+            return !trimmed.isEmpty && !trimmed.hasPrefix("#")
+        }) else {
+            throw WriteError.rowRefOutOfRange(path: relativePath, rowRef: 0)
+        }
+        guard lines[idx] == change.before else {
+            throw WriteError.rowMismatch(path: relativePath, rowRef: 0)
+        }
+        lines[idx] = change.after
+        let joined = lines.joined(separator: "\n")
+        return hadTrailingNewline ? joined + "\n" : joined
+    }
+
     // MARK: - Row-diff application
 
     /// Apply row diffs to existing CSV `fileText`, editing only the referenced data rows.

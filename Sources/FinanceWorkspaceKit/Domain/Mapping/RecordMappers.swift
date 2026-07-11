@@ -27,6 +27,11 @@ extension ParsedRecord {
         if case let .integer(value)? = fields[column]?.typed { return value }
         return nil
     }
+    /// `sort_order` cell: valid = non-negative integer; anything else (non-integer already
+    /// dropped by the normalizer with a warning, negative here) reads as absent (spec 010 FR-007).
+    func sortOrder() -> Int? {
+        int("sort_order").flatMap { $0 >= 0 ? $0 : nil }
+    }
     /// Pipe-delimited list column (e.g. `account_group_ids`).
     func list(_ column: String) -> [String] {
         guard let raw = string(column) else { return [] }
@@ -53,13 +58,14 @@ public enum RecordMappers {
                        institution: rec.string("institution") ?? "", accountGroup: group,
                        accountType: accountType, status: status, accountGroupId: accountGroupId,
                        currentBalance: rec.decimal("current_balance"), apy: rec.decimal("apy"),
-                       investment: investment)
+                       sortOrder: rec.sortOrder(), investment: investment)
     }
 
     public static func accountGroup(_ rec: ParsedRecord) -> AccountGroup? {
         guard let id = rec.string("account_group_id"),
               let typeRaw = rec.string("group_type"), let groupType = GroupType(rawValue: typeRaw) else { return nil }
-        return AccountGroup(accountGroupId: id, name: rec.string("name") ?? id, groupType: groupType)
+        return AccountGroup(accountGroupId: id, name: rec.string("name") ?? id, groupType: groupType,
+                            sortOrder: rec.sortOrder())
     }
 
     public static func liability(_ rec: ParsedRecord) -> Liability? {
@@ -228,8 +234,17 @@ public enum RecordMappers {
 // MARK: - WorkspaceContext convenience accessors (typed views over the parsed records)
 
 extension WorkspaceContext {
-    public var accounts: [Account] { records(ofType: "registry").compactMap(RecordMappers.account) }
-    public var accountGroups: [AccountGroup] { records(ofType: "account-groups").compactMap(RecordMappers.accountGroup) }
+    // Accounts and account-groups apply the canonical display order HERE, once (spec 010 UV-1):
+    // explicit `sort_order` ascending first, rows without one after in default ID order. Engines
+    // and views preserve this order — never re-sort by ID downstream.
+    public var accounts: [Account] {
+        records(ofType: "registry").compactMap(RecordMappers.account)
+            .sorted { ($0.sortOrder ?? Int.max, $0.accountId) < ($1.sortOrder ?? Int.max, $1.accountId) }
+    }
+    public var accountGroups: [AccountGroup] {
+        records(ofType: "account-groups").compactMap(RecordMappers.accountGroup)
+            .sorted { ($0.sortOrder ?? Int.max, $0.accountGroupId) < ($1.sortOrder ?? Int.max, $1.accountGroupId) }
+    }
     public var liabilities: [Liability] { records(ofType: "liabilities").compactMap(RecordMappers.liability) }
     public var accountRules: [AccountRule] { records(ofType: "account-rules").compactMap(RecordMappers.accountRule) }
     public var transactions: [UnifiedTransaction] { records(ofType: "transactions").compactMap(RecordMappers.transaction) }

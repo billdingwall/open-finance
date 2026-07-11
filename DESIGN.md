@@ -92,6 +92,7 @@ components:
   modal-form:         "centered over scrim · stacked modal-field (label + control) · used for add/edit flows"
   empty-state:        "glyph + title + one-line message + optional CTA · one per data-less surface"
   step-indicator:     "N dots/segments on the onboarding wizard header · done = accent fill · current = accent ring · upcoming = border on surface-sunken · caption 'Step n of N' in muted"
+  list-reorder:       "native drag reorder on sidebar/list rows (.onMove) · system insertion indicator · scope-locked (no cross-group drops) · context-menu 'Move up/Move down' = keyboard/VoiceOver path · gated: moveDisabled + disabled menu items + gate reason in help tooltip · drop settle in the 80–120ms motion tier · immediate apply (no modal preview — constitution v1.1.2 direct-manipulation carve-out)"
   onboarding-wizard:  "modal-form variant: one centered lg-radius card (max 520px) over the window bg · step-indicator header · one step visible at a time · Back ghost / Continue primary footer · iCloud state uses status-chip semantics"
 ---
 
@@ -239,6 +240,7 @@ class; keep names aligned so the token-sync and design-adherence skills can cros
 | **Empty state** | Glyph + title + one-line message + optional CTA; one per data-less surface | `.empty-inspector` | `EmptyStateView` |
 | **Step indicator** | Dots/segments above the wizard title: done = `accent` fill, current = `accent` ring, upcoming = `border` on `surface-sunken`; "Step n of N" caption in `muted` | *(app-only)* | `StepIndicatorView` |
 | **Onboarding wizard** | `modal-form` variant: one centered card (radius `lg`, max 520px, `--shadow` — it floats) over `window-bg`; step-indicator header; single step visible; footer = Back (ghost) + Continue (primary); iCloud setup state rendered with `status-chip` semantics (`ok`/`warn`/`err`); **cannot be dismissed until complete** | *(app-only)* | `OnboardingView` |
+| **List reorder** | Native drag reorder on sidebar/list rows (`.onMove`); **system insertion indicator** (platform chrome — not restyled); drops are **scope-locked** (an account row cannot land in another group — structure, not validation, prevents it); context menu gains "Move up"/"Move down" as the keyboard/VoiceOver path; while writes are gated, dragging is `moveDisabled` and menu items disabled with the gate reason in the `help` tooltip (same treatment as the sidebar "New group" affordance); drop settle animates in the standard 80–120ms tier; **applies immediately, no modal preview** — sanctioned by the constitution v1.1.2 direct-manipulation carve-out (backup + atomic apply + gating unchanged) | *(app-only)* | `NavigationSidebarView` reorder |
 
 **Traceability is a design requirement, not just engineering** (constitution #5): every KPI links to
 a detail view, and every detail row links to its source file + row. Design KPI cards and table rows
@@ -284,6 +286,15 @@ When any one changes, reconcile the others in the same change. The `design-token
 
 ## Changelog
 
+- **2026-07-10 — v1.4** — **`list-reorder`** component contract added (spec `010` UV-1, task
+  T001/DA-004): native `.onMove` drag reorder for sidebar account groups and the accounts within
+  them — system insertion indicator (platform chrome, not restyled), scope-locked drops,
+  context-menu "Move up"/"Move down" as the keyboard/VoiceOver path, `moveDisabled` + disabled
+  menu items + gate-reason tooltip while writes are gated, drop settle in the existing 80–120ms
+  motion tier. Immediate apply with no modal preview per the constitution v1.1.2
+  direct-manipulation carve-out. **No new tokens** — composes `sidebar-nav-item`, the existing
+  disabled-affordance convention, and the motion scale, so `prototype/styles.css` and Figma need
+  no token sync (a prototype demo of reorder can be added when the prototype next updates).
 - **2026-07-07 — v1.3** — WCAG AA contrast audit (008 US5 T040) across every token pair the app
   uses, light + dark. **Fixed**: dark `info-soft` deepened `#0e2747` → `#081a30` (info text was
   4.11:1); new **`on-accent`** token (light white / dark `#1c1d20`) for text on accent fills —

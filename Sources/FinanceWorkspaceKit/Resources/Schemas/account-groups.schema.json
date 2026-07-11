@@ -7,6 +7,7 @@
   "columns": {
     "account_group_id": { "type": "string", "required": true },
     "name": { "type": "string", "required": true },
-    "group_type": { "type": "enum", "required": true, "values": ["personal", "employment", "business", "custom"] }
+    "group_type": { "type": "enum", "required": true, "values": ["personal", "employment", "business", "custom"] },
+    "sort_order": { "type": "integer", "required": false }
   }
 }
