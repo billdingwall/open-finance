@@ -328,6 +328,22 @@ path is verified (hand-stamped `sort_order` flips `accounts-overview` group orde
 7. **Feel (SC-001)**: the visible reorder lands < 100ms after drop; the drop settle animates in
    the restrained 80–120ms tier (DESIGN.md `list-reorder`).
 
+### Flow 12 — Delete inside the edit modal · principles 4, 5 (spec 011 UV-2) **[Manual pass pending]**
+
+Automated coverage in CI: `DeleteInEditFormTests` (entry-point parity with the detail-pane
+delete, add-mode suppression, cancel byte-identity, apply-time gate refusal, whitelist, FR-008
+route resolution). The manual pass covers the interactive halves (quickstart steps 1–7 of
+`specs/011-delete-in-edit-modal/quickstart.md`):
+
+1. Edit an unreferenced account → red **Delete…** leads the footer → preview shows file/row/
+   backup → confirm → gone everywhere + backup exists.
+2. "New account" form and out-of-scope forms (goals, budgets) show no Delete.
+3. Edit a used category → Delete → reassignment picker → one atomic preview → apply.
+4. Edit a group that still contains accounts → picker offers other groups only (no unlink).
+5. Cancel each stage (form / picker / preview) → files unchanged.
+6. With writes blocked, Delete is disabled with the gate reason tooltip.
+7. Delete the account whose screen you're on → app lands on its group / All accounts.
+
 ### Formerly blocked flows — status as of 2026-07-07 (008 build)
 
 - **[Testable]** Create/edit/delete records through the app — write affordances are live and

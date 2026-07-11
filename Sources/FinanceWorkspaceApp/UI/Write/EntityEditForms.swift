@@ -34,6 +34,20 @@ struct EntityEditForm: View {
     @State private var fields: [String: String] = [:]
     @State private var schema: CSVSchema?
 
+    /// The entity files whose edit forms offer in-form Delete (spec 011 UV-2 — exactly these
+    /// three per the backlog scope; other entities keep the detail-pane delete only).
+    static let deletableFiles: Set<String> = [
+        "Accounts/accounts.csv",
+        "Accounts/account-groups.csv",
+        "Budget/categories.csv",
+    ]
+
+    /// Edit mode + whitelisted file ⇒ the footer leads with the destructive Delete
+    /// (DESIGN.md `modal-form`, v1.5).
+    private var showsDelete: Bool {
+        !context.isNew && Self.deletableFiles.contains(context.relativePath)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -54,6 +68,19 @@ struct EntityEditForm: View {
 
             Divider().overlay(DS.Colors.borderSoft)
             HStack {
+                if showsDelete {
+                    // Leading + separated from Cancel/Save; full preview semantics via the
+                    // standard delete pipeline (never a bare row delete — spec 011 FR-002).
+                    Button("Delete…", role: .destructive) {
+                        state.requestDeleteFromEditForm(context)
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .foregroundStyle(state.writesEnabled ? DS.Colors.err : DS.Colors.muted)
+                    .disabled(!state.writesEnabled)
+                    .help(state.writesEnabled
+                          ? "Delete this record (previewed before applying)"
+                          : (state.writeGateReason ?? "Writing is unavailable right now."))
+                }
                 Spacer()
                 Button("Cancel") { state.editForm = nil }
                     .buttonStyle(SecondaryButtonStyle())

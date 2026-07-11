@@ -228,6 +228,22 @@ extension AppState {
         }
     }
 
+    /// Delete the entity being edited, from inside its edit form (spec 011 UV-2). Closes the
+    /// form and enters the IDENTICAL pipeline as a detail-pane delete — the same `requestDelete`
+    /// call, so reference scanning, the reassignment picker, atomicity, and the full write
+    /// preview are inherited unchanged (SC-002/SC-004; deletes keep preview-before-apply — the
+    /// v1.1.2 direct-manipulation carve-out does not cover destructive flows). The pipeline
+    /// re-reads the file, so unsaved form edits are discarded and the preview shows the on-disk
+    /// row. No-op in add mode (nothing exists to delete).
+    func requestDeleteFromEditForm(_ context: EntityEditContext) {
+        guard let rowRef = context.rowRef else { return }   // add mode
+        editForm = nil
+        let ref = SourceRef(filePath: context.relativePath, rowNumber: rowRef, provenance: .userEdited)
+        // Hop to the next runloop so the form sheet fully dismisses before the picker/preview
+        // sheet opens (the finishEditForm sheet-sequencing pattern).
+        Task { @MainActor in self.requestDelete(ref) }
+    }
+
     /// Called by the form on submit: build the add/edit plan and hand off to the write preview.
     func finishEditForm(context: EntityEditContext, fields: [String: String]) {
         let plan: WritePlan

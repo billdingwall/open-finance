@@ -5,6 +5,12 @@
 **Status**: Draft
 **Input**: User description: "Delete inside the edit modal (backlog UV-2): accounts, account groups, and categories gain a destructive Delete action inside their edit form (EntityEditForm), per the locked R5 'delete inside the edit flow' convention — routed through requestDelete → ReferenceScanner → atomic delete+reassignment plan → write preview; never a bare row delete"
 
+## Clarifications
+
+### Session 2026-07-11
+
+- Q: After a confirmed delete of the entity the user is currently viewing, where should the app navigate? → A: Nearest valid context — the account's group screen, or All accounts if the group also went away (the established stale-route fallback); never a dead screen.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Delete an entity from its edit form (Priority: P1)
@@ -110,6 +116,9 @@ disabled and its tooltip explains why. Re-enable writes; the action becomes acti
   forms are out of scope for this feature; existing delete paths (detail pane) are untouched.
 - **The reorder column** (`sort_order`, UV-1): deleting a row leaves the remaining values valid —
   gaps are harmless by the UV-1 contract; no renumbering is required as part of the delete.
+- **Deleting the entity currently on screen**: after the delete applies, the app navigates to the
+  nearest valid context (the deleted account's group screen; All accounts if the group is gone
+  too) — never a dead or blank screen for a route whose entity no longer exists.
 
 ## Requirements *(mandatory)*
 
@@ -133,6 +142,9 @@ disabled and its tooltip explains why. Re-enable writes; the action becomes acti
   unlinked; optional references MAY be left unlinked. (Unchanged R7 rule, inherited.)
 - **FR-007**: After a confirmed delete, every surface listing the entity MUST reflect its removal
   on the next render (projection refresh), including pickers and dropdowns.
+- **FR-008**: If the deleted entity was the one currently displayed, the app MUST navigate to
+  the nearest valid context (e.g. the account's group screen, or All accounts if the group is
+  also gone) — a route MUST never keep pointing at a deleted entity.
 
 ### Key Entities
 

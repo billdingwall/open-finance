@@ -89,7 +89,7 @@ components:
   breadcrumb:         "11px muted · crumb / sep / crumb above the page title"
   detail-pane:        "right slide-over · closed by default globally · opens on main-panel selection · inspector / source-row / repair-preview / edit-form surfaces"
   chart:              "chart-wrap (tall 230 / short 140) · single-accent series · tabular axis labels · heat-map pos/neg cell scale"
-  modal-form:         "centered over scrim · stacked modal-field (label + control) · used for add/edit flows"
+  modal-form:         "centered over scrim · stacked modal-field (label + control) · used for add/edit flows · edit-mode destructive Delete leads the footer (separated from trailing Cancel/Save) · system destructive role + err token on secondary chrome · gate-disabled with reason"
   empty-state:        "glyph + title + one-line message + optional CTA · one per data-less surface"
   step-indicator:     "N dots/segments on the onboarding wizard header · done = accent fill · current = accent ring · upcoming = border on surface-sunken · caption 'Step n of N' in muted"
   list-reorder:       "native drag reorder on sidebar/list rows (.onMove) · system insertion indicator · scope-locked (no cross-group drops) · context-menu 'Move up/Move down' = keyboard/VoiceOver path · gated: moveDisabled + disabled menu items + gate reason in help tooltip · drop settle in the 80–120ms motion tier · immediate apply (no modal preview — constitution v1.1.2 direct-manipulation carve-out)"
@@ -236,7 +236,7 @@ class; keep names aligned so the token-sync and design-adherence skills can cros
 | **Breadcrumb** | 11px muted, `crumb / sep / crumb`, above the title | `.breadcrumb` | `BreadcrumbView` |
 | **Detail pane** | Right slide-over, **closed by default**; surfaces: inspector, source-row preview, repair preview, edit form; edit/delete at the bottom for right-panel objects | `.inspector` | `DetailPaneView` |
 | **Chart** | `chart-wrap` (tall 230 / short 140); single-accent series; tabular axis labels; **heat-map** uses `pos`/`neg` cell scale with an S&P 500 comparison row | `.chart-wrap` / `.heat-map-table` | Swift Charts (`PieChartView`, `SparklineView`, `HeatMapTableView`) |
-| **Modal form** | Centered over scrim; stacked `modal-field` (label + control); add/edit flows; preview before write | `.modal` | sheet + `Form` |
+| **Modal form** | Centered over scrim; stacked `modal-field` (label + control); add/edit flows; preview before write. **Edit-mode destructive Delete** (spec 011): leading in the footer, visually separated from the trailing Cancel/Save so it can't be hit by Save muscle-memory; system destructive role + `err` token on secondary-button chrome; disabled with the standard gate reason while writes are blocked; never present in add mode | `.modal` | sheet + `Form` |
 | **Empty state** | Glyph + title + one-line message + optional CTA; one per data-less surface | `.empty-inspector` | `EmptyStateView` |
 | **Step indicator** | Dots/segments above the wizard title: done = `accent` fill, current = `accent` ring, upcoming = `border` on `surface-sunken`; "Step n of N" caption in `muted` | *(app-only)* | `StepIndicatorView` |
 | **Onboarding wizard** | `modal-form` variant: one centered card (radius `lg`, max 520px, `--shadow` — it floats) over `window-bg`; step-indicator header; single step visible; footer = Back (ghost) + Continue (primary); iCloud setup state rendered with `status-chip` semantics (`ok`/`warn`/`err`); **cannot be dismissed until complete** | *(app-only)* | `OnboardingView` |
@@ -286,6 +286,11 @@ When any one changes, reconcile the others in the same change. The `design-token
 
 ## Changelog
 
+- **2026-07-11 — v1.5** — **`modal-form`** contract gains the edit-mode destructive Delete
+  placement (spec `011` UV-2, DA-011-1): leading in the footer, separated from the trailing
+  Cancel/Save, system destructive role + the existing `err` semantic token on secondary chrome,
+  gate-disabled with the standard reason, absent in add mode. **No new tokens** — red stays
+  reserved for money/severity/destruction; no prototype/Figma sync needed.
 - **2026-07-10 — v1.4** — **`list-reorder`** component contract added (spec `010` UV-1, task
   T001/DA-004): native `.onMove` drag reorder for sidebar account groups and the accounts within
   them — system insertion indicator (platform chrome, not restyled), scope-locked drops,

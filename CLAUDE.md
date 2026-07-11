@@ -123,13 +123,14 @@ under-consideration), then run the Spec Kit chain on a fresh `NNN-` branch. On m
 roadmap's *Delivered* table and close the backlog row.
 
 <!-- SPECKIT START -->
-**Active feature**: `010-reorder-and-delete` — backlog **UV-1** (sidebar re-ordering of accounts
-& account groups; spec + 2 clarify sessions + plan complete 2026-07-10, see
-`specs/010-reorder-and-delete/plan.md`) with **UV-2** (delete in edit modals) queued on the same
-branch. Plan artifacts: research.md (R1–R7), data-model.md, contracts/, quickstart.md; doc
-amendments DA-001…DA-004 ship with the feature (DA-004 DESIGN.md pattern gates UI work).
-**Previous**: `008-polish-launch` complete 2026-07-09 (PRs #22/#23, 206 tests green; residues
-SP-7/SP-8/SP-9 in the backlog). **Next**: `/speckit-tasks` → `/speckit-implement` for UV-1.
+**Active feature**: `010-reorder-and-delete` (branch carries both promoted items). **UV-1**
+(sidebar re-ordering): implementation **complete 2026-07-10** — 25/26 tasks
+(`specs/010-reorder-and-delete/`); open: the Flow 11 manual drag pass (`docs/test-plans.md`) +
+CI confirmation. **UV-2** (delete in edit modals): spec + plan complete 2026-07-11
+(`specs/011-delete-in-edit-modal/plan.md` — entry-point-only reuse of the `requestDelete`
+pipeline; DA-011-1 DESIGN.md modal-form note gates the UI task). **Previous**:
+`008-polish-launch` complete 2026-07-09 (PRs #22/#23). **Next**: `/speckit-tasks` →
+`/speckit-implement` for UV-2, then the branch PR closing both backlog rows.
 <!-- SPECKIT END -->
 
 ### On spec completion — maintain the living docs
