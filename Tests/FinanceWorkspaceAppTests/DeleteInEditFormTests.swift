@@ -28,23 +28,36 @@ import Foundation
         state.requestDeleteFromEditForm(context)
     }
 
+    /// The standard fixture plus account A3 — every standard account (A1, A2, B1) is actually
+    /// referenced by a transaction or goal, so a genuinely reference-free delete needs its own row.
+    private func fixtureWithUnreferencedAccount() -> AppFixture {
+        let fixture = AppFixture.standard()
+        fixture.write("Accounts/accounts.csv",
+                      "account_id,display_name,institution,account_group,account_type,status,account_group_id",
+                      ["A1,Checking,Bank,checking,checking,active,G1",
+                       "A2,Savings,Bank,savings,savings,active,G1",
+                       "B1,Studio,Bank,business,checking,active,G2",
+                       "A3,Extra,Bank,checking,checking,active,G1"])
+        return fixture
+    }
+
     // MARK: - T004 (US1): clean delete parity, add-mode, cancel byte-identity, apply
 
     @Test func formEntryPointBuildsTheSamePlanAsTheDetailPane() async throws {
-        let fixture = AppFixture.standard()
+        let fixture = fixtureWithUnreferencedAccount()
         defer { fixture.cleanup() }
 
-        // Detail-pane entry point on account A2 (no referencing rows in the standard fixture).
+        // Detail-pane entry point on account A3 (no referencing rows).
         let paneState = await makeState(fixture)
         let text = try #require(paneState.readWorkspaceFile("Accounts/accounts.csv"))
-        let row = try #require(AppState.dataRowNumber(of: "A2", in: text))
+        let row = try #require(AppState.dataRowNumber(of: "A3", in: text))
         paneState.requestDelete(SourceRef(filePath: "Accounts/accounts.csv", rowNumber: row,
                                           provenance: .userEdited))
         let paneWrite = paneState.pendingWrite
 
         // Form entry point on the same row.
         let formState = await makeState(fixture)
-        await deleteViaForm(formState, file: "Accounts/accounts.csv", id: "A2")
+        await deleteViaForm(formState, file: "Accounts/accounts.csv", id: "A3")
 
         #expect(formState.editForm == nil)                       // the form closed
         let formWrite = try #require(formState.pendingWrite)
@@ -70,12 +83,12 @@ import Foundation
     }
 
     @Test func cancellingThePreviewLeavesFilesByteIdentical() async throws {
-        let fixture = AppFixture.standard()
+        let fixture = fixtureWithUnreferencedAccount()
         defer { fixture.cleanup() }
         let state = await makeState(fixture)
         let snapshot = fixture.contentSnapshot()
 
-        await deleteViaForm(state, file: "Accounts/accounts.csv", id: "A2")
+        await deleteViaForm(state, file: "Accounts/accounts.csv", id: "A3")
         #expect(state.pendingWrite != nil)
         state.cancelWrite()
 
@@ -83,21 +96,21 @@ import Foundation
     }
 
     @Test func confirmedDeleteRemovesRowCreatesBackupAndDropsEntity() async throws {
-        let fixture = AppFixture.standard()
+        let fixture = fixtureWithUnreferencedAccount()
         defer { fixture.cleanup() }
         let state = await makeState(fixture)
 
-        await deleteViaForm(state, file: "Accounts/accounts.csv", id: "A2")
+        await deleteViaForm(state, file: "Accounts/accounts.csv", id: "A3")
         #expect(state.pendingWrite != nil)
         await state.applyPendingWrite()
 
         let text = try #require(state.readWorkspaceFile("Accounts/accounts.csv"))
-        #expect(!text.contains("A2,"))                            // row gone
+        #expect(!text.contains("A3,"))                            // row gone
         let backups = fixture.root.appendingPathComponent(".finance-meta/backups")
         let names = (try? FileManager.default.contentsOfDirectory(atPath: backups.path)) ?? []
         #expect(names.contains { $0.hasPrefix("accounts.csv.") }) // timestamped backup
         // FR-007: refreshed projections drop the entity everywhere.
-        #expect(state.projections?.context.accounts.map(\.accountId).contains("A2") == false)
+        #expect(state.projections?.context.accounts.map(\.accountId).contains("A3") == false)
     }
 
     // MARK: - T005 (US2): referenced deletes inherit the reassignment flow
@@ -156,13 +169,13 @@ import Foundation
     // MARK: - T006 (US3): inherited apply-time gating + the whitelist
 
     @Test func gatedApplyRefusesAndLeavesFilesUntouched() async throws {
-        let fixture = AppFixture.standard()
+        let fixture = fixtureWithUnreferencedAccount()
         defer { fixture.cleanup() }
         let state = await makeState(fixture)
 
         // Parity (analyze I1): the preview still OPENS while syncing — same as the detail pane;
         // gating bites at apply, exactly like every other write.
-        await deleteViaForm(state, file: "Accounts/accounts.csv", id: "A2")
+        await deleteViaForm(state, file: "Accounts/accounts.csv", id: "A3")
         #expect(state.pendingWrite != nil)
         let snapshot = fixture.contentSnapshot()
 
@@ -183,14 +196,14 @@ import Foundation
     // MARK: - T007 (FR-008): post-delete route resolution
 
     @Test func deletingTheCurrentlyRoutedEntityResolvesToNearestValidContext() async throws {
-        let fixture = AppFixture.standard()
+        let fixture = fixtureWithUnreferencedAccount()
         defer { fixture.cleanup() }
         let state = await makeState(fixture)
 
-        state.route = .account("A2")                              // on the entity's own screen
-        await deleteViaForm(state, file: "Accounts/accounts.csv", id: "A2")
+        state.route = .account("A3")                              // on the entity's own screen
+        await deleteViaForm(state, file: "Accounts/accounts.csv", id: "A3")
         await state.applyPendingWrite()                           // applies + reindexes
 
-        #expect(state.route != .account("A2"))                    // never a dead route
+        #expect(state.route != .account("A3"))                    // never a dead route
     }
 }
