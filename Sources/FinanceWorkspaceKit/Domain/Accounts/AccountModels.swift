@@ -37,6 +37,7 @@ public struct Account: Codable, Equatable, Sendable, Identifiable {
     public var accountGroupId: String
     public var currentBalance: Decimal?          // derived/cached for display
     public var apy: Decimal?                      // optional stored savings rate (FR-024a)
+    public var sortOrder: Int?                    // optional display order within the group (spec 010 UV-1)
     public var investment: InvestmentMetadata?
 
     public var id: String { accountId }
@@ -45,7 +46,7 @@ public struct Account: Codable, Equatable, Sendable, Identifiable {
     public init(accountId: String, displayName: String, institution: String,
                 accountGroup: AccountGroupClass, accountType: String, status: AccountStatus,
                 accountGroupId: String, currentBalance: Decimal? = nil, apy: Decimal? = nil,
-                investment: InvestmentMetadata? = nil) {
+                sortOrder: Int? = nil, investment: InvestmentMetadata? = nil) {
         self.accountId = accountId
         self.displayName = displayName
         self.institution = institution
@@ -55,6 +56,7 @@ public struct Account: Codable, Equatable, Sendable, Identifiable {
         self.accountGroupId = accountGroupId
         self.currentBalance = currentBalance
         self.apy = apy
+        self.sortOrder = sortOrder
         self.investment = investment
     }
 }
@@ -64,12 +66,14 @@ public struct AccountGroup: Codable, Equatable, Sendable, Identifiable {
     public var accountGroupId: String
     public var name: String
     public var groupType: GroupType
+    public var sortOrder: Int?                   // optional display order among groups (spec 010 UV-1)
     public var id: String { accountGroupId }
 
-    public init(accountGroupId: String, name: String, groupType: GroupType) {
+    public init(accountGroupId: String, name: String, groupType: GroupType, sortOrder: Int? = nil) {
         self.accountGroupId = accountGroupId
         self.name = name
         self.groupType = groupType
+        self.sortOrder = sortOrder
     }
 }
 

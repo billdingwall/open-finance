@@ -124,6 +124,12 @@ final class AppState {
     var droppedImportURL: URL?
     // First-launch onboarding wizard (non-dismissable until complete — DESIGN.md onboarding-wizard).
     var showingOnboarding = false
+    // Sidebar reorder (010 US1/US2): the optimistic display order shown between drop and the
+    // post-write re-index (provisional — files stay the source of truth), and the single-flight
+    // latch that refuses a second reorder while one write is still settling.
+    var optimisticGroupOrder: [String]?
+    var optimisticAccountOrder: [String: [String]]?   // group id → account ids
+    var reorderInFlight = false
 
     let provider: any CloudStorageProvider
     let manager: WorkspaceManager

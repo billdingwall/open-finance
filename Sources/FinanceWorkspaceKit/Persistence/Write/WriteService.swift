@@ -33,7 +33,8 @@ public struct WriteService: Sendable {
             FileChange(relativePath: change.relativePath,
                        expectedHash: Self.hash(of: workspaceURL.appendingPathComponent(change.relativePath)),
                        rowDiffs: change.rowDiffs,
-                       seedHeader: change.seedHeader)
+                       seedHeader: change.seedHeader,
+                       headerChange: change.headerChange)
         }
         return stamped
     }
@@ -87,6 +88,10 @@ public struct WriteService: Sendable {
                 // Brand-new managed file: seed the schema comment + canonical header so the
                 // created file is valid on its own (never headerless).
                 existing = "# schema_version: 1\n" + header.joined(separator: ",") + "\n"
+            }
+            if let headerChange = change.headerChange {
+                existing = try CSVRowSerializer.replaceHeader(headerChange, in: existing,
+                                                              relativePath: change.relativePath)
             }
             let updated = try CSVRowSerializer.applyDiffs(change.rowDiffs, to: existing,
                                                           relativePath: change.relativePath)

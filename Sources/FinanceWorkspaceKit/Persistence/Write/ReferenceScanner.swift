@@ -91,7 +91,17 @@ public struct ReferenceScanner: Sendable {
     /// deletion set (FR-022). List columns additionally always allow "remove" (handled in the UI).
     public func reassignTargets(parentSubtype: String, excluding deleted: Set<String>) -> [String] {
         guard let idColumn = Self.idColumns[parentSubtype] else { return [] }
-        return context.identifierSet(fileTypeKey: parentSubtype, column: idColumn)
-            .subtracting(deleted).sorted()
+        let ids = context.identifierSet(fileTypeKey: parentSubtype, column: idColumn)
+            .subtracting(deleted)
+        // Accounts and account-groups list in the canonical display order (spec 010 FR-008);
+        // other collections keep the alphabetical default.
+        let canonical: [String]
+        switch parentSubtype {
+        case "registry": canonical = context.accounts.map(\.accountId)
+        case "account-groups": canonical = context.accountGroups.map(\.accountGroupId)
+        default: return ids.sorted()
+        }
+        let ordered = canonical.filter(ids.contains)
+        return ordered + ids.subtracting(ordered).sorted()
     }
 }

@@ -34,7 +34,10 @@ The MVP shipped the complete v1 product (see the delivery record below). From he
 
 | Backlog ID | Item | Branch / spec | Status |
 |---|---|---|---|
-| — | *Nothing promoted yet. Per the PM's standing priority, **UV-1** (sidebar re-ordering) and **UV-2** (delete in edit modals) lead the backlog; **SP-8** (first signed release) unblocks distribution and is certificate-gated.* | — | — |
+| **UV-1** | Manual re-ordering of accounts & account groups in the sidebar (optional `sort_order` columns, safe-write path, all surfaces mirror; PRD §5 + architecture §3.14/§3.21 amended 2026-07-10; constitution v1.1.2 direct-manipulation carve-out) | `010-reorder-and-delete` / [spec](../specs/010-reorder-and-delete/spec.md) | **In review — [PR #24](https://github.com/billdingwall/open-finance/pull/24)** (impl complete 2026-07-10, 25/26 tasks; Flow 11 manual pass pending) |
+| **UV-2** | Delete inside the edit modal for accounts, account groups, and categories (locked R5/R7 delete-reassign convention; reuses the existing `requestDelete` → `ReferenceScanner` → picker → preview pipeline unchanged; DESIGN.md v1.5 modal-form amendment) | `010-reorder-and-delete` / [spec](../specs/011-delete-in-edit-modal/spec.md) | **In review — [PR #24](https://github.com/billdingwall/open-finance/pull/24)** (impl complete 2026-07-11, 8/9 tasks; Flow 12 manual pass pending) |
+
+> On merge: move these rows to *Delivered* below and close the backlog rows (UV-1, UV-2).
 
 ### Delivered in Growth
 

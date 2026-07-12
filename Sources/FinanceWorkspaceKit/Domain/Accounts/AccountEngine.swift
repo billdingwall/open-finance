@@ -113,8 +113,8 @@ public struct AccountEngine: Sendable {
             }
         }
 
-        let groups = buildGroups(accounts: accounts, groupType: groupType, figures: figures,
-                                 taxYear: taxYear, asOf: asOf)
+        let groups = buildGroups(accounts: accounts, groups: context.accountGroups,
+                                 figures: figures, taxYear: taxYear, asOf: asOf)
 
         return AccountsOverview(
             asOfMonth: asOfMonth, taxYear: taxYear, accounts: cards, groups: groups,
@@ -147,10 +147,10 @@ public struct AccountEngine: Sendable {
                             settings: WorkspaceSettings) -> AccountGroupProjection? {
         let accounts = context.accounts
         guard accounts.contains(where: { $0.accountGroupId == accountGroupId }) else { return nil }
-        let groupType = groupTypeByAccount(accounts, groups: context.accountGroups)
         let figures = monthlyFigures(context.transactions)
-        return buildGroups(accounts: accounts, groupType: groupType, figures: figures,
-                           taxYear: settings.taxYear, asOf: asOf, only: accountGroupId).first
+        return buildGroups(accounts: accounts, groups: context.accountGroups,
+                           figures: figures, taxYear: settings.taxYear, asOf: asOf,
+                           only: accountGroupId).first
     }
 
     // MARK: - Internals
@@ -197,12 +197,17 @@ public struct AccountEngine: Sendable {
         return abs(delta)
     }
 
-    private func buildGroups(accounts: [Account], groupType: [String: GroupType],
+    private func buildGroups(accounts: [Account], groups: [AccountGroup],
                              figures: [String: [String: Figures]], taxYear: Int, asOf: Date,
                              only: String? = nil) -> [AccountGroupProjection] {
+        let groupType = groupTypeByAccount(accounts, groups: groups)
         let byGroup = Dictionary(grouping: accounts, by: \.accountGroupId)
         let monthsYTD = monthsInYTD(taxYear: taxYear, asOf: asOf)
-        return byGroup.keys.sorted().compactMap { groupId -> AccountGroupProjection? in
+        // Canonical group order (spec 010 UV-1): the accessor-ordered account-groups first, then
+        // orphan group IDs (referenced by accounts but absent from account-groups.csv) in ID order.
+        let knownIds = groups.map(\.accountGroupId).filter { byGroup[$0] != nil }
+        let orphanIds = byGroup.keys.filter { id in !groups.contains { $0.accountGroupId == id } }.sorted()
+        return (knownIds + orphanIds).compactMap { groupId -> AccountGroupProjection? in
             if let only, groupId != only { return nil }
             let groupAccounts = byGroup[groupId] ?? []
             let gType = groupType[groupAccounts.first?.accountId ?? ""] ?? .personal
@@ -222,8 +227,10 @@ public struct AccountEngine: Sendable {
                     BusinessMonthlySummary(accountGroupId: groupId, period: $0, netIncome: monthlyNet[$0] ?? 0)
                 }
                 : nil
+            // groupAccounts preserves the accessor's canonical account order (Dictionary(grouping:)
+            // keeps input order within each group) — do not re-sort by ID (spec 010 UV-1).
             return AccountGroupProjection(accountGroupId: groupId, groupType: gType,
-                                          accountIds: groupAccounts.map(\.accountId).sorted(),
+                                          accountIds: groupAccounts.map(\.accountId),
                                           ytdNetIncome: net, ytdRetainedEquity: retained, businessPL: pl)
         }
     }

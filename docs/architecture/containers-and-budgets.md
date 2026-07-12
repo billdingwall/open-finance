@@ -413,6 +413,7 @@ Required columns:
 | group_type | enum | `personal`, `employment`, `business`, `custom` (was `entity_type`) |
 | tax_id_hint | string | Tax ID / EIN (optional) |
 | is_active | boolean | Status flag |
+| sort_order | integer | Optional — display ordering among account groups (added in spec `010`, UV-1; absent → default `account_group_id` order) |
 
 ### 3.15 Reserved (Absorbed into Unified Transactions)
 
@@ -506,6 +507,7 @@ Required columns:
 | tax_treatment | string | Optional — investment accounts only (e.g. taxable, roth_ira, traditional_ira, hsa) |
 | performance_tracking | boolean | Optional — investment accounts only; enables portfolio projection |
 | notes | string | Optional |
+| sort_order | integer | Optional — display ordering **within the account's group** (scope = rows sharing `account_group_id`; added in spec `010`, UV-1; absent → default `account_id` order) |
 
 Notes:
 - All account types, including investment accounts, are stored in this single file. Investment-specific columns (`tax_treatment`, `performance_tracking`) are optional and apply only to rows with `account_group: investment`.

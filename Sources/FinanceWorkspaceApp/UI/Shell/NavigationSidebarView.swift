@@ -58,17 +58,30 @@ struct NavigationSidebarView: View {
             NavRow(title: "All accounts", count: state.projections?.accounts.accounts.count)
                 .tag(Route.accounts)
             DisclosureGroup(isExpanded: expansion("accounts")) {
-                let groups = state.projections?.accounts.groups ?? []
+                let groups = state.orderedGroups
                 if groups.isEmpty {
                     EmptyGroupRow(message: "No account groups yet")
                 } else {
+                    // Nested ForEach (groups → that group's accounts): `.onMove` gives native
+                    // drag reorder at each level, and the per-group inner ForEach makes
+                    // cross-group drops structurally impossible (DESIGN.md `list-reorder`).
                     ForEach(groups) { group in
                         NavRow(title: groupName(group), count: group.accountIds.count)
                             .tag(Route.accountGroup(group.accountGroupId))
-                        ForEach(group.accountIds, id: \.self) { accountId in
+                            .moveDisabled(!reorderEnabled)
+                            .contextMenu { groupMoveMenu(group, in: groups) }
+                        ForEach(state.orderedAccountIds(in: group), id: \.self) { accountId in
                             NavRow(title: accountName(accountId), indent: true)
                                 .tag(Route.account(accountId))
+                                .moveDisabled(!reorderEnabled)
+                                .contextMenu { accountMoveMenu(accountId, in: group) }
                         }
+                        .onMove { offsets, target in
+                            state.reorderAccounts(in: group, fromOffsets: offsets, toOffset: target)
+                        }
+                    }
+                    .onMove { offsets, target in
+                        state.reorderGroups(fromOffsets: offsets, toOffset: target)
                     }
                 }
             } label: {
@@ -121,6 +134,38 @@ struct NavigationSidebarView: View {
             NavRow(title: "Archive", count: state.projections?.closedTaxYears.count)
                 .tag(Route.taxes(.archive))
         }
+    }
+
+    // MARK: - Reorder affordances (010 US1/US2 — DESIGN.md `list-reorder`)
+
+    /// Drag + Move up/down share the write gate and the single-flight latch.
+    private var reorderEnabled: Bool { state.writesEnabled && !state.reorderInFlight }
+
+    /// Gate reason for disabled reorder menu items (same treatment as the "New group" affordance).
+    private var reorderHelp: String { state.writeGateReason ?? "Saving the previous reorder…" }
+
+    @ViewBuilder
+    private func groupMoveMenu(_ group: AccountGroupProjection,
+                               in groups: [AccountGroupProjection]) -> some View {
+        let index = groups.firstIndex { $0.accountGroupId == group.accountGroupId }
+        Button("Move up") { state.moveGroup(group.accountGroupId, by: -1) }
+            .disabled(!reorderEnabled || index == 0)
+            .help(reorderEnabled ? "Move this group up" : reorderHelp)
+        Button("Move down") { state.moveGroup(group.accountGroupId, by: 1) }
+            .disabled(!reorderEnabled || index == groups.count - 1)
+            .help(reorderEnabled ? "Move this group down" : reorderHelp)
+    }
+
+    @ViewBuilder
+    private func accountMoveMenu(_ accountId: String, in group: AccountGroupProjection) -> some View {
+        let ids = state.orderedAccountIds(in: group)
+        let index = ids.firstIndex(of: accountId)
+        Button("Move up") { state.moveAccount(accountId, in: group, by: -1) }
+            .disabled(!reorderEnabled || index == 0)
+            .help(reorderEnabled ? "Move this account up" : reorderHelp)
+        Button("Move down") { state.moveAccount(accountId, in: group, by: 1) }
+            .disabled(!reorderEnabled || index == ids.count - 1)
+            .help(reorderEnabled ? "Move this account down" : reorderHelp)
     }
 
     // MARK: - Helpers
