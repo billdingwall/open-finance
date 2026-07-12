@@ -21,12 +21,11 @@ import Foundation
         return state
     }
 
-    /// Drive the form entry point and drain the sheet-sequencing hop it schedules.
+    /// Drive the form entry point (synchronous per analyze M1 — no runloop hop to drain).
     private func deleteViaForm(_ state: AppState, file: String, id: String) async {
         state.presentEditEntity(relativePath: file, id: id)
         guard let context = state.editForm else { Issue.record("edit form did not open"); return }
         state.requestDeleteFromEditForm(context)
-        for _ in 0..<4 { await Task.yield() }   // drain the runloop hop
     }
 
     // MARK: - T004 (US1): clean delete parity, add-mode, cancel byte-identity, apply

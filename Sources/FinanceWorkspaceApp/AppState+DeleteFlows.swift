@@ -115,8 +115,9 @@ extension AppState {
         guard let rowRef = context.rowRef else { return }   // add mode
         editForm = nil
         let ref = SourceRef(filePath: context.relativePath, rowNumber: rowRef, provenance: .userEdited)
-        // Hop to the next runloop so the form sheet fully dismisses before the picker/preview
-        // sheet opens (the finishEditForm sheet-sequencing pattern).
-        Task { @MainActor in self.requestDelete(ref) }
+        // Core delete stays synchronous (analyze M1) so tests can assert pendingWrite/
+        // pendingReassignment deterministically; only the sheet-dismiss-then-present hop, if
+        // SwiftUI needs one, belongs in the view layer, not here.
+        requestDelete(ref)
     }
 }
